@@ -8,8 +8,10 @@ __pycache__/
 test_files/
 test.py
 pipeline_LLM_test.ipynb
+pipeline copy.py
 
 
+checkpoints/
 
 #hide venv
 venv/
