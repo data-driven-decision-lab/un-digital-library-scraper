@@ -10,9 +10,14 @@ test.py
 pipeline_LLM_test.ipynb
 pipeline copy.py
 
-
+#hide checkpoints
 checkpoints/
 
 #hide venv
 venv/
 
+#hide data
+data/
+
+#hide logs
+logs/
