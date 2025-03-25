@@ -602,6 +602,12 @@ Rules:
             return SubTag1Classification(subtag1s=[])
             
         main_tag = previous_tags["main_tag"]
+        
+        # Check if the main_tag exists in the classification dictionary
+        if main_tag not in un_classification:
+            logger.warning(f"Main tag '{main_tag}' not found in classification dictionary")
+            return SubTag1Classification(subtag1s=[])
+            
         subcategories = list(un_classification[main_tag].keys())
         
         system_prompt = f"""You are a UN document classification assistant. Your task is to analyze UN resolutions given their Title.
