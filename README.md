@@ -40,19 +40,21 @@ python pipeline_complete.py
 ## Project Structure
 
 ```
-un-digital-library-scraper/
-├── pipeline_complete.py   # Main script integrating all functionality
-├── README.md              # This documentation
-├── requirements.txt       # Python dependencies
-├── .gitignore             # Files excluded from version control
-├── .env.example           # Template for environment variables
-├── dictionaries/          # Reference data
-│   ├── un_classification.py  # Classification scheme
-│   ├── un_geo_hierarchy.py   # Geographical hierarchy
-│   └── iso2_country.py       # ISO country mappings
-├── pipeline_output/       # Output CSV files
-│   └── UN_VOTING_DATA_RAW_WITH_TAGS_YYYY-MM-DD.csv  # Example output file  
 
+## Project Structure
+
+
+* pipeline_complete.py # Main script integrating all functionality
+* README.md # This documentation
+* requirements.txt # Python dependencies
+* .env.example # Template for environment variables
+* dictionaries/ # Reference data, e.g un and geographic classifiers
+   - un_classification.py # Classification scheme
+   - un_geo_hierarchy.py # Geographical hierarchy
+   - iso2_country.py # ISO country mappings
+* pipeline_output/ # Output CSV files
+   - UN_VOTING_DATA_RAW_WITH_TAGS_YYYY-MM-DD.csv # Example output file
+* .gitignore # Make sure your .env is present
 
 
 ## API Key Configuration
