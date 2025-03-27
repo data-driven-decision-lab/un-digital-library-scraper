@@ -109,7 +109,7 @@ Where YYYY-MM-DD is the generation date (e.g., UN_VOTING_DATA_RAW_WITH_TAGS_2025
 
 ### Sample Data
 
-id,"Security Council","2020-07-11","The situation in Syria","S/RES/2533 (2020)","SY","Western Asia","Asia","PEACE AND SECURITY, HUMANITARIAN AID",15,12,0,3
+id,"Security Council","2020-07-11","The situation in Syria","S/RES/2533 (2020)","SY","Western Asia","Asia","PEACE AND SECURITY, HUMANITARIAN AID",15,12,0,3, (followed by individual country voting data, YES, NO, ABSTAIN, ' ')
 
 ## Methodology
 
@@ -154,7 +154,7 @@ The geographic tagging system also follows the UNBIS Thesaurus structure for "Ge
      * Continent: Major world regions (Africa, Americas, Asia, Europe, Oceania)
      * Subregion: Geographic subdivisions within continents
      * Country: Individual nations identified by ISO codes where possible
-          Note: The exeption here is bodies of water which keep their original name
+          Note: The exception here are bodies of water which keep their original name
 
 ## Contributing
 
