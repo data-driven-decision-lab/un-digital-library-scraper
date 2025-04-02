@@ -45,6 +45,7 @@ from queue import Queue
 from dictionaries.un_classification import un_classification
 from dictionaries.un_geo_hierarchy import geo_hierarchy
 from dictionaries.iso2_country import iso2_country_code
+import pycountry
 
 import random
 import logging
@@ -143,7 +144,7 @@ print(f"Using master CSV: {MASTER_CSV}")
 
 FIXED_COLUMNS = [
     "Council", "Date", "Title", "Resolution", "TOTAL VOTES", "NO-VOTE COUNT",
-    "ABSENT COUNT", "NO COUNT", "YES COUNT", "Link", "token", "Scrape_Year"
+    "ABSTAIN COUNT", "NO COUNT", "YES COUNT", "Link", "token", "Scrape_Year"
 ]
 
 # Scraper constants
@@ -523,6 +524,85 @@ def combined_geo_tagger(df, geo_hierarchy, iso2_country_code,
     df.insert(loc=insert_pos+1, column='subregion', value=subregions_str)
     df.insert(loc=insert_pos+2, column='continent', value=continents_str)
     
+    return df
+
+
+# -------------------- Country Standardization Function --------------------
+
+def standardize_country_columns(df):
+    """
+    Standardize country names in DataFrame columns to ISO3 codes.
+    
+    Args:
+        df: pandas DataFrame with country names in column names
+        
+    Returns:
+        DataFrame with standardized country column names
+    """
+    # Step 1: Create ISO3 mapping from pycountry
+    country_name_to_iso3 = {}
+    for country in pycountry.countries:
+        country_name_to_iso3[country.name.lower()] = country.alpha_3
+        if hasattr(country, "official_name"):
+            country_name_to_iso3[country.official_name.lower()] = country.alpha_3
+        if hasattr(country, "common_name"):
+            country_name_to_iso3[country.common_name.lower()] = country.alpha_3
+
+    # Step 2: Add manual overrides for historical/ambiguous names
+    manual_iso3_map = {
+        'BURMA': 'MMR',
+        'BYELORUSSIAN SSR': 'BLR',
+        'CAPE VERDE': 'CPV',
+        'CENTRAL AFRICAN EMPIRE': 'CAF',
+        'CEYLON': 'LKA',
+        "COTE D'IVOIRE": 'CIV',
+        'DAHOMEY': 'BEN',
+        'DEMOCRATIC KAMPUCHEA': 'KHM',
+        'FEDERATION OF MALAYA': 'MYS',
+        'GERMAN DEMOCRATIC REPUBLIC': 'DEU',
+        'IRAN': 'IRN',
+        'IRAN (ISLAMIC REPUBLIC OF)': 'IRN',
+        'IVORY COAST': 'CIV',
+        'KHMER REPUBLIC': 'KHM',
+        'LAOS': 'LAO',
+        'MALDIVE ISLANDS': 'MDV',
+        'MICRONESIA (FEDERATED STATES OF)': 'FSM',
+        'PHILIPPINE REPUBLIC': 'PHL',
+        'REPUBLIC OF KOREA': 'KOR',
+        'SIAM': 'THA',
+        'SURINAM': 'SUR',
+        'SWAZILAND': 'SWZ',
+        'SYRIA': 'SYR',
+        'TANGANYIKA': 'TZA',
+        'THE FORMER YUGOSLAV REPUBLIC OF MACEDONIA': 'MKD',
+        'TÜRKIYE': 'TUR',
+        'TÜRKÝYE': 'TUR',
+        'TÜRKİYE': 'TUR',
+        'UKRAINIAN SSR': 'UKR',
+        'UNITED ARAB REPUBLIC': 'EGY',
+        'UPPER VOLTA': 'BFA',
+        'USSR': 'RUS',
+        'YUGOSLAVIA': 'SRB',
+        'ZAIRE': 'COD',
+        'ZANZIBAR': 'TZA',
+    }
+
+    # Step 3: Replace column names
+    new_columns = []
+    for col in df.columns:
+        lower_col = col.lower()
+        replaced = False
+
+        for name in sorted(country_name_to_iso3, key=len, reverse=True):
+            if name in lower_col:
+                new_columns.append(lower_col.replace(name, country_name_to_iso3[name]))
+                replaced = True
+                break
+
+        if not replaced:
+            new_columns.append(manual_iso3_map.get(col.upper(), col))  # Use original if not found
+
+    df.columns = new_columns
     return df
 
 
@@ -959,7 +1039,7 @@ def process_resolution(link, driver, year):
                 if m := re.search(r'No:\s*(\d+)', summary):
                     row_data['NO COUNT'] = m.group(1)
                 if m := re.search(r'Abstentions:\s*(\d+)', summary):
-                    row_data['ABSENT COUNT'] = m.group(1)
+                    row_data['ABSTAIN COUNT'] = m.group(1)
                 if m := re.search(r'Non-Voting:\s*(\d+)', summary):
                     row_data['NO-VOTE COUNT'] = m.group(1)
                 if m := re.search(r'Total voting membership:\s*(\d+)', summary):
@@ -1042,8 +1122,8 @@ def check_for_next_button(driver):
 def collect_links_for_year(driver, year, existing_links):
     """
     Paginate the search results for a given year and collect new links.
-    Once a duplicate link (one already in existing_links) is encountered,
-    raise DuplicateLinkFound to immediately halt further processing.
+    Once a duplicate link is encountered on a page, finish collecting any new links
+    from that page and then stop. If all links on a page are duplicates, stop immediately.
     
     Returns a list of new links (i.e. not in existing_links).
     """
@@ -1064,23 +1144,27 @@ def collect_links_for_year(driver, year, existing_links):
         elements = driver.find_elements(By.XPATH, "//a[contains(@href, '/record/')]")
         new_links_on_page = False
         duplicate_found = False
+        page_links = []
         
+        # First pass: collect all valid links from the page
         for elem in elements:
             try:
                 href = elem.get_attribute("href")
                 norm_link = normalize_link(href)
                 if norm_link:
-                    # Check if link is already in our existing links
-                    if norm_link in existing_links:
-                        logger.info(f"Duplicate link encountered ({norm_link}); will finish collecting links on this page.")
-                        duplicate_found = True
-                    else:
-                        all_links.add(norm_link)
-                        new_links_on_page = True
+                    page_links.append(norm_link)
             except StaleElementReferenceException:
                 continue
-                
-        # If a duplicate was found on this page, raise the exception with all new links collected so far
+        
+        # Second pass: process all links from the page
+        for link in page_links:
+            if link in existing_links:
+                duplicate_found = True
+            else:
+                all_links.add(link)
+                new_links_on_page = True
+        
+        # If we found any duplicates on this page
         if duplicate_found:
             if len(all_links) > 0:
                 logger.info(f"[Year {year}] Found {len(all_links)} unique new links before duplicate.")
@@ -1089,11 +1173,12 @@ def collect_links_for_year(driver, year, existing_links):
                 logger.info(f"[Year {year}] No new links found before duplicate.")
                 return []
         
-        # If no new links were found on this page (all were duplicates), we can stop
+        # If no new links were found on this page, stop processing
         if not new_links_on_page:
             logger.info(f"[Year {year}] No new links on page {page_count}; stopping collection.")
             break
 
+        # Only continue to next page if we found new links and no duplicates
         next_button = check_for_next_button(driver)
         if next_button:
             try:
@@ -1281,6 +1366,7 @@ def main():
       - Loads the master CSV (for reference) but does NOT modify it
       - Scrapes new rows to add to the dataset
       - Tags only the new rows with both regular tagging and geo-tagging
+      - Standardizes country columns to ISO3 codes
       - Saves the full dataset (new + old rows) into a new CSV file
     """
     # Import required geo hierarchy and ISO code mappings
@@ -1325,6 +1411,8 @@ def main():
     stop_processing = False  # Flag to stop processing further years
 
     try:
+        check_one_more_year = False  # Flag to indicate if we should check one more year
+        
         for year_data in years_data:
             year = year_data['year']
             logger.info(f"\n{'='*60}\nProcessing year {year} ({year_data['count']} records)\n{'='*60}")
@@ -1351,10 +1439,14 @@ def main():
                 # The new_links attribute should now contain all links found before the duplicate
                 new_links = e.new_links
                 logger.info(f"Duplicate link encountered; found {len(new_links)} new links before duplicate in year {year}")
-                stop_processing = True
+                if not check_one_more_year:
+                    check_one_more_year = True
+                else:
+                    stop_processing = True
 
             if new_links:
                 logger.info(f"Collected {len(new_links)} new links for year {year}")
+                check_one_more_year = False  # Reset the flag since we found new links
                 # Process links: use parallel scraping if many links; otherwise, batch process
                 BATCH_SIZE = 40
                 if len(new_links) > 50 and MAX_WORKERS > 1:
@@ -1389,13 +1481,18 @@ def main():
                 # Update the in-memory set to avoid reprocessing these links
                 csv_links.update(new_links)
             else:
-                logger.warning(f"No new links found for year {year}.")
+                if not check_one_more_year:
+                    logger.info(f"No new links found for year {year}, will check one more year.")
+                    check_one_more_year = True
+                else:
+                    logger.info(f"No new links found for second consecutive year, stopping scraping process.")
+                    stop_processing = True
             
             clear_filters(driver)
             time.sleep(1)
 
             if stop_processing:
-                logger.info("Stopping further year processing due to duplicate link encountered.")
+                logger.info("Stopping further year processing.")
                 break
     
     except Exception as general_e:
@@ -1428,6 +1525,10 @@ def main():
         combined_df = pd.concat([master_df, tagged_new_df], ignore_index=True)
     else:
         combined_df = tagged_new_df
+    
+    # Standardize country columns to ISO3 codes
+    logger.info("Standardizing country columns to ISO3 codes...")
+    combined_df = standardize_country_columns(combined_df)
     
     # Standardize: sort by Date (oldest first), reassign id, and reorder columns
     combined_df['Date'] = pd.to_datetime(combined_df['Date'], errors='coerce')
