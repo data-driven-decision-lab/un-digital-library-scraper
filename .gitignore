@@ -18,6 +18,3 @@ venv/
 
 #hide data
 data/
-
-#hide logs
-logs/
