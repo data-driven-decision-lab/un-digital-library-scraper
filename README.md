@@ -164,6 +164,8 @@ Contributions are welcome! Here's how you can help:
 2. Suggest features - Have ideas for improvements? Let us know
 3. Feel free to submit pull requests too!
 
+Reach out to the team at "hello@datadrivendecisionlab.com"
+
 ## Use Cases
 
 - Academic Research - Analyze voting patterns in UN resolutions
