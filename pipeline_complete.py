@@ -529,138 +529,82 @@ def combined_geo_tagger(df, geo_hierarchy, iso2_country_code,
 
 # -------------------- Country Standardization Function --------------------
 
+import pandas as pd
+import pycountry
+import re
+import logging
+
+# Get the logger instance defined at the top level of the script
+# This assumes logger = logging.getLogger(__name__) exists earlier
+logger = logging.getLogger(__name__)
+
+# Updated standardize_country_columns function code (extracted from country_cleanup.py)
 def standardize_country_columns(df):
     """
     Standardize country names in DataFrame columns to ISO3 codes.
     Consolidates duplicate country columns and handles special cases.
-    
+
     Args:
         df: pandas DataFrame with country names in column names
-        
+
     Returns:
         DataFrame with standardized country column names
     """
+    # Using the logger defined in the main script scope
+    logger.info("Starting country column standardization...")
+
     # Step 1: Create comprehensive ISO3 mapping from pycountry
     country_name_to_iso3 = {}
     for country in pycountry.countries:
-        # Add standard name
         country_name_to_iso3[country.name.lower()] = country.alpha_3
-        # Add alpha-2 code mapping to alpha-3
         country_name_to_iso3[country.alpha_2.lower()] = country.alpha_3
-        # Add official name if available
         if hasattr(country, "official_name"):
             country_name_to_iso3[country.official_name.lower()] = country.alpha_3
-        # Add common name if available
         if hasattr(country, "common_name"):
             country_name_to_iso3[country.common_name.lower()] = country.alpha_3
 
     # Step 2: Add manual overrides for historical/ambiguous names
     manual_iso3_map = {
-        'BURMA': 'MMR',
-        'BYELORUSSIAN SSR': 'BLR',
-        'CAPE VERDE': 'CPV',
-        'CENTRAL AFRICAN EMPIRE': 'CAF',
-        'CEYLON': 'LKA',
-        "COTE D'IVOIRE": 'CIV',
-        'DAHOMEY': 'BEN',
-        'DEMOCRATIC KAMPUCHEA': 'KHM',
-        'FEDERATION OF MALAYA': 'MYS',
-        'GERMAN DEMOCRATIC REPUBLIC': 'DEU',
-        'IRAN (ISLAMIC REPUBLIC OF)': 'IRN',
-        'IVORY COAST': 'CIV',
-        'KHMER REPUBLIC': 'KHM',
-        'MALDIVE ISLANDS': 'MDV',
-        'MICRONESIA (FEDERATED STATES OF)': 'FSM',
-        'PHILIPPINE REPUBLIC': 'PHL',
-        'REPUBLIC OF KOREA': 'KOR',
-        'SIAM': 'THA',
-        'SURINAM': 'SUR',
-        'SWAZILAND': 'SWZ',
-        'SYRIAN ARAB REPUBLIC': 'SYR',
-        'TANGANYIKA': 'TZA',
-        'THE FORMER YUGOSLAV REPUBLIC OF MACEDONIA': 'MKD',
-        'TÜRKIYE': 'TUR',
-        'TÜRKÝYE': 'TUR',
-        'TÜRKİYE': 'TUR',
-        'TURKEY': 'TUR',
-        'UKRAINIAN SSR': 'UKR',
-        'UNITED ARAB REPUBLIC': 'EGY',
-        'UPPER VOLTA': 'BFA',
-        'USSR': 'RUS',
-        'YUGOSLAVIA': 'SRB',
-        'ZAIRE': 'COD',
-        'ZANZIBAR': 'TZA',
-        'CZECHOSVK': 'CZE',
-        'DEMOCRATIC YEMEN': 'YEM',
-        'SOUTHERN YEMEN': 'YEM',
-        'UNITED CAMEROON': 'CMR',
-        'UNION OF SOUTH AFRICA': 'ZAF',
-        'SERBIA AND MONTENEGRO': 'SRB',
-        'CONGO (BRAZZAVILLE)': 'COG',
-        'CONGO (DEMOCRATIC REPUBLIC OF)': 'COD',
-        'CONGO (LEOPOLDVILLE)': 'COD',
-        'DEMOCRATIC CONGO': 'COD',
-        'VENEZUELA (BOLIVARIAN REPUBLIC OF)': 'VEN',
-        'BOLIVIA (PLURINATIONAL STATE OF)': 'BOL',
-        'NETHERLANDS (KINGDOM OF THE)': 'NLD',
-        'LIBYAN ARAB JAMAHIRIYA': 'LBY',
-        'LIBYAN ARAB REPUBLIC': 'LBY',
-        'DEMOCRATIC REPUBLIC OF THE CONGO': 'COD',
-        'bol (plurinational state of)': 'BOL',
-        'cog (brazzaville)': 'COG',
-        'cog (democratic republic of)': 'COD',
-        'cog (leopoldville)': 'COD',
-        'democratic cog': 'COD',
-        'democratic yemen': 'YEM',
-        'deu, federal republic of': 'DEU',
-        'iran (islamic republic of)': 'IRN',
-        'libyan arab jamahiriya': 'LBY',
-        'libyan arab republic': 'LBY',
-        'nld (kingdom of the)': 'NLD',
-        'serbia and montenegro': 'SRB',
-        'southern yemen': 'YEM',
-        'union of south africa': 'ZAF',
-        'united cameroon': 'CMR',
-        'venezuela (bolivarian republic of)': 'VEN',
-        'micronesia (federated states of)': 'FSM',
-        'democratic yem': 'YEM',
-        'iran (islamic republic of)': 'IRN',
-        'lbyn arab jamahiriya': 'LBY',
-        'lbyn arab republic': 'LBY',
-        'srb and mne': 'SRB',
-        'southern yem': 'YEM',
-        'union of zaf': 'ZAF',
-        'united cmr': 'CMR',
-        'ven (bolivarian republic of)': 'VEN',
-        'bol (plurinational state of)': 'BOL',
-        'cog (brazzaville)': 'COG',
-        'cog (democratic republic of)': 'COD',
-        'cog (leopoldville)': 'COD',
-        'democratic cog': 'COD',
-        'deu, federal republic of': 'DEU',
-        '"deu, federal republic of"': 'DEU',
-        'nld (kingdom of the)': 'NLD',
-        'serbia and montenegro': 'SRB',
-        'venezuela (bolivarian republic of)': 'VEN',
-        'micronesia (federated states of)': 'FSM',
-        'irn (islamic republic of)': 'IRN',
-        'iran islamic republic of': 'IRN',
-        'lbyn arab jamahiriya': 'LBY',
-        'lbyn arab republic': 'LBY'
+        'BURMA': 'MMR', 'BYELORUSSIAN SSR': 'BLR', 'CAPE VERDE': 'CPV',
+        'CENTRAL AFRICAN EMPIRE': 'CAF', 'CEYLON': 'LKA', "COTE D'IVOIRE": 'CIV',
+        'DAHOMEY': 'BEN', 'DEMOCRATIC KAMPUCHEA': 'KHM', 'FEDERATION OF MALAYA': 'MYS',
+        'GERMAN DEMOCRATIC REPUBLIC': 'DEU', 'FEDERAL REPUBLIC OF GERMANY': 'DEU', 'GERMANY': 'DEU',
+        'IRAN (ISLAMIC REPUBLIC OF)': 'IRN', 'IVORY COAST': 'CIV', 'KHMER REPUBLIC': 'KHM',
+        'MALDIVE ISLANDS': 'MDV', 'MICRONESIA (FEDERATED STATES OF)': 'FSM', 'PHILIPPINE REPUBLIC': 'PHL',
+        'REPUBLIC OF KOREA': 'KOR', 'SIAM': 'THA', 'SURINAM': 'SUR', 'SWAZILAND': 'SWZ',
+        'SYRIAN ARAB REPUBLIC': 'SYR', 'TANGANYIKA': 'TZA', 'THE FORMER YUGOSLAV REPUBLIC OF MACEDONIA': 'MKD',
+        'TÜRKIYE': 'TUR', 'TÜRKÝYE': 'TUR', 'TÜRKİYE': 'TUR', 'TURKEY': 'TUR', 'UKRAINIAN SSR': 'UKR',
+        'UNITED ARAB REPUBLIC': 'EGY', 'UPPER VOLTA': 'BFA', 'USSR': 'RUS', 'YUGOSLAVIA': 'SRB',
+        'ZAIRE': 'COD', 'ZANZIBAR': 'TZA', 'CZECHOSVK': 'CZE', 'DEMOCRATIC YEMEN': 'YEM',
+        'SOUTHERN YEMEN': 'YEM', 'UNITED CAMEROON': 'CMR', 'UNION OF SOUTH AFRICA': 'ZAF',
+        'SERBIA AND MONTENEGRO': 'SRB', 'CONGO (BRAZZAVILLE)': 'COG', 'CONGO (DEMOCRATIC REPUBLIC OF)': 'COD',
+        'CONGO (LEOPOLDVILLE)': 'COD', 'DEMOCRATIC CONGO': 'COD', 'VENEZUELA (BOLIVARIAN REPUBLIC OF)': 'VEN',
+        'BOLIVIA (PLURINATIONAL STATE OF)': 'BOL', 'NETHERLANDS (KINGDOM OF THE)': 'NLD',
+        'LIBYAN ARAB JAMAHIRIYA': 'LBY', 'LIBYAN ARAB REPUBLIC': 'LBY', 'DEMOCRATIC REPUBLIC OF THE CONGO': 'COD',
+        # Lowercase variations often seen
+        'bol (plurinational state of)': 'BOL', 'cog (brazzaville)': 'COG', 'cog (democratic republic of)': 'COD',
+        'cog (leopoldville)': 'COD', 'democratic cog': 'COD', 'democratic yemen': 'YEM',
+        'deu, federal republic of': 'DEU', '"deu, federal republic of"': 'DEU', 'iran (islamic republic of)': 'IRN',
+        'libyan arab jamahiriya': 'LBY', 'libyan arab republic': 'LBY', 'nld (kingdom of the)': 'NLD',
+        'serbia and montenegro': 'SRB', 'southern yemen': 'YEM', 'union of south africa': 'ZAF',
+        'united cameroon': 'CMR', 'venezuela (bolivarian republic of)': 'VEN', 'micronesia (federated states of)': 'FSM',
+        'democratic yem': 'YEM', 'lbyn arab jamahiriya': 'LBY', 'lbyn arab republic': 'LBY',
+        'srb and mne': 'SRB', 'southern yem': 'YEM', 'union of zaf': 'ZAF', 'united cmr': 'CMR',
+        'ven (bolivarian republic of)': 'VEN', 'irn (islamic republic of)': 'IRN', 'iran islamic republic of': 'IRN'
     }
 
-    # Add manual mappings to the main dictionary (convert keys to lowercase for matching)
-    # Clear and rebuild to ensure manual overrides take precedence if keys overlap
     temp_manual_map = {k.lower(): v for k, v in manual_iso3_map.items()}
-    country_name_to_iso3.update(temp_manual_map) # Add/overwrite with manual mappings
+    country_name_to_iso3.update(temp_manual_map)
 
     # Step 3: Process each column name
-    column_mapping = {}  # Maps original column names to their ISO3 codes
-    initial_fixed_cols = set(['id', 'Council', 'Date', 'Title', 'Resolution', 'country', 
-                          'subregion', 'continent', 'tags', 'TOTAL VOTES', 'NO-VOTE COUNT',
-                          'ABSTAIN COUNT', 'NO COUNT', 'YES COUNT', 'Link', 'token', 'Scrape_Year']) # Use a set for faster lookup
-    processed_fixed_cols = [] # Keep track of fixed columns encountered
-    unmapped_cols = [] # Track columns that couldn't be mapped to ISO3
+    column_mapping = {}
+    # Define fixed columns expected in the pipeline output
+    initial_fixed_cols = set(['id', 'Council', 'Date', 'Title', 'Resolution', 'country',
+                              'subregion', 'continent', 'tags', 'TOTAL VOTES', 'NO-VOTE COUNT',
+                              'ABSTAIN COUNT', 'NO COUNT', 'YES COUNT', 'Link', 'token', 'Scrape_Year'])
+    processed_fixed_cols = []
+    unmapped_cols = []
+    known_non_countries = {'YES', 'NO'} # Add others if they appear as 3-letter columns
 
     logger.info("Mapping original columns to ISO3 codes...")
     for col in df.columns:
@@ -669,47 +613,103 @@ def standardize_country_columns(df):
             continue # It's a fixed column
 
         iso3_code = None
-        col_clean = col.strip().lower()
-        
-        # Priority 1: Check cleaned name against combined map
+        # Handle potential non-string column names gracefully
+        if not isinstance(col, str):
+            logger.warning(f"Skipping non-string column name: {col}")
+            unmapped_cols.append(str(col)) # Add original column name (as string) to unmapped
+            continue
+
+        # --- Revised Mapping Logic for Step 3 ---
+        col_to_check = col # Start with the original column name
+        base_col_name = col
+        is_suffixed = False
+
+        # Check if it might be a suffixed column (e.g., 'DEU.1')
+        if '.' in col and col.rsplit('.', 1)[1].isdigit():
+            base_col_name = col.rsplit('.', 1)[0]
+            logger.info(f"Column '{col}' looks suffixed. Checking base '{base_col_name}'.")
+            col_to_check = base_col_name # Use the base name for mapping lookup
+            is_suffixed = True
+
+        col_clean = col_to_check.strip().lower()
+
+        # Priority 1: Check cleaned base name against combined map
         if col_clean in country_name_to_iso3:
             iso3_code = country_name_to_iso3[col_clean]
+            if is_suffixed:
+                 logger.info(f"Mapped suffixed column '{col}' to {iso3_code} via base name '{base_col_name}'.")
 
-        # Priority 2: Check original column name if 3-letters uppercase
-        elif len(col) == 3 and col.isupper():
-            iso3_code = col 
+        # Priority 2: Check original base column name if 3-letters uppercase
+        elif len(col_to_check) == 3 and col_to_check.isupper():
+            # Double check it's not a known non-country code mistaken as ISO3
+            known_non_countries = {'YES', 'NO'} # Add others if needed
+            if col_to_check not in known_non_countries:
+                 iso3_code = col_to_check
+                 if is_suffixed:
+                      logger.info(f"Mapped suffixed column '{col}' to {iso3_code} via base ISO3 '{base_col_name}'.")
+            elif not is_suffixed: # Only log skipping if it wasn't a suffix check
+                 logger.info(f"Column '{col_to_check}' looks like ISO3 but is in known_non_countries set. Skipping.")
+
+        # --- End of Revised Mapping Logic ---
 
         # Assign to mapping or track as unmapped
         if iso3_code:
             if iso3_code not in column_mapping:
                 column_mapping[iso3_code] = []
+            # IMPORTANT: Store the *original* column name (e.g., 'DEU.1')
+            # associated with the identified iso3_code
             column_mapping[iso3_code].append(col)
-        else:
-            logger.warning(f"MAP FAIL: Col='{col}', Cleaned='{col_clean}'. Tracking as unmapped.") # Keep this less specific warning
+        elif not is_suffixed: # Only track as unmapped if it wasn't a suffix we failed to map
+            # Log only if it wasn't already identified as a fixed column
+            logger.warning(f"MAP FAIL: Col='{col}', Cleaned='{col_clean}'. Tracking as unmapped.")
             unmapped_cols.append(col)
+        elif is_suffixed and iso3_code is None:
+             # Log if it looked like a suffix but the base couldn't be mapped
+             logger.warning(f"MAP FAIL (Suffix): Col='{col}', Base='{base_col_name}' could not be mapped. Tracking as unmapped.")
+             unmapped_cols.append(col)
 
-    # Step 4: Consolidate duplicate columns and create new DataFrame
-    # Use the identified fixed columns found in the input df
+
+    # Step 4: Consolidate duplicate columns
+    logger.info("Consolidating columns...")
+    # Keep only fixed columns present in the original DataFrame
+    processed_fixed_cols = [col for col in processed_fixed_cols if col in df.columns]
     new_df = df[processed_fixed_cols].copy()
-    country_data_collected = {} # Collect country series here to avoid fragmentation
+    country_data_collected = {}
 
-    for iso3_code, original_cols in column_mapping.items():
-        # Ensure original_cols is not empty and exists in df
-        valid_original_cols = [col for col in original_cols if col in df.columns]
+    # --- Revised Consolidation Logic ---
+    # Get all unique target ISO3 codes identified
+    all_target_iso3_codes = set(column_mapping.keys())
+
+    for iso3_code in all_target_iso3_codes:
+        # Start with columns that were explicitly mapped (including suffixed ones mapped in Step 3)
+        cols_to_combine = column_mapping.get(iso3_code, [])
+
+        # Explicitly check if a column with the exact ISO3 name exists
+        # and add it to the list if it's not already there from the mapping
+        if iso3_code in df.columns and iso3_code not in cols_to_combine:
+            # Insert at the beginning so the 'correct' name is prioritized by combine_first
+            cols_to_combine.insert(0, iso3_code)
+
+        # Ensure we only work with columns that actually exist in the original df
+        valid_original_cols = [col for col in cols_to_combine if col in df.columns]
+
         if not valid_original_cols:
-            logger.warning(f"No valid columns found for ISO3 code {iso3_code} from list: {original_cols}")
+            logger.warning(f"No valid columns found to combine for ISO3 code {iso3_code} from list: {cols_to_combine}")
             continue
 
-        # Combine values from all columns for this country using combine_first
-        combined_series = df[valid_original_cols[0]].copy() # Start with the first column
+        logger.info(f"Combining columns for {iso3_code}: {valid_original_cols}")
+
+        # Combine values using combine_first, starting with the first column in the list
+        combined_series = df[valid_original_cols[0]].copy()
         if len(valid_original_cols) > 1:
             for col in valid_original_cols[1:]:
+                # combine_first fills NaN in `combined_series` with values from `df[col]`
                 combined_series = combined_series.combine_first(df[col])
 
-        # Instead of adding to new_df directly, store in dict
         country_data_collected[iso3_code] = combined_series
+    # --- End of Revised Logic ---
 
-    # Create DataFrame from collected country data and concatenate
+
     if country_data_collected:
         country_df = pd.DataFrame(country_data_collected)
         new_df = pd.concat([new_df, country_df], axis=1)
@@ -717,79 +717,78 @@ def standardize_country_columns(df):
     else:
         logger.info("No country columns were successfully mapped and consolidated.")
 
-    # Add back any unmapped columns (if they exist in original df)
     unmapped_cols_present = [col for col in unmapped_cols if col in df.columns]
     if unmapped_cols_present:
          logger.warning(f"Adding {len(unmapped_cols_present)} unmapped columns to the end: {unmapped_cols_present}")
-         new_df = pd.concat([new_df, df[unmapped_cols_present]], axis=1)
+         # Filter unmapped_cols_present to ensure no duplicates with already added fixed/country cols
+         unmapped_to_add = [col for col in unmapped_cols_present if col not in new_df.columns]
+         if unmapped_to_add:
+              new_df = pd.concat([new_df, df[unmapped_to_add]], axis=1)
+         else:
+              logger.info("Unmapped columns were already present (likely fixed columns).")
 
-    # Final check to remove remaining suffixed columns
+
+    # Final check to remove remaining suffixed columns (like 'DEU.1')
+    # This step might now be redundant if Step 3 correctly maps suffixes, but keep for safety.
+    logger.info("Checking for suffixed columns to drop...")
     current_columns = set(new_df.columns)
     cols_to_drop = []
-    iso3_codes_present = set(column_mapping.keys()) # Get the successfully mapped ISO3 codes
+    iso3_codes_present = set(country_data_collected.keys()) # Use keys from collected data
 
     for col in current_columns:
-        if '.' in col:
-            base_col_name = col.rsplit('.', 1)[0] # Get part before last dot
-            # Attempt to map the base name back to an ISO3 code
-            base_col_clean = base_col_name.strip().lower()
-            base_col_clean_no_paren = re.sub(r'\s*\([^)]*\)', '', base_col_clean).strip()
-            mapped_iso3 = None
-            if base_col_clean_no_paren in country_name_to_iso3:
-                 mapped_iso3 = country_name_to_iso3[base_col_clean_no_paren]
-            elif base_col_clean in country_name_to_iso3:
-                 mapped_iso3 = country_name_to_iso3[base_col_clean]
-            elif len(base_col_name) == 3 and base_col_name.isupper(): # Check original base name
-                 mapped_iso3 = base_col_name
+        if isinstance(col, str) and '.' in col:
+            # Check if this suffixed column name itself exists in the mapping's values
+            # (meaning it was successfully mapped in Step 3 but might still be present if base also exists)
+            is_mapped_suffix = any(col in mapped_list for mapped_list in column_mapping.values())
 
-            # If base maps to an ISO3 code AND that code exists as a column, drop the suffixed one
-            if mapped_iso3 and mapped_iso3 in iso3_codes_present and mapped_iso3 in current_columns:
-                if col != mapped_iso3: # Don't drop if col IS the mapped code (e.g. V.1 -> V doesn't exist)
-                     cols_to_drop.append(col)
-                     logger.info(f"Identified suffixed column '{col}' whose base '{base_col_name}' maps to existing ISO3 '{mapped_iso3}'. Marking for drop.")
-            # Also drop if the base is exactly the same as a column (e.g. drop COL.1 if COL exists)
-            elif base_col_name in current_columns and col != base_col_name:
-                 cols_to_drop.append(col)
-                 logger.info(f"Identified suffixed column '{col}' whose base '{base_col_name}' exists. Marking for drop.")
+            if is_mapped_suffix:
+                 base_col_name = col.rsplit('.', 1)[0]
+                 # Find the ISO code this suffix was mapped to
+                 mapped_iso3_for_suffix = None
+                 for iso, cols_list in column_mapping.items():
+                      if col in cols_list:
+                           mapped_iso3_for_suffix = iso
+                           break
+                 # If the primary ISO code column (e.g., 'DEU') also exists, drop the suffixed one ('DEU.1')
+                 if mapped_iso3_for_suffix and mapped_iso3_for_suffix in current_columns and col != mapped_iso3_for_suffix:
+                      cols_to_drop.append(col)
+                      logger.info(f"Identified mapped suffixed column '{col}' whose base ISO '{mapped_iso3_for_suffix}' also exists. Marking for drop.")
+            else:
+                 # If the suffix itself wasn't mapped, check its base like before
+                 base_col_name = col.rsplit('.', 1)[0]
+                 if base_col_name in current_columns:
+                      cols_to_drop.append(col)
+                      logger.info(f"Identified unmapped suffixed column '{col}' whose base '{base_col_name}' exists. Marking for drop.")
 
 
     if cols_to_drop:
-        # Deduplicate cols_to_drop
         cols_to_drop = list(set(cols_to_drop))
         logger.warning(f"Dropping identified suffixed/duplicate columns: {cols_to_drop}")
-        # Ensure columns actually exist before dropping
         cols_to_drop_existing = [c for c in cols_to_drop if c in new_df.columns]
-        new_df = new_df.drop(columns=cols_to_drop_existing)
+        if cols_to_drop_existing:
+             new_df = new_df.drop(columns=cols_to_drop_existing)
 
-    # Step 5: Reorder columns: fixed columns first, then alphabetically sorted country codes
-    
-    # Identify the actual fixed columns present in the *final* dataframe
-    # Use the `processed_fixed_cols` list generated in Step 3
+    # Step 5: Reorder columns
+    logger.info("Reordering columns...")
     fixed_cols_present = [col for col in processed_fixed_cols if col in new_df.columns]
-    
-    # Identify country columns: 3 letters, uppercase, AND NOT in the original fixed list
     country_cols_present = [
-        col for col in new_df.columns 
-        if len(col) == 3 and col.isupper() and col not in initial_fixed_cols
+        col for col in new_df.columns
+        if isinstance(col, str) and len(col) == 3 and col.isupper() and col not in initial_fixed_cols
     ]
-    
-    # Sort the identified country columns alphabetically
     country_cols_present.sort()
-    
-    # Identify any other columns remaining (should mostly be the unmapped ones)
     other_cols = [col for col in new_df.columns if col not in fixed_cols_present and col not in country_cols_present]
     if other_cols:
         logger.info(f"Non-fixed, non-ISO3 columns found: {other_cols}. Placing them at the end.")
 
-    # Construct the final desired column order
     final_column_order = fixed_cols_present + country_cols_present + other_cols
-    
-    # Apply the new order
-    # Check if the order is actually different before reindexing
-    if list(new_df.columns) != final_column_order:
-        logger.info("Reordering columns to place sorted ISO3 codes after fixed columns.")
-        new_df = new_df[final_column_order]
+    # Ensure final_column_order only contains columns that *actually* exist in new_df before reindexing
+    final_column_order_existing = [col for col in final_column_order if col in new_df.columns]
 
+    if list(new_df.columns) != final_column_order_existing:
+        logger.info("Reordering columns to place sorted ISO3 codes after fixed columns.")
+        new_df = new_df[final_column_order_existing]
+
+    logger.info("Column standardization complete.")
     return new_df
 
 
