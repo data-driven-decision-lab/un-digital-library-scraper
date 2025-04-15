@@ -18,3 +18,6 @@ venv/
 
 #hide data
 data/
+
+#hide pillar_1_analysis
+pillar_1_analysis/
