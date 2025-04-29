@@ -19,5 +19,8 @@ venv/
 #hide data
 data/
 
-#hide pillar_1_analysis
-pillar_1_analysis/
+#hide index analysis
+index_analysis/
+
+#supabase stuff
+sync_supabase.py
