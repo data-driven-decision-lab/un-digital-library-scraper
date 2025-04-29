@@ -776,13 +776,39 @@ def standardize_country_columns(df):
         if isinstance(col, str) and len(col) == 3 and col.isupper() and col not in initial_fixed_cols
     ]
     country_cols_present.sort()
-    other_cols = [col for col in new_df.columns if col not in fixed_cols_present and col not in country_cols_present]
-    if other_cols:
-        logger.info(f"Non-fixed, non-ISO3 columns found: {other_cols}. Placing them at the end.")
+    # Make sure 'unmapped_cols_present' contains only columns actually in the final df
+    unmapped_cols_in_final = [col for col in unmapped_cols_present if col in new_df.columns]
+    other_cols = [col for col in new_df.columns if col not in fixed_cols_present and col not in country_cols_present and col not in unmapped_cols_in_final]
 
-    final_column_order = fixed_cols_present + country_cols_present + other_cols
+    # Add the unmapped columns back at the end
+    final_column_order = fixed_cols_present + country_cols_present + other_cols + unmapped_cols_in_final
+
     # Ensure final_column_order only contains columns that *actually* exist in new_df before reindexing
     final_column_order_existing = [col for col in final_column_order if col in new_df.columns]
+
+    # Explicitly drop original mapped columns if the target ISO3 exists
+    logger.info("Checking for original mapped columns to drop...")
+    cols_to_drop_mapped = []
+    current_columns_set = set(new_df.columns)
+    for iso3_code, original_cols in column_mapping.items():
+        # Check if the target ISO3 code exists in the DataFrame
+        if iso3_code in current_columns_set:
+            # Check each original column name that was mapped to this ISO3
+            for original_col in original_cols:
+                # If the original column name still exists and is different from the ISO3 code, mark it for dropping
+                if original_col in current_columns_set and original_col != iso3_code:
+                    cols_to_drop_mapped.append(original_col)
+                    logger.info(f"Identified original column '{original_col}' mapped to '{iso3_code}'. Marking '{original_col}' for drop as '{iso3_code}' exists.")
+
+    if cols_to_drop_mapped:
+        cols_to_drop_mapped = list(set(cols_to_drop_mapped)) # Deduplicate
+        cols_to_drop_existing = [c for c in cols_to_drop_mapped if c in new_df.columns]
+        if cols_to_drop_existing:
+            logger.warning(f"Dropping original columns that were mapped to existing ISO3 codes: {cols_to_drop_existing}")
+            new_df = new_df.drop(columns=cols_to_drop_existing)
+            # Recalculate final_column_order_existing after dropping columns
+            final_column_order_existing = [col for col in final_column_order if col in new_df.columns]
+
 
     if list(new_df.columns) != final_column_order_existing:
         logger.info("Reordering columns to place sorted ISO3 codes after fixed columns.")
