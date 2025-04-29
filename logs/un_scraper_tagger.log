@@ -11513,3 +11513,282 @@ Processing year 2023 (138 records)
 13:49:37 [INFO] Column standardization complete.
 13:49:37 [INFO] Final CSV written with 9854 rows to pipeline_output/UN_VOTING_DATA_RAW_WITH_TAGS_2025-04-22.csv
 13:49:37 [INFO] Master CSV was NOT modified.
+14:55:11 [INFO] Loaded 9852 existing rows from master CSV.
+14:55:11 [INFO] Extracted 9852 unique links from CSV for deduplication.
+14:55:11 [INFO] Loaded 9852 unique links from CSV for deduplication.
+14:55:11 [INFO] ====== WebDriver manager ======
+14:55:14 [INFO] Get LATEST chromedriver version for google-chrome
+14:55:14 [INFO] Get LATEST chromedriver version for google-chrome
+14:55:14 [INFO] There is no [win64] chromedriver "135.0.7049.114" for browser google-chrome "135.0.7049" in cache
+14:55:14 [INFO] Get LATEST chromedriver version for google-chrome
+14:55:14 [INFO] WebDriver version 135.0.7049.114 selected
+14:55:14 [INFO] Modern chrome version https://storage.googleapis.com/chrome-for-testing-public/135.0.7049.114/win32/chromedriver-win32.zip
+14:55:14 [INFO] About to download new driver from https://storage.googleapis.com/chrome-for-testing-public/135.0.7049.114/win32/chromedriver-win32.zip
+14:55:14 [INFO] Driver downloading response is 200
+14:55:14 [INFO] Get LATEST chromedriver version for google-chrome
+14:55:15 [INFO] Driver has been saved in cache [C:\Users\gabeo\.wdm\drivers\chromedriver\win64\135.0.7049.114]
+14:55:18 [INFO] Initialized browser with user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36
+14:55:31 [INFO] Found 80 years to process
+14:55:31 [INFO] 
+============================================================
+Processing year 2025 (20 records)
+============================================================
+14:55:31 [INFO] Selecting year: 2025 (Attempt 1/10)
+14:55:33 [INFO] Selected year 2025 with 60 visible records
+14:55:33 [INFO] [Year 2025] Processing page 1.
+14:55:33 [INFO] [Year 2025] Found 2 unique new links before duplicate.
+14:55:33 [INFO] Duplicate link encountered; found 2 new links before duplicate in year 2025
+14:55:33 [INFO] Collected 2 new links for year 2025
+14:55:33 [INFO] Processing batch 1/1 (2 links)
+14:55:33 [INFO] Processing batch 1/1 with 2 links.
+14:55:33 [INFO] Processing record: 4080625
+14:55:34 [INFO] Processing record: 4080624
+14:55:41 [INFO] 
+============================================================
+Processing year 2024 (141 records)
+============================================================
+14:55:41 [INFO] Selecting year: 2024 (Attempt 1/10)
+14:55:44 [INFO] Selected year 2024 with 100 visible records
+14:55:44 [INFO] [Year 2024] Processing page 1.
+14:55:45 [INFO] [Year 2024] No new links found before duplicate.
+14:55:45 [INFO] No new links found for year 2024, will check one more year.
+14:55:50 [INFO] 
+============================================================
+Processing year 2023 (138 records)
+============================================================
+14:55:50 [INFO] Selecting year: 2023 (Attempt 1/10)
+14:55:52 [INFO] Selected year 2023 with 100 visible records
+14:55:52 [INFO] [Year 2023] Processing page 1.
+14:55:53 [INFO] [Year 2023] No new links found before duplicate.
+14:55:53 [INFO] No new links found for second consecutive year, stopping scraping process.
+14:55:58 [INFO] Stopping further year processing.
+14:56:01 [INFO] Scraping complete. 2 new rows collected.
+14:56:01 [INFO] Tagging 2 new rows...
+14:56:04 [INFO] HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+14:56:06 [INFO] HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+14:56:07 [INFO] HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+14:56:08 [INFO] HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+14:56:09 [INFO] HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+14:56:10 [INFO] HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+14:56:11 [INFO] HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+14:56:12 [INFO] HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+14:56:14 [INFO] HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+14:56:15 [INFO] HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+14:56:15 [INFO] Starting regex pattern matching phase...
+14:56:15 [INFO] Starting LLM enrichment phase...
+14:56:15 [INFO] Processing with 2 parallel workers
+14:56:15 [INFO] Getting LLM tags for: United Nations Decade for Afforestation and Refore...
+14:56:15 [INFO] Calling LLM API for resolution classification: United Nations Decade for Afforestation and Refore...
+14:56:15 [INFO] Getting LLM tags for: Cooperation between the United Nations and the Cou...
+14:56:15 [INFO] Calling LLM API for resolution classification: Cooperation between the United Nations and the Cou...
+14:56:16 [INFO] HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+14:56:16 [INFO] HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+14:56:16 [INFO] API call successful.
+14:56:16 [INFO] Extracted LLM tags: []
+14:56:16 [INFO] API call successful.
+14:56:16 [INFO] Extracted LLM tags: []
+14:56:16 [INFO] Tagging complete.
+14:56:16 [INFO] Standardizing country columns to ISO3 codes...
+14:56:16 [INFO] Starting country column standardization...
+14:56:16 [INFO] Mapping original columns to ISO3 codes...
+14:56:16 [INFO] Consolidating columns...
+14:56:16 [INFO] Combining columns for BEL: ['BEL', 'BELGIUM']
+14:56:16 [INFO] Combining columns for SVN: ['SVN', 'SLOVENIA']
+14:56:16 [INFO] Combining columns for UZB: ['UZB', 'UZBEKISTAN']
+14:56:16 [INFO] Combining columns for CMR: ['CMR', 'CAMEROON']
+14:56:16 [INFO] Combining columns for DMA: ['DMA', 'DOMINICA']
+14:56:16 [INFO] Combining columns for TGO: ['TGO', 'TOGO']
+14:56:16 [INFO] Combining columns for LBY: ['LBY', 'LIBYA']
+14:56:16 [INFO] Combining columns for OMN: ['OMN', 'OMAN']
+14:56:16 [INFO] Combining columns for SWZ: ['SWZ', 'ESWATINI']
+14:56:16 [INFO] Combining columns for IRL: ['IRL', 'IRELAND']
+14:56:16 [INFO] Combining columns for COG: ['COG', 'CONGO']
+14:56:16 [INFO] Combining columns for GIN: ['GIN']
+14:56:16 [INFO] Combining columns for BTN: ['BTN', 'BHUTAN']
+14:56:16 [INFO] Combining columns for THA: ['THA', 'THAILAND']
+14:56:16 [INFO] Combining columns for VEN: ['VEN']
+14:56:16 [INFO] Combining columns for COD: ['COD', 'DEMOCRATIC REPUBLIC OF THE CONGO']
+14:56:16 [INFO] Combining columns for CAN: ['CAN', 'CANADA']
+14:56:16 [INFO] Combining columns for CHE: ['CHE', 'SWITZERLAND']
+14:56:16 [INFO] Combining columns for BRA: ['BRA', 'BRAZIL']
+14:56:16 [INFO] Combining columns for MAR: ['MAR', 'MOROCCO']
+14:56:16 [INFO] Combining columns for HND: ['HND', 'HONDURAS']
+14:56:16 [INFO] Combining columns for NGA: ['NGA', 'NIGERIA']
+14:56:16 [INFO] Combining columns for NOR: ['NOR', 'NORWAY']
+14:56:16 [INFO] Combining columns for ARM: ['ARM', 'ARMENIA']
+14:56:16 [INFO] Combining columns for CUB: ['CUB', 'CUBA']
+14:56:16 [INFO] Combining columns for BGD: ['BGD', 'BANGLADESH']
+14:56:16 [INFO] Combining columns for MNE: ['MNE', 'MONTENEGRO']
+14:56:16 [INFO] Combining columns for MEX: ['MEX', 'MEXICO']
+14:56:16 [INFO] Combining columns for ISR: ['ISR']
+14:56:16 [INFO] Combining columns for NPL: ['NPL', 'NEPAL']
+14:56:16 [INFO] Combining columns for BGR: ['BGR', 'BULGARIA']
+14:56:16 [INFO] Combining columns for FIN: ['FIN', 'FINLAND']
+14:56:16 [INFO] Combining columns for GMB: ['GMB', 'GAMBIA']
+14:56:16 [INFO] Combining columns for SGP: ['SGP', 'SINGAPORE']
+14:56:16 [INFO] Combining columns for AUT: ['AUT', 'AUSTRIA']
+14:56:16 [INFO] Combining columns for NER: ['NER', 'NIGER']
+14:56:16 [INFO] Combining columns for QAT: ['QAT', 'QATAR']
+14:56:16 [INFO] Combining columns for LBN: ['LBN', 'LEBANON']
+14:56:16 [INFO] Combining columns for TUV: ['TUV']
+14:56:16 [INFO] Combining columns for CYP: ['CYP', 'CYPRUS']
+14:56:16 [INFO] Combining columns for GTM: ['GTM', 'GUATEMALA']
+14:56:16 [INFO] Combining columns for SAU: ['SAU', 'SAUDI ARABIA']
+14:56:16 [INFO] Combining columns for GUY: ['GUY', 'GUYANA']
+14:56:16 [INFO] Combining columns for SSD: ['SSD']
+14:56:16 [INFO] Combining columns for EST: ['EST', 'ESTONIA']
+14:56:16 [INFO] Combining columns for GAB: ['GAB', 'GABON']
+14:56:16 [INFO] Combining columns for HUN: ['HUN', 'HUNGARY']
+14:56:16 [INFO] Combining columns for FJI: ['FJI', 'FIJI']
+14:56:16 [INFO] Combining columns for NAM: ['NAM', 'NAMIBIA']
+14:56:16 [INFO] Combining columns for JPN: ['JPN', 'JAPAN']
+14:56:16 [INFO] Combining columns for LVA: ['LVA', 'LATVIA']
+14:56:16 [INFO] Combining columns for SWE: ['SWE', 'SWEDEN']
+14:56:16 [INFO] Combining columns for ZMB: ['ZMB', 'ZAMBIA']
+14:56:16 [INFO] Combining columns for IND: ['IND', 'INDIA']
+14:56:16 [INFO] Combining columns for IDN: ['IDN', 'INDONESIA']
+14:56:16 [INFO] Combining columns for IRQ: ['IRQ', 'IRAQ']
+14:56:16 [INFO] Combining columns for POL: ['POL', 'POLAND']
+14:56:16 [INFO] Combining columns for FRA: ['FRA', 'FRANCE']
+14:56:16 [INFO] Combining columns for SMR: ['SMR', 'SAN MARINO']
+14:56:16 [INFO] Combining columns for LUX: ['LUX', 'LUXEMBOURG']
+14:56:16 [INFO] Combining columns for MHL: ['MHL', 'MARSHALL ISLANDS']
+14:56:16 [INFO] Combining columns for MOZ: ['MOZ', 'MOZAMBIQUE']
+14:56:16 [INFO] Combining columns for UKR: ['UKR', 'UKRAINE']
+14:56:16 [INFO] Combining columns for TTO: ['TTO', 'TRINIDAD AND TOBAGO']
+14:56:16 [INFO] Combining columns for BDI: ['BDI']
+14:56:16 [INFO] Combining columns for AZE: ['AZE', 'AZERBAIJAN']
+14:56:16 [INFO] Combining columns for VNM: ['VNM', 'VIET NAM']
+14:56:16 [INFO] Combining columns for ARG: ['ARG']
+14:56:16 [INFO] Combining columns for KAZ: ['KAZ', 'KAZAKHSTAN']
+14:56:16 [INFO] Combining columns for FSM: ['FSM', 'MICRONESIA (FEDERATED STATES OF)']
+14:56:16 [INFO] Combining columns for DZA: ['DZA', 'ALGERIA']
+14:56:16 [INFO] Combining columns for ZAF: ['ZAF', 'SOUTH AFRICA']
+14:56:16 [INFO] Combining columns for DNK: ['DNK', 'DENMARK']
+14:56:16 [INFO] Combining columns for GNQ: ['GNQ', 'EQUATORIAL GUINEA']
+14:56:16 [INFO] Combining columns for USA: ['USA', 'UNITED STATES']
+14:56:16 [INFO] Combining columns for BHS: ['BHS', 'BAHAMAS']
+14:56:16 [INFO] Combining columns for MRT: ['MRT', 'MAURITANIA']
+14:56:16 [INFO] Combining columns for MCO: ['MCO', 'MONACO']
+14:56:16 [INFO] Combining columns for TJK: ['TJK', 'TAJIKISTAN']
+14:56:16 [INFO] Combining columns for PRT: ['PRT', 'PORTUGAL']
+14:56:16 [INFO] Combining columns for GNB: ['GNB']
+14:56:16 [INFO] Combining columns for HTI: ['HTI', 'HAITI']
+14:56:16 [INFO] Combining columns for IRN: ['IRN', 'IRAN (ISLAMIC REPUBLIC OF)']
+14:56:16 [INFO] Combining columns for KIR: ['KIR']
+14:56:16 [INFO] Combining columns for NLD: ['NLD', 'NETHERLANDS (KINGDOM OF THE)']
+14:56:16 [INFO] Combining columns for TLS: ['TLS', 'TIMOR-LESTE']
+14:56:16 [INFO] Combining columns for BIH: ['BIH', 'BOSNIA AND HERZEGOVINA']
+14:56:16 [INFO] Combining columns for ARE: ['ARE', 'UNITED ARAB EMIRATES']
+14:56:16 [INFO] Combining columns for HRV: ['HRV', 'CROATIA']
+14:56:16 [INFO] Combining columns for BWA: ['BWA', 'BOTSWANA']
+14:56:16 [INFO] Combining columns for KOR: ['KOR', 'REPUBLIC OF KOREA']
+14:56:16 [INFO] Combining columns for WSM: ['WSM', 'SAMOA']
+14:56:16 [INFO] Combining columns for MLT: ['MLT', 'MALTA']
+14:56:16 [INFO] Combining columns for KEN: ['KEN']
+14:56:16 [INFO] Combining columns for MWI: ['MWI', 'MALAWI']
+14:56:16 [INFO] Combining columns for GEO: ['GEO', 'GEORGIA']
+14:56:16 [INFO] Combining columns for KHM: ['KHM', 'CAMBODIA']
+14:56:16 [INFO] Combining columns for LIE: ['LIE', 'LIECHTENSTEIN']
+14:56:16 [INFO] Combining columns for SYC: ['SYC']
+14:56:16 [INFO] Combining columns for PRK: ['PRK', "DEMOCRATIC PEOPLE'S REPUBLIC OF KOREA"]
+14:56:16 [INFO] Combining columns for ITA: ['ITA', 'ITALY']
+14:56:16 [INFO] Combining columns for PRY: ['PRY', 'PARAGUAY']
+14:56:16 [INFO] Combining columns for RUS: ['RUS', 'RUSSIAN FEDERATION']
+14:56:16 [INFO] Combining columns for SYR: ['SYR', 'SYRIAN ARAB REPUBLIC']
+14:56:16 [INFO] Combining columns for BRB: ['BRB', 'BARBADOS']
+14:56:16 [INFO] Combining columns for CHL: ['CHL', 'CHILE']
+14:56:16 [INFO] Combining columns for SDN: ['SDN', 'SUDAN']
+14:56:16 [INFO] Combining columns for AND: ['AND', 'ANDORRA']
+14:56:16 [INFO] Combining columns for STP: ['STP']
+14:56:16 [INFO] Combining columns for MKD: ['MKD', 'NORTH MACEDONIA']
+14:56:16 [INFO] Combining columns for SVK: ['SVK', 'SLOVAKIA']
+14:56:16 [INFO] Combining columns for SOM: ['SOM']
+14:56:16 [INFO] Combining columns for ATG: ['ATG', 'ANTIGUA AND BARBUDA']
+14:56:16 [INFO] Combining columns for SUR: ['SUR', 'SURINAME']
+14:56:16 [INFO] Combining columns for CIV: ['CIV', "COTE D'IVOIRE"]
+14:56:16 [INFO] Combining columns for AFG: ['AFG']
+14:56:16 [INFO] Combining columns for BLR: ['BLR', 'BELARUS']
+14:56:16 [INFO] Combining columns for TKM: ['TKM', 'TURKMENISTAN']
+14:56:16 [INFO] Combining columns for ZWE: ['ZWE', 'ZIMBABWE']
+14:56:16 [INFO] Combining columns for ESP: ['ESP', 'SPAIN']
+14:56:16 [INFO] Combining columns for TUN: ['TUN', 'TUNISIA']
+14:56:16 [INFO] Combining columns for MDG: ['MDG', 'MADAGASCAR']
+14:56:16 [INFO] Combining columns for DEU: ['DEU', 'GERMANY']
+14:56:16 [INFO] Combining columns for MMR: ['MMR', 'MYANMAR']
+14:56:16 [INFO] Combining columns for TON: ['TON', 'TONGA']
+14:56:16 [INFO] Combining columns for DJI: ['DJI', 'DJIBOUTI']
+14:56:16 [INFO] Combining columns for JOR: ['JOR', 'JORDAN']
+14:56:16 [INFO] Combining columns for BOL: ['BOL']
+14:56:16 [INFO] Combining columns for ISL: ['ISL', 'ICELAND']
+14:56:16 [INFO] Combining columns for GRC: ['GRC', 'GREECE']
+14:56:16 [INFO] Combining columns for YEM: ['YEM', 'YEMEN']
+14:56:16 [INFO] Combining columns for PAN: ['PAN', 'PANAMA']
+14:56:16 [INFO] Combining columns for SLV: ['SLV', 'EL SALVADOR']
+14:56:16 [INFO] Combining columns for SEN: ['SEN', 'SENEGAL']
+14:56:16 [INFO] Combining columns for LSO: ['LSO', 'LESOTHO']
+14:56:16 [INFO] Combining columns for SRB: ['SRB']
+14:56:16 [INFO] Combining columns for AGO: ['AGO', 'ANGOLA']
+14:56:16 [INFO] Combining columns for TCD: ['TCD', 'CHAD']
+14:56:16 [INFO] Combining columns for ERI: ['ERI', 'ERITREA']
+14:56:16 [INFO] Combining columns for JAM: ['JAM', 'JAMAICA']
+14:56:16 [INFO] Combining columns for MNG: ['MNG', 'MONGOLIA']
+14:56:16 [INFO] Combining columns for PER: ['PER', 'PERU']
+14:56:16 [INFO] Combining columns for RWA: ['RWA', 'RWANDA']
+14:56:16 [INFO] Combining columns for LKA: ['LKA', 'SRI LANKA']
+14:56:16 [INFO] Combining columns for LTU: ['LTU', 'LITHUANIA']
+14:56:16 [INFO] Combining columns for LCA: ['LCA']
+14:56:16 [INFO] Combining columns for TZA: ['TZA', 'UNITED REPUBLIC OF TANZANIA']
+14:56:16 [INFO] Combining columns for BFA: ['BFA', 'BURKINA FASO']
+14:56:16 [INFO] Combining columns for CAF: ['CAF', 'CENTRAL AFRICAN REPUBLIC']
+14:56:16 [INFO] Combining columns for VCT: ['VCT']
+14:56:16 [INFO] Combining columns for SLE: ['SLE']
+14:56:16 [INFO] Combining columns for CRI: ['CRI', 'COSTA RICA']
+14:56:16 [INFO] Combining columns for BEN: ['BEN']
+14:56:16 [INFO] Combining columns for KNA: ['KNA']
+14:56:16 [INFO] Combining columns for ROU: ['ROU', 'ROMANIA']
+14:56:16 [INFO] Combining columns for DOM: ['DOM', 'DOMINICAN REPUBLIC']
+14:56:16 [INFO] Combining columns for EGY: ['EGY', 'EGYPT']
+14:56:16 [INFO] Combining columns for LAO: ['LAO', "LAO PEOPLE'S DEMOCRATIC REPUBLIC"]
+14:56:16 [INFO] Combining columns for NZL: ['NZL', 'NEW ZEALAND']
+14:56:16 [INFO] Combining columns for COL: ['COL', 'COLOMBIA']
+14:56:17 [INFO] Combining columns for ALB: ['ALB', 'ALBANIA']
+14:56:17 [INFO] Combining columns for COM: ['COM']
+14:56:17 [INFO] Combining columns for AUS: ['AUS', 'AUSTRALIA']
+14:56:17 [INFO] Combining columns for UGA: ['UGA', 'UGANDA']
+14:56:17 [INFO] Combining columns for VUT: ['VUT', 'VANUATU']
+14:56:17 [INFO] Combining columns for MLI: ['MLI', 'MALI']
+14:56:17 [INFO] Combining columns for ETH: ['ETH', 'ETHIOPIA']
+14:56:17 [INFO] Combining columns for GBR: ['GBR', 'UNITED KINGDOM']
+14:56:17 [INFO] Combining columns for PNG: ['PNG', 'PAPUA NEW GUINEA']
+14:56:17 [INFO] Combining columns for BHR: ['BHR', 'BAHRAIN']
+14:56:17 [INFO] Combining columns for MUS: ['MUS']
+14:56:17 [INFO] Combining columns for NRU: ['NRU']
+14:56:17 [INFO] Combining columns for URY: ['URY', 'URUGUAY']
+14:56:17 [INFO] Combining columns for PLW: ['PLW', 'PALAU']
+14:56:17 [INFO] Combining columns for GHA: ['GHA', 'GHANA']
+14:56:17 [INFO] Combining columns for MYS: ['MYS', 'MALAYSIA']
+14:56:17 [INFO] Combining columns for PAK: ['PAK', 'PAKISTAN']
+14:56:17 [INFO] Combining columns for MDV: ['MDV', 'MALDIVES']
+14:56:17 [INFO] Combining columns for NIC: ['NIC', 'NICARAGUA']
+14:56:17 [INFO] Combining columns for KGZ: ['KGZ', 'KYRGYZSTAN']
+14:56:17 [INFO] Combining columns for PHL: ['PHL', 'PHILIPPINES']
+14:56:17 [INFO] Combining columns for CPV: ['CPV', 'CABO VERDE']
+14:56:17 [INFO] Combining columns for ECU: ['ECU', 'ECUADOR']
+14:56:17 [INFO] Combining columns for CHN: ['CHN', 'CHINA']
+14:56:17 [INFO] Combining columns for GRD: ['GRD', 'GRENADA']
+14:56:17 [INFO] Combining columns for BLZ: ['BLZ']
+14:56:17 [INFO] Combining columns for SLB: ['SLB']
+14:56:17 [INFO] Combining columns for KWT: ['KWT', 'KUWAIT']
+14:56:17 [INFO] Combining columns for MDA: ['MDA', 'REPUBLIC OF MOLDOVA']
+14:56:17 [INFO] Combining columns for BRN: ['BRN', 'BRUNEI DARUSSALAM']
+14:56:17 [INFO] Combining columns for LBR: ['LBR']
+14:56:17 [INFO] Combining columns for CZE: ['CZE', 'CZECHIA']
+14:56:17 [INFO] Consolidated data for 193 ISO3 codes.
+14:56:17 [INFO] Checking for suffixed columns to drop...
+14:56:17 [INFO] Reordering columns...
+14:56:17 [INFO] Checking for original mapped columns to drop...
+14:56:17 [INFO] Reordering columns to place sorted ISO3 codes after fixed columns.
+14:56:17 [INFO] Column standardization complete.
+14:56:17 [INFO] Final CSV written with 9854 rows to pipeline_output/UN_VOTING_DATA_RAW_WITH_TAGS_2025-04-29.csv
+14:56:17 [INFO] Master CSV was NOT modified.
