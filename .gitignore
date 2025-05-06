@@ -24,3 +24,10 @@ index_analysis/
 
 #supabase stuff
 sync_supabase.py
+
+#hide json files
+
+JSON_output/
+
+dashboard_pipeline/
+
