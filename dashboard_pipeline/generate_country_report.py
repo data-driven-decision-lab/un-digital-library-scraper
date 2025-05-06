@@ -10,6 +10,9 @@ import json
 import re
 from datetime import datetime
 
+# --- Local Imports ---
+from country_iso_map import COUNTRY_TO_ISO3 
+
 # --- Configuration ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 CURRENT_YEAR = datetime.now().year
@@ -173,6 +176,34 @@ def generate_report(country_iso, start_year, end_year, script_dir):
     # --- Calculations ---
     results = {}
 
+    # --- Create Reverse Mapping (ISO3 -> Country Name) ---
+    ISO3_TO_COUNTRY = {v: k for k, v in COUNTRY_TO_ISO3.items()}
+
+    # --- Add Report Metadata --- 
+    logging.info("Adding report metadata...")
+    country_name = ISO3_TO_COUNTRY.get(country_iso, country_iso) # Fallback to ISO if not found
+    results['report_metadata'] = {
+        'country_iso3': country_iso, 
+        'country_name': country_name, # Added full country name
+        'start_year': start_year,
+        'end_year': end_year
+    }
+    
+    # --- Calculate World Averages for the Period --- (Keep this section for overall summary)
+    logging.info("Calculating world average scores for the period...")
+    world_avg_scores = {}
+    world_avg_cols = ['pillar_1_score', 'pillar_2_score', 'pillar_3_score', 'total_index_average']
+    for col in world_avg_cols:
+        if col in df_scores_period.columns:
+            # Calculate mean, dropna=True is default but explicit
+            world_avg = df_scores_period[col].mean(skipna=True) 
+            world_avg_scores[f'world_avg_{col}'] = round(world_avg, DECIMAL_PLACES) if pd.notna(world_avg) else None
+        else:
+            world_avg_scores[f'world_avg_{col}'] = None
+            logging.warning(f"World average column '{col}' not found in scores data.")
+    results['world_average_scores_period'] = world_avg_scores
+    # --- End of Section ---
+
     # 1. Index Score + Change + Rank
     logging.info("Calculating Index Score change and ranks...")
     start_index_score = safe_get_value(df_scores_country, start_year, country_col_scores, country_iso, 'total_index_average')
@@ -225,18 +256,52 @@ def generate_report(country_iso, start_year, end_year, script_dir):
         'abstain_vs_world_avg': round(country_abs_perc - world_abs_perc, DECIMAL_PLACES)
     }
 
-    # 3. Pillar Scores Time Series (Includes Total Index Average AND Ranks now)
-    logging.info("Extracting Pillar, Index score, and Rank time series...")
-    # Use standardized column names
+    # 3. Pillar Scores Time Series (ADDING YEARLY WORLD AVERAGES)
+    logging.info("Extracting scores timeseries and calculating yearly world averages...")
+    
+    # --- Calculate Yearly World Averages --- (NEW STEP)
+    world_avg_cols = ['pillar_1_score', 'pillar_2_score', 'pillar_3_score', 'total_index_average']
+    world_avg_cols_present = [col for col in world_avg_cols if col in df_scores_period.columns]
+    df_world_yearly_avg = pd.DataFrame() # Initialize empty df
+    if world_avg_cols_present:
+        try:
+            # Calculates the mean for EACH column in world_avg_cols_present, grouped by year
+            # REMOVED skipna=True as it's default for groupby().mean() and caused TypeError
+            df_world_yearly_avg = df_scores_period.groupby('year')[world_avg_cols_present].mean().reset_index()
+            # Renames columns like 'pillar_1_score' to 'world_avg_pillar_1_score' etc.
+            df_world_yearly_avg.columns = ['year'] + [f'world_avg_{col}' for col in world_avg_cols_present]
+            logging.info("Calculated yearly world average scores.")
+        except Exception as e:
+            logging.warning(f"Could not calculate yearly world averages: {e}")
+            df_world_yearly_avg = pd.DataFrame(columns=['year'])
+    else:
+        logging.warning("No score columns found to calculate yearly world averages.")
+        df_world_yearly_avg = pd.DataFrame(columns=['year'])
+    # --- End of New Step ---
+        
+    # Select country's scores and ranks
     score_cols = [
         'year', 
         'pillar_1_score', 'pillar_2_score', 'pillar_3_score', 'total_index_average',
-        'pillar_1_rank', 'pillar_2_rank', 'pillar_3_rank', 'overall_rank' # Added ranks
+        'pillar_1_rank', 'pillar_2_rank', 'pillar_3_rank', 'overall_rank'
     ]
     score_cols_present = [col for col in score_cols if col in df_scores_country.columns]
     df_scores_ts = df_scores_country[score_cols_present].sort_values(by='year')
+
+    # Merge country data with yearly world averages
+    if not df_world_yearly_avg.empty:
+        # This merge adds the 'world_avg_pillar_1_score', 'world_avg_pillar_2_score', etc. columns
+        df_scores_ts_merged = pd.merge(df_scores_ts, df_world_yearly_avg, on='year', how='left')
+    else:
+        df_scores_ts_merged = df_scores_ts
+        logging.warning("Proceeding without merging yearly world averages.")
+
+    # --- Remove Debug Logging ---
+    # logging.debug(f"Columns in df_scores_ts_merged before converting to JSON: {df_scores_ts_merged.columns.tolist()}")
+    # --- End Debug Logging ---
+
     # Rounding and NaN->None applied by dataframe_to_json_list
-    results['scores_timeseries'] = dataframe_to_json_list(df_scores_ts)
+    results['scores_timeseries'] = dataframe_to_json_list(df_scores_ts_merged) # Use the merged dataframe
 
     # 4. & 5. Allies & Enemies (Scaled Score)
     logging.info("Calculating Allies and Enemies...")
