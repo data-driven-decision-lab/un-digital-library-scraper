@@ -35,6 +35,11 @@ class VotingBehaviorOverall(BaseModel):
     yes_percentage: Optional[float] = Field(default=None, example=70.0)
     no_percentage: Optional[float] = Field(default=None, example=20.0)
     abstain_percentage: Optional[float] = Field(default=None, example=10.0)
+    # World percentages for the period
+    world_yes_percentage: Optional[float] = Field(default=None, example=65.0, description="World average YES vote percentage for the period.")
+    world_no_percentage: Optional[float] = Field(default=None, example=25.0, description="World average NO vote percentage for the period.")
+    world_abstain_percentage: Optional[float] = Field(default=None, example=10.0, description="World average ABSTAIN vote percentage for the period.")
+    # Difference vs world average
     yes_vs_world_avg: Optional[float] = Field(default=None, example=5.0)
     no_vs_world_avg: Optional[float] = Field(default=None, example=-2.5)
     abstain_vs_world_avg: Optional[float] = Field(default=None, example=-2.5)
