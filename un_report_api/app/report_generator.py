@@ -246,6 +246,9 @@ def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:
         'yes_percentage': round(country_yes_perc, DECIMAL_PLACES),
         'no_percentage': round(country_no_perc, DECIMAL_PLACES),
         'abstain_percentage': round(country_abs_perc, DECIMAL_PLACES),
+        'world_yes_percentage': round(world_yes_perc, DECIMAL_PLACES),
+        'world_no_percentage': round(world_no_perc, DECIMAL_PLACES),
+        'world_abstain_percentage': round(world_abs_perc, DECIMAL_PLACES),
         'yes_vs_world_avg': round(country_yes_perc - world_yes_perc, DECIMAL_PLACES),
         'no_vs_world_avg': round(country_no_perc - world_no_perc, DECIMAL_PLACES),
         'abstain_vs_world_avg': round(country_abs_perc - world_abs_perc, DECIMAL_PLACES)

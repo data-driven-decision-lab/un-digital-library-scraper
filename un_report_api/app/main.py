@@ -1,6 +1,5 @@
-FastAPI application for UN Country Voting Report API with CORS enabled.
+"""FastAPI application for UN Country Voting Report API with CORS enabled."""
 
-```python
 import logging
 from fastapi import FastAPI, Path, Query, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,22 +13,17 @@ from .models import ReportResponse, MIN_YEAR_CONSTRAINT, MAX_YEAR_CONSTRAINT
 app = FastAPI(
     title="UN Country Voting Report API",
     description="Generates a JSON report for UN voting patterns of a specific country over a time period (Years: 1946-2024).",
-    version="1.1.0"
+    version="1.2.0" # Incremented version due to new endpoint and CORS update
 )
 
-# --- CORS Middleware Configuration ---
-origins = [
-    "http://localhost:3000",             # Next.js development server
-    "http://127.0.0.1:3000",
-    "https://datadrivendecisionlab.com/",  # production domain
-]
-
+# --- CORS Middleware Configuration (User Specified) ---
+# Enable CORS for all origins, methods, headers
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], #origins,            # Or ["*"] to allow any origin (less secure)
-    allow_credentials=True,           # Allow cookies and Authorization headers
-    allow_methods=["*"],            # GET, POST, PUT, DELETE, etc.
-    allow_headers=["*"],            # Allow any headers
+    allow_origins=["*"],        # allow any origin
+    allow_credentials=True,     # allow cookies, Authorization headers, etc.
+    allow_methods=["*"],        # allow all HTTP methods (GET, POST, PUT, DELETE, …)
+    allow_headers=["*"],        # allow all headers
 )
 
 # --- Logging Configuration ---
@@ -123,6 +117,13 @@ async def get_country_report_api(
 @app.get("/", include_in_schema=False)
 async def root():
     return {"message": "UN Country Voting Report API. Access /docs for API documentation."}
+
+# --- Health Check Endpoint (New) ---
+@app.get("/health", tags=["Health"])
+async def health_check():
+    """Check the health of the API."""
+    api_logger.info("Health check endpoint called.")
+    return {"status": "ok"}
 
 # Run with Uvicorn example (CLI):
 # uvicorn main:app --host 0.0.0.0 --port 8000 --reload
