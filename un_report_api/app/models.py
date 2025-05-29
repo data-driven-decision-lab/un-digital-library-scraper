@@ -20,6 +20,12 @@ class WorldAverageScoresPeriod(BaseModel):
     world_avg_pillar_3_score: Optional[float] = Field(default=None, example=45.8)
     world_avg_total_index_average: Optional[float] = Field(default=None, example=52.1)
 
+class CountryAverageScoresPeriod(BaseModel):
+    country_avg_pillar_1_score: Optional[float] = Field(default=None, example=90.5, description="Average Pillar 1 score for the selected country over the period.")
+    country_avg_pillar_2_score: Optional[float] = Field(default=None, example=92.2, description="Average Pillar 2 score for the selected country over the period.")
+    country_avg_pillar_3_score: Optional[float] = Field(default=None, example=85.8, description="Average Pillar 3 score for the selected country over the period.")
+    country_avg_total_index_average: Optional[float] = Field(default=None, example=89.5, description="Average total index score for the selected country over the period.")
+
 class IndexScoreAnalysis(BaseModel):
     end_year_score: Optional[float] = Field(default=None, example=85.5)
     start_year_score: Optional[float] = Field(default=None, example=80.1)
@@ -43,6 +49,12 @@ class VotingBehaviorOverall(BaseModel):
     yes_vs_world_avg: Optional[float] = Field(default=None, example=5.0)
     no_vs_world_avg: Optional[float] = Field(default=None, example=-2.5)
     abstain_vs_world_avg: Optional[float] = Field(default=None, example=-2.5)
+
+# Define MostAlignedP5Member before it's used in ReportResponse
+class MostAlignedP5Member(BaseModel):
+    p5_country_iso3: Optional[str] = Field(default=None, example="USA", description="ISO3 code of the P5 member most aligned with.")
+    average_similarity_score_scaled: Optional[float] = Field(default=None, example=75.5, description="Scaled average similarity score (0-100) with that P5 member over the period.")
+    note: Optional[str] = Field(default=None, description="Note, e.g., if the reported country is itself a P5 member.")
 
 class ScoreTimeseriesItem(BaseModel):
     year: int = Field(..., example=2010)
@@ -99,11 +111,33 @@ class TopOpposedTopicItem(BaseModel):
 class ReportResponse(BaseModel):
     report_metadata: ReportMetadata
     world_average_scores_period: Optional[WorldAverageScoresPeriod]
+    country_average_scores_period: Optional[CountryAverageScoresPeriod]
     index_score_analysis: IndexScoreAnalysis
     voting_behavior_overall: VotingBehaviorOverall
+    most_aligned_p5_member: Optional[MostAlignedP5Member]
     scores_timeseries: List[ScoreTimeseriesItem]
     top_allies: List[AllyEnemyItem]
     top_enemies: List[AllyEnemyItem]
     top_supported_topics: List[TopSupportedTopicItem]
     top_opposed_topics: List[TopOpposedTopicItem]
-    all_topic_voting: List[TopicVoteItem] 
+    all_topic_voting: List[TopicVoteItem]
+
+# --- Models for Yearly Rankings Endpoint ---
+
+class RankingEntry(BaseModel):
+    country_name: str = Field(..., description="Name of the country.")
+    value: Optional[float] = Field(default=None, description="Pillar score or average pillar score.")
+    rank: Optional[int] = Field(default=None, description="Rank for the pillar based on the score (higher score is better).")
+    rank_change: Optional[int] = Field(default=None, description="Change in rank compared to the previous year (e.g., a positive value means improved rank, negative means worsened).")
+    value_change: Optional[float] = Field(default=None, description="Absolute change in score compared to the previous year.")
+
+class YearlyPillarRankings(BaseModel):
+    year: int = Field(..., description="The year for which rankings are provided.")
+    pillar_1_rankings: List[RankingEntry] = Field(..., description="Rankings for Pillar 1.")
+    pillar_2_rankings: List[RankingEntry] = Field(..., description="Rankings for Pillar 2.")
+    pillar_3_rankings: List[RankingEntry] = Field(..., description="Rankings for Pillar 3.")
+    average_pillar_rankings: List[RankingEntry] = Field(..., description="Rankings based on the average of Pillar 1, 2, and 3 (or total_index_average).")
+
+class YearlyRankingsResponse(BaseModel):
+    data: YearlyPillarRankings
+    message: Optional[str] = Field(default=None, description="Contextual message, e.g., about data availability for change calculations.") 

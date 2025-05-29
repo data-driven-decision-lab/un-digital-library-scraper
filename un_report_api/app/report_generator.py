@@ -18,6 +18,7 @@ from datetime import datetime
 from .country_iso_map import COUNTRY_TO_ISO3
 
 # --- Configuration ---
+P5_ISO_CODES = ["CHN", "FRA", "RUS", "GBR", "USA"] # UN Security Council P5 Members
 # Logging will be configured by the calling application (FastAPI)
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(APP_DIR, "required_csvs")
@@ -203,20 +204,56 @@ def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:
             logging.warning(f"World average column '{col}' for period calculation not found in scores data.")
     results['world_average_scores_period'] = world_avg_scores_period_data
 
-    # --- Index Score Analysis ---
-    logging.debug("Calculating Index Score change and ranks...")
-    start_index_score = safe_get_value(df_scores_country, start_year, country_col_scores, country_iso, 'total_index_average')
-    end_index_score = safe_get_value(df_scores_country, end_year, country_col_scores, country_iso, 'total_index_average')
-    start_rank = safe_get_value(df_scores_country, start_year, country_col_scores, country_iso, 'overall_rank')
-    end_rank = safe_get_value(df_scores_country, end_year, country_col_scores, country_iso, 'overall_rank')
-    index_perc_change = calculate_perc_change(start_index_score, end_index_score)
-    results['index_score_analysis'] = {
-        'end_year_score': round(end_index_score, DECIMAL_PLACES) if end_index_score is not None else None,
-        'start_year_score': round(start_index_score, DECIMAL_PLACES) if start_index_score is not None else None,
-        'percentage_change': index_perc_change,
-        'start_year_rank': start_rank,
-        'end_year_rank': end_rank
-    }
+    # --- Calculate Index Score Analysis (Pillar Scores & Ranks for specific country) ---
+    df_scores_country_period = df_scores[
+        (df_scores[country_col_scores].str.upper() == country_iso) &
+        (df_scores['year'] >= start_year) &
+        (df_scores['year'] <= end_year)
+    ].copy()
+
+    if df_scores_country_period.empty:
+        logging.warning(f"No score data found for {country_iso} between {start_year} and {end_year} for index and country average calculations.")
+        # report_data["country_average_scores_period"] remains None (or empty dict as per Pydantic model)
+        # report_data["index_score_analysis"] remains as initialized (with Nones)
+    else:
+        logging.debug(f"Score data found for {country_iso} ({start_year}-{end_year}): {len(df_scores_country_period)} rows for index and country averages.")
+        
+        # --- NEW: Calculate Country Average Scores for the Period ---
+        country_avg_p1 = df_scores_country_period['pillar_1_score'].mean()
+        country_avg_p2 = df_scores_country_period['pillar_2_score'].mean()
+        country_avg_p3 = df_scores_country_period['pillar_3_score'].mean()
+        country_avg_total = df_scores_country_period['total_index_average'].mean()
+
+        results["country_average_scores_period"] = {
+            "country_avg_pillar_1_score": round(country_avg_p1, DECIMAL_PLACES) if pd.notna(country_avg_p1) else None,
+            "country_avg_pillar_2_score": round(country_avg_p2, DECIMAL_PLACES) if pd.notna(country_avg_p2) else None,
+            "country_avg_pillar_3_score": round(country_avg_p3, DECIMAL_PLACES) if pd.notna(country_avg_p3) else None,
+            "country_avg_total_index_average": round(country_avg_total, DECIMAL_PLACES) if pd.notna(country_avg_total) else None,
+        }
+        logging.debug(f"Calculated country average scores for {country_iso} ({start_year}-{end_year}): {results['country_average_scores_period']}")
+
+        # --- Continue with existing Index Score Analysis (start/end year values) ---
+        df_scores_country_period = df_scores_country_period.sort_values(by='year') # Sort for correct start/end year pick
+        
+        # Safely get start and end year data for index score analysis
+        start_year_data = df_scores_country_period[df_scores_country_period['year'] == start_year]
+        end_year_data = df_scores_country_period[df_scores_country_period['year'] == end_year]
+
+        start_index_score = start_year_data['total_index_average'].iloc[0] if not start_year_data.empty and pd.notna(start_year_data['total_index_average'].iloc[0]) else None
+        end_index_score = end_year_data['total_index_average'].iloc[0] if not end_year_data.empty and pd.notna(end_year_data['total_index_average'].iloc[0]) else None
+        start_rank = start_year_data['overall_rank'].iloc[0] if not start_year_data.empty and pd.notna(start_year_data['overall_rank'].iloc[0]) else None
+        end_rank = end_year_data['overall_rank'].iloc[0] if not end_year_data.empty and pd.notna(end_year_data['overall_rank'].iloc[0]) else None
+        
+        index_perc_change = calculate_perc_change(start_index_score, end_index_score)
+
+        results['index_score_analysis'] = {
+            'end_year_score': round(end_index_score, DECIMAL_PLACES) if pd.notna(end_index_score) else None,
+            'start_year_score': round(start_index_score, DECIMAL_PLACES) if pd.notna(start_index_score) else None,
+            'percentage_change': round(index_perc_change, DECIMAL_PLACES) if pd.notna(index_perc_change) else None,
+            'start_year_rank': int(start_rank) if pd.notna(start_rank) else None,
+            'end_year_rank': int(end_rank) if pd.notna(end_rank) else None
+        }
+        logging.debug(f"Calculated index score analysis for {country_iso}: {results['index_score_analysis']}")
 
     # --- Overall Voting Behavior (Country vs World) ---
     logging.debug("Calculating overall vote behavior (Country vs World)...")
@@ -393,6 +430,63 @@ def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:
     results['top_supported_topics'] = top_supported
     results['top_opposed_topics'] = top_opposed
     results['all_topic_voting'] = all_topic_voting
+
+    # --- Most Aligned P5 Member --- #
+    logging.debug(f"Calculating most aligned P5 member for {country_iso}...")
+    most_aligned_p5_data = {
+        "p5_country_iso3": None,
+        "average_similarity_score_scaled": None,
+        "note": None
+    }
+
+    if not df_similarity_country.empty and 'cosinesimilarity' in df_similarity_country.columns:
+        # Determine the 'partner' country in each row (the one that is not country_iso)
+        df_similarity_country['partner_iso3'] = df_similarity_country.apply(
+            lambda row: row['country2_iso3'] if row[country_col_sim].upper() == country_iso.upper() else row[country_col_sim],
+            axis=1
+        )
+        
+        # Filter for P5 members
+        target_p5_list = P5_ISO_CODES.copy()
+        is_country_iso_p5 = country_iso.upper() in P5_ISO_CODES
+        note_for_p5 = None
+
+        if is_country_iso_p5:
+            target_p5_list.remove(country_iso.upper()) # Exclude self if country_iso is P5
+            note_for_p5 = f"{country_iso.upper()} is a P5 member; alignment shown with other P5 members."
+            logging.debug(f"{country_iso} is P5. Finding alignment with: {target_p5_list}")
+        else:
+            logging.debug(f"{country_iso} is not P5. Finding alignment with: {target_p5_list}")
+
+        df_p5_partners = df_similarity_country[df_similarity_country['partner_iso3'].str.upper().isin(target_p5_list)]
+
+        if not df_p5_partners.empty:
+            avg_similarity_with_p5 = df_p5_partners.groupby('partner_iso3')['cosinesimilarity'].mean().reset_index()
+            avg_similarity_with_p5 = avg_similarity_with_p5.rename(columns={'cosinesimilarity': 'average_similarity_score'})
+            
+            if not avg_similarity_with_p5.empty:
+                most_aligned_p5 = avg_similarity_with_p5.sort_values(by='average_similarity_score', ascending=False).iloc[0]
+                most_aligned_p5_data['p5_country_iso3'] = most_aligned_p5['partner_iso3']
+                most_aligned_p5_data['average_similarity_score_scaled'] = scale_similarity(most_aligned_p5['average_similarity_score'])
+                most_aligned_p5_data['note'] = note_for_p5
+                logging.debug(f"Most aligned P5 member for {country_iso}: {most_aligned_p5_data['p5_country_iso3']} with score {most_aligned_p5_data['average_similarity_score_scaled']}")
+            else:
+                logging.warning(f"No P5 members found for alignment calculation after grouping for {country_iso} (target list: {target_p5_list}).")
+                if is_country_iso_p5:
+                     most_aligned_p5_data['note'] = f"{country_iso.upper()} is P5. Could not determine alignment with other P5 members based on available data."
+                else:
+                     most_aligned_p5_data['note'] = "Could not determine alignment with any P5 members based on available data."
+        else:
+            logging.warning(f"No similarity data found with any target P5 members ({target_p5_list}) for {country_iso}.")
+            if is_country_iso_p5:
+                 most_aligned_p5_data['note'] = f"{country_iso.upper()} is P5. No similarity data with other P5 members ({target_p5_list})."
+            else:
+                 most_aligned_p5_data['note'] = f"No similarity data with P5 members ({P5_ISO_CODES})."
+    else:
+        logging.warning(f"No similarity data or 'cosinesimilarity' column available for {country_iso} to calculate P5 alignment.")
+        most_aligned_p5_data['note'] = "Similarity data not available for P5 alignment calculation."
+
+    results['most_aligned_p5_member'] = most_aligned_p5_data
 
     logging.info(f"Report generation finished for {country_iso}.")
     return results
