@@ -224,13 +224,24 @@ def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:
         country_avg_p3 = df_scores_country_period['pillar_3_score'].mean()
         country_avg_total = df_scores_country_period['total_index_average'].mean()
 
+        # Calculate Country Average Ranks for the Period
+        country_avg_p1_rank = df_scores_country_period['pillar_1_rank'].mean()
+        country_avg_p2_rank = df_scores_country_period['pillar_2_rank'].mean()
+        country_avg_p3_rank = df_scores_country_period['pillar_3_rank'].mean()
+        country_avg_overall_rank = df_scores_country_period['overall_rank'].mean()
+
         results["country_average_scores_period"] = {
             "country_avg_pillar_1_score": round(country_avg_p1, DECIMAL_PLACES) if pd.notna(country_avg_p1) else None,
             "country_avg_pillar_2_score": round(country_avg_p2, DECIMAL_PLACES) if pd.notna(country_avg_p2) else None,
             "country_avg_pillar_3_score": round(country_avg_p3, DECIMAL_PLACES) if pd.notna(country_avg_p3) else None,
             "country_avg_total_index_average": round(country_avg_total, DECIMAL_PLACES) if pd.notna(country_avg_total) else None,
+            # Update average ranks to round to 0 decimal places (nearest integer)
+            "country_avg_pillar_1_rank": round(country_avg_p1_rank, 0) if pd.notna(country_avg_p1_rank) else None,
+            "country_avg_pillar_2_rank": round(country_avg_p2_rank, 0) if pd.notna(country_avg_p2_rank) else None,
+            "country_avg_pillar_3_rank": round(country_avg_p3_rank, 0) if pd.notna(country_avg_p3_rank) else None,
+            "country_avg_overall_rank": round(country_avg_overall_rank, 0) if pd.notna(country_avg_overall_rank) else None,
         }
-        logging.debug(f"Calculated country average scores for {country_iso} ({start_year}-{end_year}): {results['country_average_scores_period']}")
+        logging.debug(f"Calculated country average scores and ranks for {country_iso} ({start_year}-{end_year}): {results['country_average_scores_period']}")
 
         # --- Continue with existing Index Score Analysis (start/end year values) ---
         df_scores_country_period = df_scores_country_period.sort_values(by='year') # Sort for correct start/end year pick

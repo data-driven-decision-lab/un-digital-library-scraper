@@ -25,6 +25,11 @@ class CountryAverageScoresPeriod(BaseModel):
     country_avg_pillar_2_score: Optional[float] = Field(default=None, example=92.2, description="Average Pillar 2 score for the selected country over the period.")
     country_avg_pillar_3_score: Optional[float] = Field(default=None, example=85.8, description="Average Pillar 3 score for the selected country over the period.")
     country_avg_total_index_average: Optional[float] = Field(default=None, example=89.5, description="Average total index score for the selected country over the period.")
+    # New fields for average ranks
+    country_avg_pillar_1_rank: Optional[float] = Field(default=None, example=10.5, description="Average Pillar 1 rank for the selected country over the period.")
+    country_avg_pillar_2_rank: Optional[float] = Field(default=None, example=12.0, description="Average Pillar 2 rank for the selected country over the period.")
+    country_avg_pillar_3_rank: Optional[float] = Field(default=None, example=15.2, description="Average Pillar 3 rank for the selected country over the period.")
+    country_avg_overall_rank: Optional[float] = Field(default=None, example=11.8, description="Average overall rank for the selected country over the period.")
 
 class IndexScoreAnalysis(BaseModel):
     end_year_score: Optional[float] = Field(default=None, example=85.5)
