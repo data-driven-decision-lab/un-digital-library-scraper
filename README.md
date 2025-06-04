@@ -57,6 +57,42 @@ python pipeline_complete.py
 * .gitignore                                      # Make sure your .env is present     
 
 
+## API Details
+
+The project includes a FastAPI-based API to serve the processed data and analysis.
+
+### Country Report Endpoint
+
+*   **Endpoint:** `/report/{country_iso}`
+*   **Method:** `GET`
+*   **Path Parameters:**
+    *   `country_iso` (string, required): The 3-letter uppercase ISO code of the country (e.g., "USA").
+*   **Query Parameters:**
+    *   `start_year` (integer, required): The start year for the report period.
+    *   `end_year` (integer, required): The end year for the report period.
+*   **Description:** Provides a detailed report on a country's UN voting patterns, scores, and regional context for a specified period.
+*   **Response Structure:** The JSON response includes several sections:
+    *   `report_metadata`: Basic information about the report (country ISO, name, period).
+    *   `world_average_scores_period`: Average pillar scores and total index average for the world during the period.
+    *   `country_average_scores_period`: Average pillar scores, ranks, and total index average for the selected country over the period.
+    *   `index_score_analysis`: The selected country's index score and rank at the start and end of the period, and percentage change.
+    *   `voting_behavior_overall`: The selected country's voting statistics (yes, no, abstain percentages) compared to world averages for the period.
+    *   `most_aligned_p5_member`: Details of the UN Security Council P5 member whose voting record (based on cosine similarity for the period) is most aligned with the selected country. Includes the P5 country's ISO, name, and scaled similarity score.
+    *   `least_aligned_p5_member`: Details of the UN Security Council P5 member whose voting record is least aligned with the selected country. Includes the P5 country's ISO, name, and scaled similarity score.
+    *   `scores_timeseries`: A yearly breakdown of the selected country's pillar scores, ranks, and total index average, alongside yearly world averages for these scores.
+    *   `top_allies`: Top 5 countries most aligned with the selected country based on average voting similarity over the period.
+    *   `top_enemies`: Top 5 countries least aligned with the selected country based on average voting similarity over the period.
+    *   `top_supported_topics`: Top 3 topics most supported by the selected country.
+    *   `top_opposed_topics`: Top 3 topics most opposed by the selected country.
+    *   `all_topic_voting`: Detailed voting statistics for the selected country across all topics compared to world averages.
+    *   `regional_context`: Provides context about the selected country's voting alignment within its UN-defined geographical region for the `end_year` of the reporting period.
+        *   `un_region` (string): The UN region name of the selected country.
+        *   `regional_peer_alignment` (list of objects): A list of other countries in the same UN region. Each object contains:
+            *   `country_iso3` (string): ISO code of the peer country.
+            *   `country_name` (string): Full name of the peer country.
+            *   `alignment_score` (float): The scaled cosine similarity score (0-100) indicating alignment with the *selected country* for the `end_year`. Sorted by alignment score in descending order.
+        *   `average_regional_alignment_score` (float): The average of the alignment scores between the selected country and all its regional peers for the `end_year`.
+
 ## API Key Configuration
 
 This project requires an OpenAI API key to function properly. The API key is used for the classification and geo-tagging features that analyze resolution titles.

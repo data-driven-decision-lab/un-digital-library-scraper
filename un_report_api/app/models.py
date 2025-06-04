@@ -57,9 +57,14 @@ class VotingBehaviorOverall(BaseModel):
 
 # Define MostAlignedP5Member before it's used in ReportResponse
 class MostAlignedP5Member(BaseModel):
-    p5_country_iso3: Optional[str] = Field(default=None, example="USA", description="ISO3 code of the P5 member most aligned with.")
+    p5_country_iso3: Optional[str] = Field(default=None, example="CHN", description="ISO3 code of the P5 member.")
     average_similarity_score_scaled: Optional[float] = Field(default=None, example=75.5, description="Scaled average similarity score (0-100) with that P5 member over the period.")
-    note: Optional[str] = Field(default=None, description="Note, e.g., if the reported country is itself a P5 member.")
+    note: Optional[str] = Field(default=None, description="Contextual note, e.g., if the reported country is itself a P5 member.")
+
+class LeastAlignedP5Member(BaseModel):
+    p5_country_iso3: Optional[str] = Field(default=None, example="RUS", description="ISO3 code of the P5 member.")
+    average_similarity_score_scaled: Optional[float] = Field(default=None, example=22.1, description="Scaled average similarity score (0-100) with that P5 member over the period.")
+    note: Optional[str] = Field(default=None, description="Contextual note.")
 
 class ScoreTimeseriesItem(BaseModel):
     year: int = Field(..., example=2010)
@@ -112,6 +117,18 @@ class TopOpposedTopicItem(BaseModel):
     total_no: Optional[int] = None
     total_votes: Optional[int] = None
 
+# --- NEW: Models for Regional Context ---
+class RegionalPeerAlignmentItem(BaseModel):
+    country_iso3: str = Field(..., example="CAN")
+    country_name: str = Field(..., example="Canada")
+    alignment_score: Optional[float] = Field(default=None, example=82.3)
+
+class RegionalContext(BaseModel):
+    un_region: Optional[str] = Field(default=None, example="Northern America")
+    regional_peer_alignment: List[RegionalPeerAlignmentItem] = []
+    average_regional_alignment_score: Optional[float] = Field(default=None, example=78.5, description="Average alignment score of the selected country with its regional peers for the end_year.")
+# --- END NEW ---
+
 # --- Main Response Model ---
 class ReportResponse(BaseModel):
     report_metadata: ReportMetadata
@@ -119,7 +136,9 @@ class ReportResponse(BaseModel):
     country_average_scores_period: Optional[CountryAverageScoresPeriod]
     index_score_analysis: IndexScoreAnalysis
     voting_behavior_overall: VotingBehaviorOverall
-    most_aligned_p5_member: Optional[MostAlignedP5Member]
+    most_aligned_p5_member: Optional[MostAlignedP5Member] = None
+    least_aligned_p5_member: Optional[LeastAlignedP5Member] = None
+    regional_context: Optional[RegionalContext] = None
     scores_timeseries: List[ScoreTimeseriesItem]
     top_allies: List[AllyEnemyItem]
     top_enemies: List[AllyEnemyItem]
@@ -145,4 +164,8 @@ class YearlyPillarRankings(BaseModel):
 
 class YearlyRankingsResponse(BaseModel):
     data: YearlyPillarRankings
-    message: Optional[str] = Field(default=None, description="Contextual message, e.g., about data availability for change calculations.") 
+    message: Optional[str] = Field(default=None, description="Contextual message, e.g., about data availability for change calculations.")
+
+    class Config:
+        # Example for the entire response, adjust as needed 
+        pass # Added pass to fix indentation 
