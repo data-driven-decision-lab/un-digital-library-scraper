@@ -33,3 +33,7 @@ EXPOSE 8000
 # It tells uvicorn to run the 'app' instance found in /code/app/main.py
 # Using "app.main:app" ensures Python can find the main module within the app package
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"] 
+
+# Assuming your Dockerfile context is the project root
+# and your WORKDIR in the Docker image is something like /code
+COPY ./un_report_api/app/required_csvs /code/un_report_api/app/required_csvs
