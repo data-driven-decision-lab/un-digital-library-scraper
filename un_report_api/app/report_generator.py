@@ -22,7 +22,7 @@ P5_ISO_CODES = ["CHN", "FRA", "RUS", "GBR", "USA"] # UN Security Council P5 Memb
 # Logging will be configured by the calling application (FastAPI)
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(APP_DIR, "required_csvs")
-
+REGION_MAPPING_FILENAME = "UN_Country_Region_Mapping.csv" # Added
 # Year constraints for data consistency if used internally by this script
 # Primary validation for API parameters will be in the FastAPI layer.
 MIN_DATA_YEAR = 1946
@@ -92,6 +92,51 @@ def scale_similarity(score):
     except (ValueError, TypeError):
         return None
 
+# --- New Helper Function for Region Mapping ---
+def load_un_region_mapping(mapping_dir: str, filename: str) -> tuple[dict | None, dict | None]:
+    """
+    Loads UN country to region mapping from a CSV file.
+
+    Args:
+        mapping_dir (str): Directory where the mapping CSV is located.
+        filename (str): Name of the mapping CSV file.
+
+    Returns:
+        tuple[dict, dict]: A tuple containing:
+            - iso_to_region_map (dict): Maps ISO3 code to UN Region name.
+            - region_to_iso_list_map (dict): Maps UN Region name to a list of ISO3 codes.
+        Returns (None, None) if loading fails.
+    """
+    mapping_path = os.path.join(mapping_dir, filename)
+    try:
+        df_regions = pd.read_csv(mapping_path)
+        # Standardize column names for robustness
+        df_regions.columns = [col.strip() for col in df_regions.columns]
+        
+        # Ensure required columns exist
+        if 'ISO-alpha3 code' not in df_regions.columns or 'UN Region' not in df_regions.columns:
+            logging.error(f"'{filename}' is missing required columns: 'ISO-alpha3 code' or 'UN Region'.")
+            return None, None
+            
+        df_regions.dropna(subset=['ISO-alpha3 code', 'UN Region'], inplace=True)
+        
+        iso_to_region_map = pd.Series(
+            df_regions['UN Region'].values, 
+            index=df_regions['ISO-alpha3 code']
+        ).to_dict()
+        
+        region_to_iso_list_map = df_regions.groupby('UN Region')['ISO-alpha3 code'].apply(list).to_dict()
+        
+        logging.info(f"Successfully loaded UN region mapping from '{filename}'.")
+        return iso_to_region_map, region_to_iso_list_map
+        
+    except FileNotFoundError:
+        logging.error(f"UN region mapping file not found at {mapping_path}.")
+        return None, None
+    except Exception as e:
+        logging.error(f"Error loading UN region mapping from {mapping_path}: {e}")
+        return None, None
+
 # --- Main Report Generation Logic ---
 def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:
     """
@@ -106,6 +151,12 @@ def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:
     similarity_path = os.path.join(DATA_DIR, "pairwise_similarity_yearly.csv")
     topic_votes_path = os.path.join(DATA_DIR, "topic_votes_yearly.csv")
 
+    # --- Load Region Mapping ---
+    iso_to_region_map, region_to_iso_list_map = load_un_region_mapping(DATA_DIR, REGION_MAPPING_FILENAME)
+    if iso_to_region_map is None or region_to_iso_list_map is None:
+        # Logged in helper, allow report generation to proceed without regional context if mapping fails
+        logging.warning("UN Region mapping failed to load. Regional context will be unavailable.")
+    
     # --- Load Data ---
     try:
         logging.debug(f"Loading data from {annual_scores_path}")
@@ -443,8 +494,13 @@ def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:
     results['all_topic_voting'] = all_topic_voting
 
     # --- Most Aligned P5 Member --- #
-    logging.debug(f"Calculating most aligned P5 member for {country_iso}...")
+    logging.debug(f"Calculating most and least aligned P5 member for {country_iso}...")
     most_aligned_p5_data = {
+        "p5_country_iso3": None,
+        "average_similarity_score_scaled": None,
+        "note": None
+    }
+    least_aligned_p5_data = { # Initialize for least aligned
         "p5_country_iso3": None,
         "average_similarity_score_scaled": None,
         "note": None
@@ -476,28 +532,110 @@ def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:
             avg_similarity_with_p5 = avg_similarity_with_p5.rename(columns={'cosinesimilarity': 'average_similarity_score'})
             
             if not avg_similarity_with_p5.empty:
-                most_aligned_p5 = avg_similarity_with_p5.sort_values(by='average_similarity_score', ascending=False).iloc[0]
-                most_aligned_p5_data['p5_country_iso3'] = most_aligned_p5['partner_iso3']
-                most_aligned_p5_data['average_similarity_score_scaled'] = scale_similarity(most_aligned_p5['average_similarity_score'])
+                # Most Aligned
+                most_aligned_p5_row = avg_similarity_with_p5.sort_values(by='average_similarity_score', ascending=False).iloc[0]
+                most_aligned_p5_data['p5_country_iso3'] = most_aligned_p5_row['partner_iso3']
+                most_aligned_p5_data['average_similarity_score_scaled'] = scale_similarity(most_aligned_p5_row['average_similarity_score'])
                 most_aligned_p5_data['note'] = note_for_p5
                 logging.debug(f"Most aligned P5 member for {country_iso}: {most_aligned_p5_data['p5_country_iso3']} with score {most_aligned_p5_data['average_similarity_score_scaled']}")
+
+                # Least Aligned
+                least_aligned_p5_row = avg_similarity_with_p5.sort_values(by='average_similarity_score', ascending=True).iloc[0]
+                least_aligned_p5_data['p5_country_iso3'] = least_aligned_p5_row['partner_iso3']
+                least_aligned_p5_data['average_similarity_score_scaled'] = scale_similarity(least_aligned_p5_row['average_similarity_score'])
+                least_aligned_p5_data['note'] = note_for_p5 # Note can be the same or adjusted if needed
+                logging.debug(f"Least aligned P5 member for {country_iso}: {least_aligned_p5_data['p5_country_iso3']} with score {least_aligned_p5_data['average_similarity_score_scaled']}")
             else:
                 logging.warning(f"No P5 members found for alignment calculation after grouping for {country_iso} (target list: {target_p5_list}).")
+                common_note_p5_fail = "Could not determine alignment with P5 members based on available data."
                 if is_country_iso_p5:
-                     most_aligned_p5_data['note'] = f"{country_iso.upper()} is P5. Could not determine alignment with other P5 members based on available data."
-                else:
-                     most_aligned_p5_data['note'] = "Could not determine alignment with any P5 members based on available data."
+                     common_note_p5_fail = f"{country_iso.upper()} is P5. Could not determine alignment with other P5 members."
+                most_aligned_p5_data['note'] = common_note_p5_fail
+                least_aligned_p5_data['note'] = common_note_p5_fail
         else:
             logging.warning(f"No similarity data found with any target P5 members ({target_p5_list}) for {country_iso}.")
+            common_note_no_sim_p5 = f"No similarity data with P5 members ({P5_ISO_CODES})."
             if is_country_iso_p5:
-                 most_aligned_p5_data['note'] = f"{country_iso.upper()} is P5. No similarity data with other P5 members ({target_p5_list})."
-            else:
-                 most_aligned_p5_data['note'] = f"No similarity data with P5 members ({P5_ISO_CODES})."
+                 common_note_no_sim_p5 = f"{country_iso.upper()} is P5. No similarity data with other P5 members ({target_p5_list})."
+            most_aligned_p5_data['note'] = common_note_no_sim_p5
+            least_aligned_p5_data['note'] = common_note_no_sim_p5
     else:
         logging.warning(f"No similarity data or 'cosinesimilarity' column available for {country_iso} to calculate P5 alignment.")
-        most_aligned_p5_data['note'] = "Similarity data not available for P5 alignment calculation."
+        no_sim_data_note = "Similarity data not available for P5 alignment calculation."
+        most_aligned_p5_data['note'] = no_sim_data_note
+        least_aligned_p5_data['note'] = no_sim_data_note
 
     results['most_aligned_p5_member'] = most_aligned_p5_data
+    results['least_aligned_p5_member'] = least_aligned_p5_data
+
+    # --- Regional Context Analysis ---
+    logging.debug(f"Calculating regional context for {country_iso} for year {end_year}...")
+    regional_context_data = {
+        "un_region": None,
+        "regional_peer_alignment": [],
+        "average_regional_alignment_score": None # Initialize key
+    }
+
+    if iso_to_region_map and region_to_iso_list_map: # Proceed only if mapping loaded
+        selected_country_region = iso_to_region_map.get(country_iso)
+        if selected_country_region:
+            regional_context_data["un_region"] = selected_country_region
+            peer_iso_codes = [
+                peer for peer in region_to_iso_list_map.get(selected_country_region, []) 
+                if peer != country_iso and peer in ISO3_TO_COUNTRY # Ensure peer is known
+            ]
+
+            if peer_iso_codes and not df_similarity.empty:
+                df_similarity_end_year = df_similarity[df_similarity['year'] == end_year].copy()
+                
+                if not df_similarity_end_year.empty:
+                    alignment_scores = []
+                    for peer_iso in peer_iso_codes:
+                        score_row = df_similarity_end_year[
+                            ((df_similarity_end_year['country1_iso3'] == country_iso) & (df_similarity_end_year['country2_iso3'] == peer_iso)) |
+                            ((df_similarity_end_year['country1_iso3'] == peer_iso) & (df_similarity_end_year['country2_iso3'] == country_iso))
+                        ]
+                        if not score_row.empty and 'cosinesimilarity' in score_row.columns:
+                            raw_score = score_row['cosinesimilarity'].iloc[0]
+                            scaled_score = scale_similarity(raw_score)
+                            peer_name = ISO3_TO_COUNTRY.get(peer_iso, peer_iso)
+                            alignment_scores.append({
+                                "country_iso3": peer_iso,
+                                "country_name": peer_name,
+                                "alignment_score": scaled_score
+                            })
+                        else:
+                            # Log if no similarity found for a peer, could be data gap
+                            logging.debug(f"No similarity data found between {country_iso} and peer {peer_iso} for {end_year}.")
+
+                    regional_context_data["regional_peer_alignment"] = sorted(
+                        alignment_scores, 
+                        key=lambda x: x["alignment_score"] if x["alignment_score"] is not None else -1, 
+                        reverse=True
+                    )
+                    
+                    # Calculate average regional alignment score
+                    valid_alignment_scores = [
+                        item["alignment_score"] for item in regional_context_data["regional_peer_alignment"]
+                        if item["alignment_score"] is not None
+                    ]
+                    if valid_alignment_scores:
+                        regional_context_data["average_regional_alignment_score"] = round(sum(valid_alignment_scores) / len(valid_alignment_scores), DECIMAL_PLACES)
+                    # else average_regional_alignment_score remains None (initialized above)
+                        
+                else:
+                    logging.warning(f"No similarity data found for the year {end_year} to calculate regional peer alignment.")
+            # Conditions where average_regional_alignment_score remains None (already initialized)
+            elif df_similarity.empty:
+                 logging.warning("Similarity DataFrame (df_similarity) is empty. Cannot calculate regional peer alignment.")
+            elif not peer_iso_codes:
+                logging.info(f"No regional peers found for {country_iso} in region {selected_country_region} or peers not in ISO3_TO_COUNTRY map.")
+        else:
+            logging.warning(f"Country {country_iso} not found in UN region map.")
+    # else UN Region mapping not available, average_regional_alignment_score remains None (already initialized)
+        
+    results["regional_context"] = regional_context_data
+    # --- END REGIONAL CONTEXT SECTION ---
 
     logging.info(f"Report generation finished for {country_iso}.")
     return results
