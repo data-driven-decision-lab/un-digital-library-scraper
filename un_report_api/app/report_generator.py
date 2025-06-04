@@ -15,7 +15,8 @@ import re
 from datetime import datetime
 
 # --- Local Imports (relative for package structure) ---
-from .country_iso_map import COUNTRY_TO_ISO3
+# Absolute imports assuming 'app' directory is the root for these modules
+from country_iso_map import COUNTRY_TO_ISO3
 
 # --- Configuration ---
 P5_ISO_CODES = ["CHN", "FRA", "RUS", "GBR", "USA"] # UN Security Council P5 Members
