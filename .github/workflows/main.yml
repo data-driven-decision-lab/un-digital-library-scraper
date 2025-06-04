@@ -2,7 +2,7 @@ name: Monthly Python Script Runner
 
 on:
   schedule:
-    - cron: '0 2 1 * *'  # 2:00 AM UTC on the 1st of every month
+    - cron: '0 2 2 * *'  # 2:00 AM UTC on the 2nd of every month
   workflow_dispatch:
 
 jobs:
