@@ -1,3 +1,0 @@
-Session Pooler:
-
-postgresql://postgres.gjakiqtayqltssvbzasd:[YOUR-PASSWORD]@aws-0-eu-central-1.pooler.supabase.com:5432/postgres

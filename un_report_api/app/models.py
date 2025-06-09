@@ -150,10 +150,19 @@ class ReportResponse(BaseModel):
 
 class RankingEntry(BaseModel):
     country_name: str = Field(..., description="Name of the country.")
+    country_code: str = Field(..., description="3-letter ISO code of the country.")
     value: Optional[float] = Field(default=None, description="Pillar score or average pillar score.")
     rank: Optional[int] = Field(default=None, description="Rank for the pillar based on the score (higher score is better).")
     rank_change: Optional[int] = Field(default=None, description="Change in rank compared to the previous year (e.g., a positive value means improved rank, negative means worsened).")
     value_change: Optional[float] = Field(default=None, description="Absolute change in score compared to the previous year.")
+    rank_change_10_year: Optional[int] = Field(default=None, description="Change in rank from 10 years prior.")
+    value_change_10_year: Optional[float] = Field(default=None, description="Change in value from 10 years prior.")
+    is_oecd: bool = Field(..., description="True if the country is an OECD member.")
+    is_g20: bool = Field(..., description="True if the country is a G20 member.")
+    is_top_50_gdp: bool = Field(..., description="True if the country is in the top 50 for GDP per capita in 2023.")
+    is_bottom_50_gdp: bool = Field(..., description="True if the country is in the bottom 50 for GDP per capita in 2023.")
+    is_top_50_population: bool = Field(..., description="True if the country is in the top 50 for population in 2023.")
+    is_bottom_50_population: bool = Field(..., description="True if the country is in the bottom 50 for population in 2023.")
 
 class YearlyPillarRankings(BaseModel):
     year: int = Field(..., description="The year for which rankings are provided.")
