@@ -13,6 +13,7 @@ import logging # Keep logging for messages, but API will configure handlers
 import json # Though not used for writing files anymore, kept for potential internal use
 import re
 from datetime import datetime
+from typing import Optional, Tuple, Dict, List # Added Optional, Tuple, Dict, List
 
 # --- Local Imports (relative for package structure) ---
 # Absolute imports assuming 'app' directory is the root for these modules
@@ -94,7 +95,7 @@ def scale_similarity(score):
         return None
 
 # --- New Helper Function for Region Mapping ---
-def load_un_region_mapping(mapping_dir: str, filename: str) -> tuple[dict | None, dict | None]:
+def load_un_region_mapping(mapping_dir: str, filename: str) -> Tuple[Optional[Dict], Optional[Dict]]:
     """
     Loads UN country to region mapping from a CSV file.
 
@@ -387,26 +388,33 @@ def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:
         
     results['scores_timeseries'] = dataframe_to_json_list(df_scores_ts_merged)
 
-    # --- Allies & Enemies ---
+    # --- Allies & Enemies (based on average over the period) ---
     logging.debug("Calculating Allies and Enemies...")
     allies = []
     enemies = []
+    # This DataFrame will hold the average similarity for ALL countries, to be reused for regional context.
+    avg_similarity_all_countries = pd.DataFrame() 
+
     if not df_similarity_country.empty and 'cosinesimilarity' in df_similarity_country.columns:
         df_similarity_country['other_country'] = df_similarity_country.apply(
             lambda row: row['country2_iso3'] if row[country_col_sim] == country_iso else row[country_col_sim],
             axis=1
         )
-        avg_similarity = df_similarity_country.groupby('other_country')['cosinesimilarity'].mean().reset_index()
-        avg_similarity = avg_similarity.rename(columns={'other_country': 'country', 'cosinesimilarity': 'average_similarity_score'})
-        avg_similarity['average_similarity_score_scaled'] = avg_similarity['average_similarity_score'].apply(scale_similarity)
+        avg_similarity_all_countries = df_similarity_country.groupby('other_country')['cosinesimilarity'].mean().reset_index()
+        avg_similarity_all_countries = avg_similarity_all_countries.rename(columns={'other_country': 'country', 'cosinesimilarity': 'average_similarity_score'})
+        avg_similarity_all_countries['average_similarity_score_scaled'] = avg_similarity_all_countries['average_similarity_score'].apply(scale_similarity)
         
-        allies_df = avg_similarity.sort_values(by='average_similarity_score_scaled', ascending=False).head(5)
-        enemies_df = avg_similarity.sort_values(by='average_similarity_score_scaled', ascending=True).head(5)
+        # Exclude the report's own country from the allies/enemies list
+        avg_similarity_filtered = avg_similarity_all_countries[avg_similarity_all_countries['country'] != country_iso]
+
+        allies_df = avg_similarity_filtered.sort_values(by='average_similarity_score_scaled', ascending=False).head(5)
+        enemies_df = avg_similarity_filtered.sort_values(by='average_similarity_score_scaled', ascending=True).head(5)
         
         allies = dataframe_to_json_list(allies_df[['country', 'average_similarity_score_scaled']])
         enemies = dataframe_to_json_list(enemies_df[['country', 'average_similarity_score_scaled']])
     else:
         logging.warning(f"No similarity data or 'cosinesimilarity' column found for {country_iso}. Allies/Enemies will be empty.")
+    
     results['top_allies'] = allies
     results['top_enemies'] = enemies
 
@@ -478,7 +486,7 @@ def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:
             top_supported_output_cols_present = [col for col in top_supported_output_cols if col in df_supported.columns]
             top_supported = dataframe_to_json_list(df_supported[top_supported_output_cols_present])
             
-            df_opposed = df_topic_combined.sort_values(by='opposition_percentage', ascending=False).head(3)
+            df_opposed = df_topic_combined.sort_values(by='opposition_percentage', ascending=False).head(6)
             top_opposed_output_cols = [
                 'topictag', 'opposition_percentage', 'world_opposition_percentage',
                 'opposition_vs_world_avg', 'total_no', 'total_votes'
@@ -569,76 +577,58 @@ def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:
     results['most_aligned_p5_member'] = most_aligned_p5_data
     results['least_aligned_p5_member'] = least_aligned_p5_data
 
-    # --- Regional Context Analysis ---
-    logging.debug(f"Calculating regional context for {country_iso} for year {end_year}...")
+    # --- Regional Context Analysis (based on average over the period) ---
+    logging.debug(f"Calculating regional context for {country_iso} for period {start_year}-{end_year}...")
     regional_context_data = {
         "un_region": None,
         "regional_peer_alignment": [],
-        "average_regional_alignment_score": None # Initialize key
+        "average_regional_alignment_score": None
     }
 
-    if iso_to_region_map and region_to_iso_list_map: # Proceed only if mapping loaded
+    if iso_to_region_map and region_to_iso_list_map:
         selected_country_region = iso_to_region_map.get(country_iso)
         if selected_country_region:
             regional_context_data["un_region"] = selected_country_region
             peer_iso_codes = [
                 peer for peer in region_to_iso_list_map.get(selected_country_region, []) 
-                if peer != country_iso and peer in ISO3_TO_COUNTRY # Ensure peer is known
+                if peer != country_iso and peer in ISO3_TO_COUNTRY
             ]
 
-            if peer_iso_codes and not df_similarity.empty:
-                df_similarity_end_year = df_similarity[df_similarity['year'] == end_year].copy()
+            if peer_iso_codes and not avg_similarity_all_countries.empty:
+                # Reuse the average similarity scores calculated earlier
+                df_regional_peers_scores = avg_similarity_all_countries[
+                    avg_similarity_all_countries['country'].isin(peer_iso_codes)
+                ].copy()
+
+                df_regional_peers_scores = df_regional_peers_scores.rename(
+                    columns={'country': 'country_iso3', 'average_similarity_score_scaled': 'alignment_score'}
+                )
                 
-                if not df_similarity_end_year.empty:
-                    alignment_scores = []
-                    for peer_iso in peer_iso_codes:
-                        score_row = df_similarity_end_year[
-                            ((df_similarity_end_year['country1_iso3'] == country_iso) & (df_similarity_end_year['country2_iso3'] == peer_iso)) |
-                            ((df_similarity_end_year['country1_iso3'] == peer_iso) & (df_similarity_end_year['country2_iso3'] == country_iso))
-                        ]
-                        if not score_row.empty and 'cosinesimilarity' in score_row.columns:
-                            raw_score = score_row['cosinesimilarity'].iloc[0]
-                            scaled_score = scale_similarity(raw_score)
-                            peer_name = ISO3_TO_COUNTRY.get(peer_iso, peer_iso)
-                            alignment_scores.append({
-                                "country_iso3": peer_iso,
-                                "country_name": peer_name,
-                                "alignment_score": scaled_score
-                            })
-                        else:
-                            # Log if no similarity found for a peer, could be data gap
-                            logging.debug(f"No similarity data found between {country_iso} and peer {peer_iso} for {end_year}.")
-
-                    regional_context_data["regional_peer_alignment"] = sorted(
-                        alignment_scores, 
-                        key=lambda x: x["alignment_score"] if x["alignment_score"] is not None else -1, 
-                        reverse=True
-                    )
-                    
-                    # Calculate average regional alignment score
-                    valid_alignment_scores = [
-                        item["alignment_score"] for item in regional_context_data["regional_peer_alignment"]
-                        if item["alignment_score"] is not None
-                    ]
-                    if valid_alignment_scores:
-                        regional_context_data["average_regional_alignment_score"] = round(sum(valid_alignment_scores) / len(valid_alignment_scores), DECIMAL_PLACES)
-                    # else average_regional_alignment_score remains None (initialized above)
-                        
-                else:
-                    logging.warning(f"No similarity data found for the year {end_year} to calculate regional peer alignment.")
-            # Conditions where average_regional_alignment_score remains None (already initialized)
-            elif df_similarity.empty:
-                 logging.warning("Similarity DataFrame (df_similarity) is empty. Cannot calculate regional peer alignment.")
-            elif not peer_iso_codes:
-                logging.info(f"No regional peers found for {country_iso} in region {selected_country_region} or peers not in ISO3_TO_COUNTRY map.")
+                # Add full country names for the report
+                df_regional_peers_scores['country_name'] = df_regional_peers_scores['country_iso3'].map(ISO3_TO_COUNTRY)
+                
+                # Sort by alignment score
+                df_regional_peers_scores_sorted = df_regional_peers_scores.sort_values(by='alignment_score', ascending=False)
+                
+                output_cols = ['country_iso3', 'country_name', 'alignment_score']
+                regional_context_data["regional_peer_alignment"] = dataframe_to_json_list(
+                    df_regional_peers_scores_sorted[output_cols]
+                )
+                
+                # Calculate the average regional alignment score from the peers
+                if not df_regional_peers_scores_sorted.empty:
+                    avg_regional_score = df_regional_peers_scores_sorted['alignment_score'].mean()
+                    regional_context_data["average_regional_alignment_score"] = round(avg_regional_score, DECIMAL_PLACES)
+            else:
+                logging.warning(f"No regional peers or similarity data available to calculate regional context for {country_iso}.")
         else:
-            logging.warning(f"Country {country_iso} not found in UN region map.")
-    # else UN Region mapping not available, average_regional_alignment_score remains None (already initialized)
-        
-    results["regional_context"] = regional_context_data
-    # --- END REGIONAL CONTEXT SECTION ---
+            logging.warning(f"Could not determine UN Region for {country_iso}.")
+    else:
+        logging.warning("UN Region mapping not available. Skipping regional context analysis.")
 
-    logging.info(f"Report generation finished for {country_iso}.")
+    results['regional_context'] = regional_context_data
+    # ... Final data preparations and return ...
+    logging.info(f"Report generation for {country_iso} completed successfully.")
     return results
 
 # Removed the if __name__ == "__main__": block as this is now a module. 
