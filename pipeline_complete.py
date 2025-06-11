@@ -38,7 +38,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Optional, Dict, Any, Tuple, Callable
 from tqdm import tqdm
 from pydantic import BaseModel, Field
-from openai import OpenAI
+from openai import OpenAI, APIConnectionError, RateLimitError
 from dotenv import load_dotenv
 from dataclasses import dataclass
 from queue import Queue
@@ -189,8 +189,8 @@ def create_openai_client() -> OpenAI:
 
 def execute_api_call(api_call_fn, max_retries=5):
     """
-    Execute an API call with robust rate limit handling.
-    Uses exponential backoff with jitter on rate limit errors.
+    Execute an API call with robust rate limit and connection error handling.
+    Uses exponential backoff with jitter on retryable errors.
 
     Args:
         api_call_fn: Function that performs the API call.
@@ -205,20 +205,19 @@ def execute_api_call(api_call_fn, max_retries=5):
     while retries < max_retries:
         try:
             return api_call_fn(client)  # Attempt API call
+        except (RateLimitError, APIConnectionError) as e:
+            logger.warning(f"API Error ({type(e).__name__}). Retrying... (Attempt {retries+1}/{max_retries})")
+            
+            # Exponential backoff with jitter
+            wait_time = (2 ** retries) + random.uniform(0, 3)
+            logger.warning(f"Waiting {wait_time:.2f} seconds before retrying...")
+            time.sleep(wait_time)
+            
+            retries += 1
+            continue
         except Exception as e:
-            # Check for rate limit error
-            if hasattr(e, "response") and getattr(e.response, "status_code", None) == 429 or "429" in str(e):
-                logger.warning(f"API rate limit error. Retrying... (Attempt {retries+1}/{max_retries})")
-                
-                # Exponential backoff with jitter
-                wait_time = (2 ** retries) + random.uniform(0, 3)
-                logger.warning(f"Waiting {wait_time:.2f} seconds before retrying...")
-                time.sleep(wait_time)
-                
-                retries += 1
-                continue
-            else:
-                raise e  # Re-raise other errors
+            # Re-raise other, non-retryable errors
+            raise e
 
     logger.error("Max retries reached. Halting API calls for this request.")
     raise Exception("OpenAI API request failed after max retries")
