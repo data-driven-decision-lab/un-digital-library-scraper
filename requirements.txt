@@ -19,11 +19,5 @@ requests>=2.28.0
 argparse>=1.4.0
 regex>=2022.10.0
 
-# Concurrency
-concurrent-futures>=3.0.5  # For Python < 3.9; built into Python 3.9+
-
 # Date handling
 pytz>=2022.7
-
-# Logging and debugging
-logging>=0.5.1  # Usually part of Python standard library
