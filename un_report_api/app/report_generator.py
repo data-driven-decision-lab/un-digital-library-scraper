@@ -613,19 +613,19 @@ def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:
                 output_cols = ['country_iso3', 'country_name', 'alignment_score']
                 regional_context_data["regional_peer_alignment"] = dataframe_to_json_list(
                     df_regional_peers_scores_sorted[output_cols]
-                )
-                
+                    )
+                    
                 # Calculate the average regional alignment score from the peers
                 if not df_regional_peers_scores_sorted.empty:
                     avg_regional_score = df_regional_peers_scores_sorted['alignment_score'].mean()
                     regional_context_data["average_regional_alignment_score"] = round(avg_regional_score, DECIMAL_PLACES)
-            else:
+                else:
                 logging.warning(f"No regional peers or similarity data available to calculate regional context for {country_iso}.")
         else:
             logging.warning(f"Could not determine UN Region for {country_iso}.")
     else:
         logging.warning("UN Region mapping not available. Skipping regional context analysis.")
-
+        
     results['regional_context'] = regional_context_data
     # ... Final data preparations and return ...
     logging.info(f"Report generation for {country_iso} completed successfully.")
