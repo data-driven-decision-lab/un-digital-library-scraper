@@ -1426,28 +1426,46 @@ def collect_links_for_year(driver, year, existing_links):
 
 def get_available_years(driver):
     """Extract available years and their counts from the date facet."""
-    date_facets = []
+    logger.info("Attempting to get available years from the sidebar...")
     try:
-        WebDriverWait(driver, 15).until(
-            EC.presence_of_element_located((By.XPATH, "//ul[contains(@class, 'option-fct')]"))
+        # Wait for the main facet container to be loaded
+        WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'facet-container')]"))
         )
+        
+        date_facets = []
+        # Find the 'Date' header and its corresponding list
         date_headers = driver.find_elements(By.XPATH, "//h2[text()='Date']")
+        if not date_headers:
+            raise NoSuchElementException("Could not find the 'Date' facet header.")
+            
         for header in date_headers:
             try:
+                # Find the facet section associated with the header
                 facet_section = header.find_element(By.XPATH, "./following-sibling::ul[contains(@class, 'option-fct')]")
+                
+                # If the section is collapsed, try to expand it
                 if "expanded" not in facet_section.get_attribute("class"):
                     try:
                         show_more = header.find_element(By.XPATH, "./following-sibling::span[contains(@class, 'showmore')]")
                         driver.execute_script("arguments[0].click();", show_more)
-                        time.sleep(0.5)
+                        WebDriverWait(driver, 5).until(
+                            EC.visibility_of_element_located((By.XPATH, f"//ul[@id='{facet_section.get_attribute('id')}'][contains(@class, 'expanded')]"))
+                        )
                     except (NoSuchElementException, ElementNotInteractableException):
-                        pass
+                        logger.warning("Could not expand the date facet section.")
+                        pass # Continue even if expansion fails
+
+                # Find all year checkboxes within this section
                 year_inputs = facet_section.find_elements(By.XPATH, ".//input[@type='checkbox']")
                 for inp in year_inputs:
                     year_value = inp.get_attribute("value")
                     try:
+                        # Get the label associated with the checkbox
                         label = driver.find_element(By.XPATH, f"//label[@for='{inp.get_attribute('id')}']")
                         year_text = label.text.strip()
+                        
+                        # Extract year and count using regex
                         match = re.match(r'(\d{4})\s*\((\d+)\)', year_text)
                         if match:
                             year, count = match.group(1), int(match.group(2))
@@ -1458,14 +1476,23 @@ def get_available_years(driver):
                                 'input_value': year_value
                             })
                     except NoSuchElementException:
+                        logger.warning(f"Could not find label for checkbox with id: {inp.get_attribute('id')}")
                         continue
             except Exception as e:
-                logger.error(f"Error processing date header: {e}")
+                logger.error(f"Error processing a date header section: {e}")
                 continue
+        
+        if not date_facets:
+            raise ValueError("No year facets could be extracted from the page.")
+            
+        # Sort by year descending (most recent first)
         return sorted(date_facets, key=lambda x: x['year'], reverse=True)
-    except Exception as e:
-        logger.error(f"Error getting available years: {e}")
-        return []
+
+    except (TimeoutException, NoSuchElementException, ValueError) as e:
+        logger.error(f"CRITICAL: Failed to get available years. Error: {e}")
+        # Take a screenshot for debugging
+        driver.save_screenshot("logs/error_get_available_years.png")
+        raise RuntimeError("Could not retrieve available years from the website.") from e
 
 def select_year_facet(driver, year_data, max_retries=10):
     """
@@ -1596,21 +1623,42 @@ def main():
 
     # Initialize Selenium WebDriver
     driver = get_driver()
-    
-    # Get available years for scraping
-    years_data = get_available_years(driver)
-    
+    driver.get(BASE_SEARCH_URL)  # Go to the base page first
+
+    try:
+        # Get available years for scraping
+        years_data = get_available_years(driver)
+    except RuntimeError as e:
+        logger.error(f"Halting pipeline because years could not be fetched: {e}")
+        driver.quit()
+        return
+
     # Sort years from oldest to newest to process chronologically
-    sorted_years = sorted(years_data.keys(), key=int)
+    sorted_years_data = sorted(years_data, key=lambda x: int(x['year']))
     
     all_new_data = []
 
-    for year in sorted_years:
+    for year_data in sorted_years_data:
+        year = year_data['year']
         logger.info(f"--- Processing year: {year} ---")
         
+        # Select the year facet
+        success, driver = select_year_facet(driver, year_data)
+        if not success:
+            logger.error(f"Failed to select facet for year {year}. Skipping.")
+            clear_filters(driver)
+            continue
+            
         # Collect all resolution links for the year, filtering against existing ones
-        new_links = collect_links_for_year(driver, years_data[year], existing_links)
+        try:
+            new_links = collect_links_for_year(driver, year, existing_links)
+        except DuplicateLinkFound as e:
+            logger.info(f"Duplicate link found for year {year}, stopping collection for this year as planned.")
+            new_links = e.new_links # get the new links that were collected before the duplicate
         
+        # After collecting links, clear the filter to prepare for the next year
+        clear_filters(driver)
+
         if not new_links:
             logger.info(f"No new resolutions found for year {year}.")
             continue
@@ -1618,8 +1666,14 @@ def main():
         logger.info(f"Found {len(new_links)} new resolutions to scrape for year {year}.")
 
         # Scrape and process new resolutions in parallel
-        scraped_data = parallel_scrape_resolutions(new_links, year, num_workers=MAX_WORKERS)
+        scraped_data, failed_links = parallel_scrape_resolutions(new_links, year, num_workers=MAX_WORKERS)
         
+        # Retry failed links once
+        if failed_links:
+            logger.info(f"Retrying {len(failed_links)} failed links for year {year}.")
+            retried_data = retry_failed_links(failed_links, year)
+            scraped_data.extend(retried_data)
+
         if not scraped_data:
             logger.warning(f"No data was successfully scraped for year {year}.")
             continue
