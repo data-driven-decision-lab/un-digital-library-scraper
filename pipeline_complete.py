@@ -1615,7 +1615,8 @@ def get_links_from_supabase() -> set:
 def upload_to_supabase(df: pd.DataFrame):
     """
     Uploads new rows to the 'un_votes_raw' table in Supabase.
-    It checks for existing rows based on the 'token' column to avoid duplicates.
+    It performs a final check for existing rows and de-duplicates the upload batch
+    to prevent errors from race conditions or upstream duplicate collection.
 
     Args:
         df (pd.DataFrame): The DataFrame containing new rows to potentially upload.
@@ -1635,21 +1636,37 @@ def upload_to_supabase(df: pd.DataFrame):
 
     try:
         supabase: Client = create_client(supabase_url, supabase_key)
-        logger.info("Fetching existing row tokens from Supabase...")
-        response = supabase.table('un_votes_raw').select('token').execute()
         
-        existing_tokens = set()
+        # This check is largely redundant since the main scraper is guided by this data,
+        # but it serves as a final safeguard against race conditions.
+        logger.info("Fetching existing row Links from Supabase for final check...")
+        response = supabase.table('un_votes_raw').select('Link').execute()
+        
+        existing_links = set()
         if response.data:
-            existing_tokens = {item['token'] for item in response.data}
-        logger.info(f"Found {len(existing_tokens)} existing tokens in Supabase.")
+            # Normalize links to ensure accurate comparison
+            existing_links = {normalize_link(item['Link']) for item in response.data if item.get('Link')}
+        logger.info(f"Found {len(existing_links)} existing links in Supabase for final check.")
 
-        df_to_upload = df[~df['token'].isin(existing_tokens)].copy()
+        # Filter out rows that might already exist in the database
+        df['normalized_link'] = df['Link'].apply(normalize_link)
+        df_to_upload = df[~df['normalized_link'].isin(existing_links)].copy()
+        df_to_upload.drop(columns=['normalized_link'], inplace=True)
+
+        # CRITICAL FIX: Prevent "cannot affect row a second time" error by ensuring
+        # the batch itself has no duplicates on the conflict column ('Link').
+        original_row_count = len(df_to_upload)
+        df_to_upload.drop_duplicates(subset=['Link'], keep='first', inplace=True)
+        new_row_count = len(df_to_upload)
+
+        if new_row_count < original_row_count:
+            logger.warning(f"Removed {original_row_count - new_row_count} duplicate rows from the upload batch.")
 
         if df_to_upload.empty:
-            logger.info("All new rows are already present in Supabase. Nothing to upload.")
+            logger.info("All new rows are already present in Supabase or were duplicates. Nothing to upload.")
             return
 
-        logger.info(f"Attempting to upload {len(df_to_upload)} new rows to Supabase.")
+        logger.info(f"Attempting to upload {len(df_to_upload)} new unique rows to Supabase.")
 
         df_to_upload.replace({np.nan: None}, inplace=True)
         
