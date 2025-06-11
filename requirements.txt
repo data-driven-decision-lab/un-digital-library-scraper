@@ -1,12 +1,29 @@
-pandas
-numpy
-openai
-tqdm
-python-dotenv
-pydantic
-selenium
-beautifulsoup4
-webdriver-manager
-requests
-pycountry
-supabase 
+# Core dependencies
+pandas>=1.5.0
+numpy>=1.22.0
+openai>=1.0.0
+tqdm>=4.64.0
+python-dotenv>=0.21.0
+
+# Data validation and modeling
+pydantic>=2.0.0
+dataclasses>=0.6
+
+# Web scraping
+selenium>=4.10.0
+beautifulsoup4>=4.11.0
+webdriver-manager>=3.8.0
+requests>=2.28.0
+
+# Parsing and text processing
+argparse>=1.4.0
+regex>=2022.10.0
+
+# Concurrency
+concurrent-futures>=3.0.5  # For Python < 3.9; built into Python 3.9+
+
+# Date handling
+pytz>=2022.7
+
+# Logging and debugging
+logging>=0.5.1  # Usually part of Python standard library

@@ -25,7 +25,7 @@ jobs:
 
       - name: Run Python script with Supabase env
         env:
+          API_KEY: ${{ secrets.API_KEY }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          API_KEY: ${{ secrets.API_KEY }}
         run: python pipeline_complete.py

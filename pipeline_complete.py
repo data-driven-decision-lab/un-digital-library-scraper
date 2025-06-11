@@ -3,18 +3,23 @@
 Combined UN Resolution Scraper & Tagging Pipeline with Enhanced Geo-Tagging
 
 This script:
-  • Connects to Supabase to fetch existing resolution links.
-  • Runs the scraper to obtain new resolution rows (skipping rows already present).
-  • Performs dual classification on new rows:
+  • Loads an existing master CSV containing all rows
+  • Runs the scraper to obtain new resolution rows (skipping rows already present)
+  • Performs dual classification:
     - Regular tagging for subject categorization (tags column)
-    - Enhanced geo-tagging for country, subregion, and continent.
-  • Appends the new, tagged rows to the 'un_votes_raw' table in Supabase.
-  • Writes out a local CSV file with the new data for backup.
+    - Enhanced geo-tagging with both regex pattern matching and LLM analysis for:
+      * country (ISO codes when possible)
+      * subregion 
+      * continent
+  • Merges new rows with existing data, sorts by Date (oldest row gets id 0),
+    reassigns the id, and reorders columns appropriately
+  • Writes out a final CSV file whose filename includes the current scrape date
   
 Requirements:
-  - Supabase environment variables (URL and Key) must be set.
-  - The scraper identifies new rows based on the unique 'Link' attribute.
-  - Only new rows are processed and uploaded.
+  - The scraper outputs all rows in a CSV
+  - Only new rows (based on unique tokens) are processed for tagging
+  - The final CSV contains the complete set of rows
+  - Only one API key is used (set via the API_KEY environment variable)
 """
 import sys
 import os
@@ -41,15 +46,15 @@ from dictionaries.un_classification import un_classification
 from dictionaries.un_geo_hierarchy import geo_hierarchy
 from dictionaries.iso2_country import iso2_country_code
 import pycountry
-from supabase import create_client, Client
 
 import random
 import logging
-os.environ['WDM_LOG_LEVEL'] = '0'
+import os
 import time
 import glob
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import argparse
+from supabase import create_client, Client
 
 
 
@@ -73,10 +78,10 @@ from webdriver_manager.chrome import ChromeDriverManager
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%Y-%m-%S",
+    datefmt="%H:%M:%S",
     handlers=[
         logging.StreamHandler(),  # Console handler
-        logging.FileHandler("logs/un_scraper_tagger.log", mode='w')  # File handler
+        logging.FileHandler("logs/un_scraper_tagger.log")  # File handler
     ]
 )
 logger = logging.getLogger(__name__)
@@ -89,12 +94,6 @@ API_KEY = os.getenv("API_KEY")
 if not API_KEY:
     raise ValueError("API_KEY not found in environment variables.")
 
-# Supabase configuration
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-if not SUPABASE_URL or not SUPABASE_KEY:
-    raise ValueError("Supabase URL or Key not found in environment variables.")
-
 # ---------------- Global Settings ----------------
 DEFAULT_MODEL = "gpt-4o-mini"
 DEFAULT_TEMPERATURE = 0.2
@@ -103,25 +102,6 @@ DEFAULT_MAX_WORKERS = 2  # For parallel scraping
 
 # Create directories
 os.makedirs("pipeline_output", exist_ok=True)
-os.makedirs("logs", exist_ok=True)
-
-
-def create_supabase_client() -> Client:
-    """Initializes and returns a Supabase client."""
-    return create_client(SUPABASE_URL, SUPABASE_KEY)
-
-def get_existing_links_from_supabase(client: Client) -> set:
-    """Fetches all unique 'Link' values from the 'un_votes_raw' table."""
-    logger.info("Fetching existing resolution links from Supabase...")
-    try:
-        response = client.table('un_votes_raw').select('Link').execute()
-        if response.data:
-            links = {item['Link'] for item in response.data if 'Link' in item}
-            logger.info(f"Found {len(links)} existing links in Supabase.")
-            return links
-    except Exception as e:
-        logger.error(f"Error fetching links from Supabase: {e}")
-        return set()
 
 # Find the most recent CSV file in the pipeline_output folder
 def get_latest_master_csv():
@@ -155,15 +135,9 @@ def get_latest_master_csv():
         latest_file = max(dated_files, key=lambda x: x[1])[0]
         return latest_file
     
-    # Fallback: if date parsing fails, use modification time, or create new if none exist
-    if csv_files:
-        latest_file = max(csv_files, key=os.path.getmtime)
-        return latest_file
-    else:
-        # No existing files, create a default filename with today's date
-        today = datetime.now().strftime("%Y-%m-%d")
-        return f"pipeline_output/UN_VOTING_DATA_RAW_WITH_TAGS_{today}.csv"
-
+    # Fallback: if date parsing fails, use modification time
+    latest_file = max(csv_files, key=os.path.getmtime)
+    return latest_file
 
 # Set the master CSV file
 MASTER_CSV = get_latest_master_csv()
@@ -1133,24 +1107,36 @@ def tag_new_rows(new_df, geo_hierarchy, iso2_country_code, model=DEFAULT_MODEL, 
 # -------------------- Scraper Pipeline Functions --------------------
 
 def get_driver():
-    """Initializes and returns a Selenium WebDriver instance for a headless environment."""
+    """Initialize and return a Selenium Chrome driver with a rotated user-agent."""
+    global user_agent_index
     options = Options()
-    options.add_argument(f"user-agent={random.choice(USER_AGENTS)}")
-    # Use the new, more modern headless mode which is less detectable
-    options.add_argument("--headless=new")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
+    if os.getenv('CI'):
+        options.add_argument("--headless")
     options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")
     options.add_argument("--window-size=1920,1080")
-    
-    # Set up the service using WebDriver Manager
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    user_agent = USER_AGENTS[user_agent_index]
+    user_agent_index = (user_agent_index + 1) % len(USER_AGENTS)
+    options.add_argument(f"user-agent={user_agent}")
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option("useAutomationExtension", False)
+    options.add_argument("--disable-extensions")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--js-flags=--expose-gc")
+    options.add_argument("--aggressive-cache-discard")
+    options.add_argument("--disable-site-isolation-trials")
+    driver_path = ChromeDriverManager().install()
     try:
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=options)
-        return driver
+        os.chmod(driver_path, 0o755)
     except Exception as e:
-        logger.error(f"Failed to initialize WebDriver: {e}")
-        raise
+        logger.warning(f"Could not set permissions for {driver_path}: {e}")
+    service = Service(executable_path=driver_path)
+    driver = webdriver.Chrome(service=service, options=options)
+    driver.set_page_load_timeout(45)
+    driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+    logger.info(f"Initialized browser with user-agent: {user_agent}")
+    return driver
 
 def normalize_link(href):
     """Normalize a UN record URL from the given href."""
@@ -1427,46 +1413,28 @@ def collect_links_for_year(driver, year, existing_links):
 
 def get_available_years(driver):
     """Extract available years and their counts from the date facet."""
-    logger.info("Attempting to get available years from the sidebar...")
+    date_facets = []
     try:
-        # Wait for the main facet container to be loaded
-        WebDriverWait(driver, 20).until(
-            EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'facet-container')]"))
+        WebDriverWait(driver, 15).until(
+            EC.presence_of_element_located((By.XPATH, "//ul[contains(@class, 'option-fct')]"))
         )
-        
-        date_facets = []
-        # Find the 'Date' header and its corresponding list
         date_headers = driver.find_elements(By.XPATH, "//h2[text()='Date']")
-        if not date_headers:
-            raise NoSuchElementException("Could not find the 'Date' facet header.")
-            
         for header in date_headers:
             try:
-                # Find the facet section associated with the header
                 facet_section = header.find_element(By.XPATH, "./following-sibling::ul[contains(@class, 'option-fct')]")
-                
-                # If the section is collapsed, try to expand it
                 if "expanded" not in facet_section.get_attribute("class"):
                     try:
                         show_more = header.find_element(By.XPATH, "./following-sibling::span[contains(@class, 'showmore')]")
                         driver.execute_script("arguments[0].click();", show_more)
-                        WebDriverWait(driver, 5).until(
-                            EC.visibility_of_element_located((By.XPATH, f"//ul[@id='{facet_section.get_attribute('id')}'][contains(@class, 'expanded')]"))
-                        )
-                    except (NoSuchElementException, ElementNotInteractableException, TimeoutException):
-                        logger.warning("Could not expand the date facet section.")
-                        pass # Continue even if expansion fails
-
-                # Find all year checkboxes within this section
+                        time.sleep(0.5)
+                    except (NoSuchElementException, ElementNotInteractableException):
+                        pass
                 year_inputs = facet_section.find_elements(By.XPATH, ".//input[@type='checkbox']")
                 for inp in year_inputs:
                     year_value = inp.get_attribute("value")
                     try:
-                        # Get the label associated with the checkbox
                         label = driver.find_element(By.XPATH, f"//label[@for='{inp.get_attribute('id')}']")
                         year_text = label.text.strip()
-                        
-                        # Extract year and count using regex
                         match = re.match(r'(\d{4})\s*\((\d+)\)', year_text)
                         if match:
                             year, count = match.group(1), int(match.group(2))
@@ -1477,23 +1445,14 @@ def get_available_years(driver):
                                 'input_value': year_value
                             })
                     except NoSuchElementException:
-                        logger.warning(f"Could not find label for checkbox with id: {inp.get_attribute('id')}")
                         continue
             except Exception as e:
-                logger.error(f"Error processing a date header section: {e}")
+                logger.error(f"Error processing date header: {e}")
                 continue
-        
-        if not date_facets:
-            raise ValueError("No year facets could be extracted from the page.")
-            
-        # Sort by year descending (most recent first)
         return sorted(date_facets, key=lambda x: x['year'], reverse=True)
-
-    except (TimeoutException, NoSuchElementException, ValueError) as e:
-        logger.error(f"CRITICAL: Failed to get available years. Error: {e}")
-        # Take a screenshot for debugging
-        driver.save_screenshot("logs/error_get_available_years.png")
-        raise RuntimeError("Could not retrieve available years from the website.") from e
+    except Exception as e:
+        logger.error(f"Error getting available years: {e}")
+        return []
 
 def select_year_facet(driver, year_data, max_retries=10):
     """
@@ -1616,119 +1575,308 @@ def retry_failed_links(failed_links, year):
     logging.info(f"Retried {len(failed_links)} links, successfully recovered {len(retried_rows)} records.")
     return retried_rows
 
-def main():
-    """Main function to orchestrate the scraping and tagging pipeline."""
-    # Initialize Supabase client and get existing links
-    supabase_client = create_supabase_client()
-    existing_links = get_existing_links_from_supabase(supabase_client)
+# -------------------- Supabase Functions --------------------
 
-    # Initialize Selenium WebDriver
-    driver = get_driver()
-    driver.get(BASE_SEARCH_URL)  # Go to the base page first
+def get_links_from_supabase() -> set:
+    """
+    Fetches all existing record links from the 'un_votes_raw' table in Supabase.
+
+    Returns:
+        set: A set of unique, normalized links from Supabase.
+    """
+    logger.info("Fetching existing links from Supabase to guide scraping...")
+
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_KEY")
+
+    if not supabase_url or not supabase_key:
+        logger.warning("SUPABASE_URL or SUPABASE_KEY not set. Cannot fetch links from Supabase.")
+        return set()
+
+    links = set()
+    try:
+        supabase: Client = create_client(supabase_url, supabase_key)
+        response = supabase.table('un_votes_raw').select('Link').execute()
+        
+        if response.data:
+            for item in response.data:
+                if 'Link' in item and item['Link']:
+                    norm_link = normalize_link(item['Link'])
+                    if norm_link:
+                        links.add(norm_link)
+        
+        logger.info(f"Found {len(links)} unique links in Supabase table 'un_votes_raw'.")
+
+    except Exception as e:
+        logger.error(f"Could not fetch links from Supabase: {e}")
+    
+    return links
+
+def upload_to_supabase(df: pd.DataFrame):
+    """
+    Uploads new rows to the 'un_votes_raw' table in Supabase.
+    It checks for existing rows based on the 'token' column to avoid duplicates.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing new rows to potentially upload.
+    """
+    if df.empty:
+        logger.info("No new rows to upload to Supabase.")
+        return
+
+    logger.info("Starting Supabase upload process...")
+
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_KEY")
+
+    if not supabase_url or not supabase_key:
+        logger.warning("SUPABASE_URL or SUPABASE_KEY environment variables not set. Skipping Supabase upload.")
+        return
 
     try:
-        # Get available years for scraping
-        years_data = get_available_years(driver)
-    except RuntimeError as e:
-        logger.error(f"Halting pipeline because years could not be fetched: {e}")
+        supabase: Client = create_client(supabase_url, supabase_key)
+        logger.info("Fetching existing row tokens from Supabase...")
+        response = supabase.table('un_votes_raw').select('token').execute()
+        
+        existing_tokens = set()
+        if response.data:
+            existing_tokens = {item['token'] for item in response.data}
+        logger.info(f"Found {len(existing_tokens)} existing tokens in Supabase.")
+
+        df_to_upload = df[~df['token'].isin(existing_tokens)].copy()
+
+        if df_to_upload.empty:
+            logger.info("All new rows are already present in Supabase. Nothing to upload.")
+            return
+
+        logger.info(f"Attempting to upload {len(df_to_upload)} new rows to Supabase.")
+
+        df_to_upload.replace({np.nan: None}, inplace=True)
+        
+        if 'Date' in df_to_upload.columns and pd.api.types.is_datetime64_any_dtype(df_to_upload['Date']):
+            df_to_upload['Date'] = df_to_upload['Date'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        
+        rows_to_insert = df_to_upload.to_dict(orient='records')
+        supabase.table('un_votes_raw').insert(rows_to_insert).execute()
+        
+        logger.info(f"Successfully uploaded {len(df_to_upload)} rows to Supabase.")
+
+    except Exception as e:
+        logger.error(f"An error occurred during Supabase upload: {e}")
+
+
+def main():
+    """
+    Main function that integrates scraping, tagging, and geo-tagging:
+      - Loads the master CSV (for reference) but does NOT modify it
+      - Scrapes new rows to add to the dataset
+      - Tags only the new rows with both regular tagging and geo-tagging
+      - Standardizes country columns to ISO3 codes
+      - Saves the full dataset (new + old rows) into a new CSV file
+    """
+    # Import required geo hierarchy and ISO code mappings
+    try:
+        from dictionaries.un_geo_hierarchy import geo_hierarchy
+        from dictionaries.iso2_country import iso2_country_code
+    except ImportError:
+        logger.error("Could not import geo_hierarchy and iso2_country_code. Please make sure these modules are available.")
+        return
+    
+    # Create master CSV directory if needed
+    if os.path.dirname(MASTER_CSV):
+        os.makedirs(os.path.dirname(MASTER_CSV), exist_ok=True)
+    
+    # Load existing master CSV (if it exists)
+    if os.path.exists(MASTER_CSV):
+        master_df = pd.read_csv(MASTER_CSV, dtype=str)
+        logger.info(f"Loaded {len(master_df)} existing rows from master CSV.")
+    else:
+        master_df = pd.DataFrame()
+        logger.info("No master CSV found; starting fresh.")
+    
+    # Get existing links from Supabase to guide the scraper
+    existing_links = get_links_from_supabase()
+    logger.info(f"Loaded {len(existing_links)} unique links from Supabase for deduplication.")
+    
+    # Initialize Selenium driver and load the base search page
+    driver = get_driver()
+    driver.get(BASE_SEARCH_URL)
+    time.sleep(2)
+    
+    years_data = get_available_years(driver)
+    if not years_data:
+        logger.error("No years found on the page. Check the website structure.")
         driver.quit()
         return
-
-    # Sort years from oldest to newest to process chronologically
-    sorted_years_data = sorted(years_data, key=lambda x: int(x['year']))
+    logger.info(f"Found {len(years_data)} years to process")
     
-    all_new_data = []
+    new_rows_all = []
+    session_request_count = 0
+    SESSION_RESET_THRESHOLD = 150
+    stop_processing = False  # Flag to stop processing further years
 
-    for year_data in sorted_years_data:
-        year = year_data['year']
-        logger.info(f"--- Processing year: {year} ---")
+    try:
+        check_one_more_year = False  # Flag to indicate if we should check one more year
         
-        # Select the year facet
-        success, driver = select_year_facet(driver, year_data)
-        if not success:
-            logger.error(f"Failed to select facet for year {year}. Skipping.")
-            clear_filters(driver)
-            continue
+        for year_data in years_data:
+            year = year_data['year']
+            logger.info(f"\n{'='*60}\nProcessing year {year} ({year_data['count']} records)\n{'='*60}")
             
-        # Collect all resolution links for the year, filtering against existing ones
-        try:
-            new_links = collect_links_for_year(driver, year, existing_links)
-        except DuplicateLinkFound as e:
-            logger.info(f"Duplicate link found for year {year}, stopping collection for this year as planned.")
-            new_links = e.new_links # get the new links that were collected before the duplicate
-        
-        # After collecting links, clear the filter to prepare for the next year
-        clear_filters(driver)
-
-        if not new_links:
-            logger.info(f"No new resolutions found for year {year}.")
-            continue
+            # Refresh the session if threshold exceeded
+            if session_request_count > SESSION_RESET_THRESHOLD:
+                driver.quit()
+                driver = get_driver()
+                driver.get(BASE_SEARCH_URL)
+                time.sleep(2)
+                session_request_count = 0
             
-        logger.info(f"Found {len(new_links)} new resolutions to scrape for year {year}.")
+            # Use the facet selection function that handles errors and user-agent rotation
+            success, driver = select_year_facet(driver, year_data)
+            if not success:
+                logger.error(f"Failed to select facet for {year}; skipping to next year.")
+                continue
+            session_request_count += 1
+            
+            # Attempt to collect new links. If a duplicate is encountered, catch the exception
+            try:
+                new_links = collect_links_for_year(driver, year, existing_links)
+            except DuplicateLinkFound as e:
+                # The new_links attribute should now contain all links found before the duplicate
+                new_links = e.new_links
+                logger.info(f"Duplicate link encountered; found {len(new_links)} new links before duplicate in year {year}")
+                if not check_one_more_year:
+                    check_one_more_year = True
+                else:
+                    stop_processing = True
 
-        # Scrape and process new resolutions in parallel
-        scraped_data, failed_links = parallel_scrape_resolutions(new_links, year, num_workers=MAX_WORKERS)
-        
-        # Retry failed links once
-        if failed_links:
-            logger.info(f"Retrying {len(failed_links)} failed links for year {year}.")
-            retried_data = retry_failed_links(failed_links, year)
-            scraped_data.extend(retried_data)
-
-        if not scraped_data:
-            logger.warning(f"No data was successfully scraped for year {year}.")
-            continue
-
-        # Convert scraped data to DataFrame
-        new_df = pd.DataFrame(scraped_data)
-        
-        # --- Tagging and Classification for New Rows ---
-        logger.info(f"Starting tagging process for {len(new_df)} new rows for year {year}...")
-        
-        # Perform geo-tagging and subject tagging
-        tagged_df = tag_new_rows(new_df.copy(), geo_hierarchy, iso2_country_code, model=DEFAULT_MODEL, max_workers=MAX_WORKERS)
-        
-        # Standardize country columns to ISO codes
-        final_df = standardize_country_columns(tagged_df)
-        
-        # Append to the list of all new data
-        all_new_data.append(final_df)
-
-    # Close the WebDriver
-    driver.quit()
-
-    if not all_new_data:
-        logger.info("No new resolutions found across all years. Pipeline finished.")
-        return
-
-    # Combine all new data from all years into a single DataFrame
-    combined_new_df = pd.concat(all_new_data, ignore_index=True)
-    
-    logger.info(f"Total new resolutions processed: {len(combined_new_df)}")
-
-    # --- Upload new data to Supabase ---
-    if not combined_new_df.empty:
-        logger.info("Uploading new data to Supabase...")
-        # Convert DataFrame to list of dictionaries for upload
-        records_to_upload = combined_new_df.to_dict(orient='records')
-        
-        try:
-            response = supabase_client.table('un_votes_raw').insert(records_to_upload).execute()
-            if response.data:
-                logger.info(f"Successfully uploaded {len(response.data)} new rows to Supabase.")
+            if new_links:
+                logger.info(f"Collected {len(new_links)} new links for year {year}")
+                check_one_more_year = False  # Reset the flag since we found new links
+                # Process links: use parallel scraping if many links; otherwise, batch process
+                BATCH_SIZE = 40
+                if len(new_links) > 50 and MAX_WORKERS > 1:
+                    logger.info(f"Using parallel processing with {MAX_WORKERS} workers")
+                    batch_rows, failed_links = parallel_scrape_resolutions(new_links, year, MAX_WORKERS)
+                    if batch_rows:
+                        new_rows_all.extend(batch_rows)
+                    if failed_links:
+                        retry_rows = retry_failed_links(failed_links, year)
+                        if retry_rows:
+                            new_rows_all.extend(retry_rows)
+                else:
+                    for i in range(0, len(new_links), BATCH_SIZE):
+                        session_request_count += 1
+                        if session_request_count >= SESSION_RESET_THRESHOLD:
+                            logger.info(f"Session reset threshold reached ({SESSION_RESET_THRESHOLD} requests)")
+                            driver.quit()
+                            driver = get_driver()
+                            driver.get(BASE_SEARCH_URL)
+                            time.sleep(2)
+                            session_request_count = 0
+                        batch_links = new_links[i:i+BATCH_SIZE]
+                        logger.info(f"Processing batch {i//BATCH_SIZE + 1}/{(len(new_links) + BATCH_SIZE - 1)//BATCH_SIZE} ({len(batch_links)} links)")
+                        batch_rows, failed_links = batch_scrape_resolutions(batch_links, driver, year)
+                        if batch_rows:
+                            new_rows_all.extend(batch_rows)
+                        if failed_links:
+                            retry_rows = retry_failed_links(failed_links, year)
+                            if retry_rows:
+                                new_rows_all.extend(retry_rows)
+                
+                # Update the in-memory set to avoid reprocessing these links
+                existing_links.update(new_links)
             else:
-                logger.error(f"Failed to upload to Supabase. Response: {response}")
-        except Exception as e:
-            logger.error(f"An error occurred during Supabase upload: {e}")
+                if not check_one_more_year:
+                    logger.info(f"No new links found for year {year}, will check one more year.")
+                    check_one_more_year = True
+                else:
+                    logger.info(f"No new links found for second consecutive year, stopping scraping process.")
+                    stop_processing = True
+            
+            clear_filters(driver)
+            time.sleep(1)
 
-    # --- Save a local copy of the new data ---
-    today_str = datetime.now().strftime("%Y-%m-%d")
-    new_data_filename = f"pipeline_output/NEW_DATA_{today_str}.csv"
-    combined_new_df.to_csv(new_data_filename, index=False)
-    logger.info(f"Saved a local copy of new data to {new_data_filename}")
+            if stop_processing:
+                logger.info("Stopping further year processing.")
+                break
     
-    logger.info("Pipeline finished successfully.")
+    except Exception as general_e:
+        logger.error(f"An error occurred during processing: {general_e}")
+    finally:
+        driver.quit()
+    
+    logger.info(f"Scraping complete. {len(new_rows_all)} new rows collected.")
+    
+    if not new_rows_all:
+        logger.info("No new rows to process. Exiting.")
+        return
+    
+    # Create DataFrame from new rows and tag only these new rows
+    new_df = pd.DataFrame(new_rows_all)
+    
+    # Apply both regular tagging and geo-tagging to the new rows
+    tagged_new_df = tag_new_rows(
+        new_df, 
+        geo_hierarchy=geo_hierarchy,
+        iso2_country_code=iso2_country_code,
+        model=DEFAULT_MODEL,
+        max_workers=DEFAULT_MAX_WORKERS
+    )
+    
+    # Get tokens from new rows to identify them later for Supabase upload
+    new_row_tokens = list(tagged_new_df['token'].unique()) if not tagged_new_df.empty else []
 
+    # Merge new rows with master data to create a complete dataset
+    if not master_df.empty:
+        # If the master data already has geo columns, keep them for old rows
+        # and only add the new tagged rows
+        combined_df = pd.concat([master_df, tagged_new_df], ignore_index=True)
+    else:
+        combined_df = tagged_new_df
+    
+    # Standardize country columns to ISO3 codes
+    logger.info("Standardizing country columns to ISO3 codes...")
+    combined_df = standardize_country_columns(combined_df)
+    
+    # Standardize: sort by Date (oldest first), reassign id, and reorder columns
+    combined_df['Date'] = pd.to_datetime(combined_df['Date'], errors='coerce')
+    combined_df = combined_df.sort_values('Date', ascending=True).reset_index(drop=True)
+    combined_df['id'] = combined_df.index
+    
+    # Define the preferred column order with geo columns
+    # First get all columns in the DataFrame
+    cols = list(combined_df.columns)
+    
+    # Remove id, country, subregion, continent, tags - we'll place these explicitly
+    for col in ['id', 'country', 'subregion', 'continent', 'tags']:
+        if col in cols:
+            cols.remove(col)
+    
+    # If 'Resolution' exists, place geographic columns after it
+    if "Resolution" in cols:
+        resolution_index = cols.index("Resolution")
+        new_order = ['id'] + cols[:resolution_index+1] + ['country', 'subregion', 'continent', 'tags'] + cols[resolution_index+1:]
+    else:
+        # Fallback if Resolution doesn't exist
+        new_order = ['id'] + ['country', 'subregion', 'continent', 'tags'] + cols
+    
+    # Reorder the columns
+    final_cols = [col for col in new_order if col in combined_df.columns]
+    combined_df = combined_df[final_cols]
+    
+    # Write final CSV with the current scrape date appended
+    scrape_date = datetime.now().strftime("%Y-%m-%d")
+    output_csv = f"pipeline_output/UN_VOTING_DATA_RAW_WITH_TAGS_{scrape_date}.csv"
+    combined_df.to_csv(output_csv, index=False)
+    logger.info(f"Final CSV written with {len(combined_df)} rows to {output_csv}")
+    
+    # Upload new rows to Supabase
+    if new_row_tokens:
+        rows_to_upload_df = combined_df[combined_df['token'].isin(new_row_tokens)].copy()
+        upload_to_supabase(rows_to_upload_df)
+
+    # Master CSV remains unchanged
+    logger.info("Master CSV was NOT modified.")
 
 if __name__ == "__main__":
     main()
