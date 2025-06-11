@@ -1657,9 +1657,11 @@ def upload_to_supabase(df: pd.DataFrame):
             df_to_upload['Date'] = df_to_upload['Date'].dt.strftime('%Y-%m-%d %H:%M:%S')
         
         rows_to_insert = df_to_upload.to_dict(orient='records')
-        supabase.table('un_votes_raw').insert(rows_to_insert).execute()
         
-        logger.info(f"Successfully uploaded {len(df_to_upload)} rows to Supabase.")
+        # Use upsert to avoid race conditions and duplicate entries
+        supabase.table('un_votes_raw').upsert(rows_to_insert, on_conflict='Link').execute()
+        
+        logger.info(f"Successfully upserted {len(df_to_upload)} rows to Supabase.")
 
     except Exception as e:
         logger.error(f"An error occurred during Supabase upload: {e}")
