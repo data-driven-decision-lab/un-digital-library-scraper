@@ -8,11 +8,13 @@ This FastAPI application provides API endpoints to generate JSON reports on UN v
     Ensure you have the main `un_report_api` directory and an `app` subdirectory within it.
 
 2.  **Add Data Files:**
-    -   Create a directory `un_report_api/app/required_csvs/` (Note: previous versions may have mentioned `dashboard_output`, please use `required_csvs`).
-    -   Copy your data CSV files (e.g., `annual_scores.csv`, `pairwise_similarity_yearly.csv`, `topic_votes_yearly.csv`) into this `required_csvs` directory. The API's report generator and ranking scripts expect them here.
-        - `annual_scores.csv` is crucial for both main reports and yearly rankings.
-        - `pairwise_similarity_yearly.csv` is used for ally/enemy calculations and P5 alignment in the main report.
-        - `topic_votes_yearly.csv` is used for topic-based voting analysis in the main report.
+    -   Create a directory `un_report_api/app/required_csvs/`.
+    -   Copy your data CSV files into this `required_csvs` directory. The report and ranking generators expect them here.
+        - `annual_scores.csv`: Crucial for reports and rankings. Contains yearly pillar scores and ranks for all countries.
+        - `pairwise_similarity_yearly.csv`: Used for ally/enemy/P5/regional alignment calculations. Contains pre-calculated yearly similarity scores between all country pairs.
+        - `topic_votes_yearly.csv`: Used for topic-based voting analysis in the main report.
+        - `UN_Country_Region_Mapping.csv`: Provides the mapping from country ISO codes to their UN region.
+        - `country_classifications_2023.csv`: Contains flags for OECD, G20, and top/bottom 50 GDP/Population status, used to enrich the rankings endpoint.
 
 3.  **Install Dependencies:**
     Navigate to the `un_report_api` directory in your terminal and run:
@@ -67,8 +69,10 @@ Generates a comprehensive report for the specified country over a period.
 -   `index_score_analysis`: Start/end year scores and ranks for the selected country.
 -   `voting_behavior_overall`: Aggregated voting statistics for the country vs. the world over the period.
 -   `most_aligned_p5_member`: Identifies the UN Security Council P5 member (China, France, Russia, UK, USA) the selected country has the highest voting alignment with over the period, based on similarity scores. If the selected country is a P5 member, it shows alignment with another P5 member.
+-   `least_aligned_p5_member`: The P5 member the selected country is least aligned with.
+-   `regional_context`: Provides analysis of the country within its UN Region, including a list of `regional_peer_alignment` scores (how the selected country's voting record aligns with its geographic neighbors) and the `average_regional_alignment_score`.
 -   `scores_timeseries`: Yearly breakdown of pillar scores and ranks for the country, including world averages per year.
--   `top_allies` / `top_enemies`: Countries most and least aligned with the selected country.
+-   `top_allies` / `top_enemies`: Countries most and least aligned with the selected country based on average voting similarity over the period.
 -   `top_supported_topics` / `top_opposed_topics`: Topics most supported and opposed by the country.
 -   `all_topic_voting`: Detailed voting record across all topics for the country vs. the world.
 
@@ -88,7 +92,12 @@ Provides yearly rankings for all countries across different pillars.
     -   `pillar_2_rankings`: List of countries ranked by Pillar 2 score.
     -   `pillar_3_rankings`: List of countries ranked by Pillar 3 score.
     -   `average_pillar_rankings`: List of countries ranked by the average of pillar scores (or total index average).
-    -   Each ranking entry includes country name, value, rank, rank change from the previous year, and value change from the previous year.
+    -   Each ranking entry is enriched with the following data:
+        - `country_name` and `country_code`
+        - The score `value` and its global `rank`.
+        - `rank_change` and `value_change` (1-year change).
+        - `rank_change_10_year` and `value_change_10_year` (10-year change).
+        - Classification flags: `is_oecd`, `is_g20`, `is_top_50_gdp`, `is_bottom_50_gdp`, `is_top_50_population`, `is_bottom_50_population`.
 -   `message`: An optional message, e.g., if data for the previous year isn't available for change calculations.
 
 **Example Request:**
