@@ -24,3 +24,6 @@ pytz>=2022.7
 
 # Country data
 pycountry>=22.3.5
+
+# Supabase client
+supabase>=2.0.0
