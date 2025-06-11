@@ -1136,7 +1136,8 @@ def get_driver():
     """Initializes and returns a Selenium WebDriver instance for a headless environment."""
     options = Options()
     options.add_argument(f"user-agent={random.choice(USER_AGENTS)}")
-    options.add_argument("--headless")
+    # Use the new, more modern headless mode which is less detectable
+    options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
@@ -1425,41 +1426,58 @@ def collect_links_for_year(driver, year, existing_links):
     return list(all_links)
 
 def get_available_years(driver):
-    """
-    Extract available years and the necessary URL parameters for filtering.
-    This is more robust than trying to click elements.
-    """
-    logger.info("Attempting to get available years and URL filter parameters...")
+    """Extract available years and their counts from the date facet."""
+    logger.info("Attempting to get available years from the sidebar...")
     try:
+        # Wait for the main facet container to be loaded
         WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'facet-container')]"))
         )
         
         date_facets = []
+        # Find the 'Date' header and its corresponding list
         date_headers = driver.find_elements(By.XPATH, "//h2[text()='Date']")
         if not date_headers:
             raise NoSuchElementException("Could not find the 'Date' facet header.")
             
         for header in date_headers:
             try:
+                # Find the facet section associated with the header
                 facet_section = header.find_element(By.XPATH, "./following-sibling::ul[contains(@class, 'option-fct')]")
-                year_inputs = facet_section.find_elements(By.XPATH, ".//input[@type='checkbox']")
                 
-                for inp in year_inputs:
+                # If the section is collapsed, try to expand it
+                if "expanded" not in facet_section.get_attribute("class"):
                     try:
+                        show_more = header.find_element(By.XPATH, "./following-sibling::span[contains(@class, 'showmore')]")
+                        driver.execute_script("arguments[0].click();", show_more)
+                        WebDriverWait(driver, 5).until(
+                            EC.visibility_of_element_located((By.XPATH, f"//ul[@id='{facet_section.get_attribute('id')}'][contains(@class, 'expanded')]"))
+                        )
+                    except (NoSuchElementException, ElementNotInteractableException, TimeoutException):
+                        logger.warning("Could not expand the date facet section.")
+                        pass # Continue even if expansion fails
+
+                # Find all year checkboxes within this section
+                year_inputs = facet_section.find_elements(By.XPATH, ".//input[@type='checkbox']")
+                for inp in year_inputs:
+                    year_value = inp.get_attribute("value")
+                    try:
+                        # Get the label associated with the checkbox
                         label = driver.find_element(By.XPATH, f"//label[@for='{inp.get_attribute('id')}']")
                         year_text = label.text.strip()
-                        match = re.match(r'(\d{4})\s*\((\d+)\)', year_text)
                         
+                        # Extract year and count using regex
+                        match = re.match(r'(\d{4})\s*\((\d+)\)', year_text)
                         if match:
                             year, count = match.group(1), int(match.group(2))
                             date_facets.append({
                                 'year': year,
                                 'count': count,
-                                'param_name': inp.get_attribute('name'),
-                                'param_value': inp.get_attribute('value')
+                                'input_id': inp.get_attribute('id'),
+                                'input_value': year_value
                             })
                     except NoSuchElementException:
+                        logger.warning(f"Could not find label for checkbox with id: {inp.get_attribute('id')}")
                         continue
             except Exception as e:
                 logger.error(f"Error processing a date header section: {e}")
@@ -1468,10 +1486,12 @@ def get_available_years(driver):
         if not date_facets:
             raise ValueError("No year facets could be extracted from the page.")
             
+        # Sort by year descending (most recent first)
         return sorted(date_facets, key=lambda x: x['year'], reverse=True)
 
     except (TimeoutException, NoSuchElementException, ValueError) as e:
         logger.error(f"CRITICAL: Failed to get available years. Error: {e}")
+        # Take a screenshot for debugging
         driver.save_screenshot("logs/error_get_available_years.png")
         raise RuntimeError("Could not retrieve available years from the website.") from e
 
@@ -1598,19 +1618,23 @@ def retry_failed_links(failed_links, year):
 
 def main():
     """Main function to orchestrate the scraping and tagging pipeline."""
+    # Initialize Supabase client and get existing links
     supabase_client = create_supabase_client()
     existing_links = get_existing_links_from_supabase(supabase_client)
 
+    # Initialize Selenium WebDriver
     driver = get_driver()
-    
+    driver.get(BASE_SEARCH_URL)  # Go to the base page first
+
     try:
-        driver.get(BASE_SEARCH_URL)
+        # Get available years for scraping
         years_data = get_available_years(driver)
     except RuntimeError as e:
         logger.error(f"Halting pipeline because years could not be fetched: {e}")
         driver.quit()
         return
 
+    # Sort years from oldest to newest to process chronologically
     sorted_years_data = sorted(years_data, key=lambda x: int(x['year']))
     
     all_new_data = []
@@ -1618,26 +1642,34 @@ def main():
     for year_data in sorted_years_data:
         year = year_data['year']
         logger.info(f"--- Processing year: {year} ---")
-
-        # Construct the URL for the specific year
-        year_url = f"{BASE_SEARCH_URL}&{year_data['param_name']}={year_data['param_value']}"
-        logger.info(f"Navigating to year-specific URL: {year_url}")
-        driver.get(year_url)
-
+        
+        # Select the year facet
+        success, driver = select_year_facet(driver, year_data)
+        if not success:
+            logger.error(f"Failed to select facet for year {year}. Skipping.")
+            clear_filters(driver)
+            continue
+            
+        # Collect all resolution links for the year, filtering against existing ones
         try:
             new_links = collect_links_for_year(driver, year, existing_links)
         except DuplicateLinkFound as e:
-            logger.info(f"Duplicate link found for year {year}, stopping collection as planned.")
-            new_links = e.new_links
+            logger.info(f"Duplicate link found for year {year}, stopping collection for this year as planned.")
+            new_links = e.new_links # get the new links that were collected before the duplicate
         
+        # After collecting links, clear the filter to prepare for the next year
+        clear_filters(driver)
+
         if not new_links:
             logger.info(f"No new resolutions found for year {year}.")
             continue
             
         logger.info(f"Found {len(new_links)} new resolutions to scrape for year {year}.")
 
+        # Scrape and process new resolutions in parallel
         scraped_data, failed_links = parallel_scrape_resolutions(new_links, year, num_workers=MAX_WORKERS)
         
+        # Retry failed links once
         if failed_links:
             logger.info(f"Retrying {len(failed_links)} failed links for year {year}.")
             retried_data = retry_failed_links(failed_links, year)
@@ -1647,25 +1679,37 @@ def main():
             logger.warning(f"No data was successfully scraped for year {year}.")
             continue
 
+        # Convert scraped data to DataFrame
         new_df = pd.DataFrame(scraped_data)
         
+        # --- Tagging and Classification for New Rows ---
         logger.info(f"Starting tagging process for {len(new_df)} new rows for year {year}...")
+        
+        # Perform geo-tagging and subject tagging
         tagged_df = tag_new_rows(new_df.copy(), geo_hierarchy, iso2_country_code, model=DEFAULT_MODEL, max_workers=MAX_WORKERS)
+        
+        # Standardize country columns to ISO codes
         final_df = standardize_country_columns(tagged_df)
+        
+        # Append to the list of all new data
         all_new_data.append(final_df)
 
+    # Close the WebDriver
     driver.quit()
 
     if not all_new_data:
         logger.info("No new resolutions found across all years. Pipeline finished.")
         return
 
+    # Combine all new data from all years into a single DataFrame
     combined_new_df = pd.concat(all_new_data, ignore_index=True)
     
     logger.info(f"Total new resolutions processed: {len(combined_new_df)}")
 
+    # --- Upload new data to Supabase ---
     if not combined_new_df.empty:
         logger.info("Uploading new data to Supabase...")
+        # Convert DataFrame to list of dictionaries for upload
         records_to_upload = combined_new_df.to_dict(orient='records')
         
         try:
@@ -1677,6 +1721,7 @@ def main():
         except Exception as e:
             logger.error(f"An error occurred during Supabase upload: {e}")
 
+    # --- Save a local copy of the new data ---
     today_str = datetime.now().strftime("%Y-%m-%d")
     new_data_filename = f"pipeline_output/NEW_DATA_{today_str}.csv"
     combined_new_df.to_csv(new_data_filename, index=False)
