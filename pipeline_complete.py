@@ -1133,34 +1133,23 @@ def tag_new_rows(new_df, geo_hierarchy, iso2_country_code, model=DEFAULT_MODEL, 
 # -------------------- Scraper Pipeline Functions --------------------
 
 def get_driver():
-    """Initialize and return a Selenium Chrome driver with a rotated user-agent."""
-    global user_agent_index
+    """Initializes and returns a Selenium WebDriver instance for a headless environment."""
     options = Options()
-    options.add_argument("--disable-gpu")
+    options.add_argument(f"user-agent={random.choice(USER_AGENTS)}")
+    options.add_argument("--headless")
     options.add_argument("--no-sandbox")
-    options.add_argument("--window-size=1920,1080")
-    options.add_argument("--disable-blink-features=AutomationControlled")
-    user_agent = USER_AGENTS[user_agent_index]
-    user_agent_index = (user_agent_index + 1) % len(USER_AGENTS)
-    options.add_argument(f"user-agent={user_agent}")
-    options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    options.add_experimental_option("useAutomationExtension", False)
-    options.add_argument("--disable-extensions")
     options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--js-flags=--expose-gc")
-    options.add_argument("--aggressive-cache-discard")
-    options.add_argument("--disable-site-isolation-trials")
-    driver_path = ChromeDriverManager().install()
+    options.add_argument("--disable-gpu")
+    options.add_argument("--window-size=1920,1080")
+    
+    # Set up the service using WebDriver Manager
     try:
-        os.chmod(driver_path, 0o755)
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=options)
+        return driver
     except Exception as e:
-        logger.warning(f"Could not set permissions for {driver_path}: {e}")
-    service = Service(executable_path=driver_path)
-    driver = webdriver.Chrome(service=service, options=options)
-    driver.set_page_load_timeout(45)
-    driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-    logger.info(f"Initialized browser with user-agent: {user_agent}")
-    return driver
+        logger.error(f"Failed to initialize WebDriver: {e}")
+        raise
 
 def normalize_link(href):
     """Normalize a UN record URL from the given href."""
