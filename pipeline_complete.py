@@ -185,7 +185,8 @@ class ResolutionTarget(BaseModel):
 
 def create_openai_client() -> OpenAI:
     """Create and return an OpenAI client instance using the API key."""
-    return OpenAI(api_key=API_KEY)
+    # Set longer timeouts to handle potential network issues in CI/CD environments
+    return OpenAI(api_key=API_KEY, timeout=20.0, max_retries=0)
 
 def execute_api_call(api_call_fn, max_retries=5):
     """
@@ -1819,7 +1820,7 @@ def main():
         geo_hierarchy=geo_hierarchy,
         iso2_country_code=iso2_country_code,
         model=DEFAULT_MODEL,
-        max_workers=DEFAULT_MAX_WORKERS
+        max_workers=1 # Force sequential processing in CI/CD
     )
     
     # Get tokens from new rows to identify them later for Supabase upload
