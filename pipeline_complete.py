@@ -1577,6 +1577,39 @@ def retry_failed_links(failed_links, year):
 
 # -------------------- Supabase Functions --------------------
 
+def get_max_id_from_supabase() -> int:
+    """
+    Fetches the maximum 'id' from the 'un_votes_raw' table in Supabase.
+
+    Returns:
+        int: The maximum id found, or -1 if the table is empty or an error occurs.
+    """
+    logger.info("Fetching maximum ID from Supabase...")
+
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_KEY")
+
+    if not supabase_url or not supabase_key:
+        logger.warning("SUPABASE_URL or SUPABASE_KEY not set. Cannot fetch max ID from Supabase.")
+        return -1
+
+    try:
+        supabase: Client = create_client(supabase_url, supabase_key)
+        response = supabase.table('un_votes_raw').select('id', count='exact').order('id', desc=True).limit(1).execute()
+        
+        if response.data:
+            max_id = response.data[0]['id']
+            logger.info(f"Maximum ID found in Supabase: {max_id}")
+            return int(max_id)
+        else:
+            logger.info("No data in Supabase table 'un_votes_raw'. Starting ID from 0.")
+            return -1
+
+    except Exception as e:
+        logger.error(f"Could not fetch max ID from Supabase: {e}")
+        return -1
+
+
 def get_links_from_supabase() -> set:
     """
     Fetches all existing record links from the 'un_votes_raw' table in Supabase.
@@ -1842,25 +1875,45 @@ def main():
         max_workers=1 # Force sequential processing in CI/CD
     )
     
+    # Standardize country columns for the new rows before assigning IDs
+    logger.info("Standardizing country columns for new rows...")
+    tagged_new_df = standardize_country_columns(tagged_new_df)
+    
+    # Assign sequential IDs to the new rows for Supabase
+    if not tagged_new_df.empty:
+        logger.info("Assigning sequential IDs to new rows...")
+        max_id = get_max_id_from_supabase()
+        next_id = max_id + 1
+        
+        # Sort new rows by date before assigning IDs
+        tagged_new_df['Date'] = pd.to_datetime(tagged_new_df['Date'], errors='coerce')
+        tagged_new_df.sort_values('Date', ascending=True, inplace=True)
+        
+        # Assign new IDs
+        tagged_new_df['id'] = range(next_id, next_id + len(tagged_new_df))
+        logger.info(f"Assigned IDs from {next_id} to {next_id + len(tagged_new_df) - 1} to new rows.")
+
     # Get tokens from new rows to identify them later for Supabase upload
     new_row_tokens = list(tagged_new_df['token'].unique()) if not tagged_new_df.empty else []
 
     # Merge new rows with master data to create a complete dataset
     if not master_df.empty:
+        # master_df IDs are strings from CSV, convert to numeric
+        master_df['id'] = pd.to_numeric(master_df['id'], errors='coerce')
         # If the master data already has geo columns, keep them for old rows
         # and only add the new tagged rows
         combined_df = pd.concat([master_df, tagged_new_df], ignore_index=True)
     else:
         combined_df = tagged_new_df
     
-    # Standardize country columns to ISO3 codes
-    logger.info("Standardizing country columns to ISO3 codes...")
+    # Standardize country columns to ISO3 codes (re-run on combined_df to ensure consistency)
+    logger.info("Standardizing country columns on the combined dataset...")
     combined_df = standardize_country_columns(combined_df)
     
-    # Standardize: sort by Date (oldest first), reassign id, and reorder columns
+    # Standardize: sort by Date (oldest first), and reorder columns
+    # ID is already set correctly, so we don't re-index
     combined_df['Date'] = pd.to_datetime(combined_df['Date'], errors='coerce')
     combined_df = combined_df.sort_values('Date', ascending=True).reset_index(drop=True)
-    combined_df['id'] = combined_df.index
     
     # Define the preferred column order with geo columns
     # First get all columns in the DataFrame
