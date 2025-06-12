@@ -1577,39 +1577,6 @@ def retry_failed_links(failed_links, year):
 
 # -------------------- Supabase Functions --------------------
 
-def get_max_id_from_supabase() -> int:
-    """
-    Fetches the maximum 'id' from the 'un_votes_raw' table in Supabase.
-
-    Returns:
-        int: The maximum id found, or -1 if the table is empty or an error occurs.
-    """
-    logger.info("Fetching maximum ID from Supabase...")
-
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_KEY")
-
-    if not supabase_url or not supabase_key:
-        logger.warning("SUPABASE_URL or SUPABASE_KEY not set. Cannot fetch max ID from Supabase.")
-        return -1
-
-    try:
-        supabase: Client = create_client(supabase_url, supabase_key)
-        response = supabase.table('un_votes_raw').select('id', count='exact').order('id', desc=True).limit(1).execute()
-        
-        if response.data:
-            max_id = response.data[0]['id']
-            logger.info(f"Maximum ID found in Supabase: {max_id}")
-            return int(max_id)
-        else:
-            logger.info("No data in Supabase table 'un_votes_raw'. Starting ID from 0.")
-            return -1
-
-    except Exception as e:
-        logger.error(f"Could not fetch max ID from Supabase: {e}")
-        return -1
-
-
 def get_links_from_supabase() -> set:
     """
     Fetches all existing record links from the 'un_votes_raw' table in Supabase.
@@ -1701,25 +1668,10 @@ def upload_to_supabase(df: pd.DataFrame):
 
         logger.info(f"Attempting to upload {len(df_to_upload)} new unique rows to Supabase.")
 
-        # ---- NEW ID ASSIGNMENT LOGIC ----
-        # Remove any pre-existing 'id' column to avoid conflicts with the DB.
+        # FINAL FIX: Let the database generate the 'id'. Remove any client-side ID.
         if 'id' in df_to_upload.columns:
-            logger.info("Removing pre-assigned 'id' column to generate fresh IDs for Supabase.")
+            logger.info("Removing 'id' column before upload to let the database generate it.")
             df_to_upload = df_to_upload.drop(columns=['id'])
-
-        # Fetch the latest max ID right before insertion to minimize race conditions.
-        max_id = get_max_id_from_supabase()
-        next_id = max_id + 1
-        
-        # Sort by date to ensure chronological IDs for the new batch.
-        if 'Date' in df_to_upload.columns:
-             df_to_upload['Date'] = pd.to_datetime(df_to_upload['Date'], errors='coerce')
-             df_to_upload = df_to_upload.sort_values('Date', ascending=True).reset_index(drop=True)
-
-        # Assign new sequential IDs.
-        df_to_upload['id'] = range(next_id, next_id + len(df_to_upload))
-        logger.info(f"Assigned Supabase IDs from {next_id} to {next_id + len(df_to_upload) - 1}.")
-        # ---- END NEW LOGIC ----
 
         df_to_upload.replace({np.nan: None}, inplace=True)
         
@@ -1729,6 +1681,7 @@ def upload_to_supabase(df: pd.DataFrame):
         rows_to_insert = df_to_upload.to_dict(orient='records')
         
         # Use upsert to avoid race conditions and duplicate entries
+        # By not specifying 'id' in the payload, the database's auto-increment will be used.
         supabase.table('un_votes_raw').upsert(rows_to_insert, on_conflict='Link').execute()
         
         logger.info(f"Successfully upserted {len(df_to_upload)} rows to Supabase.")
@@ -1918,8 +1871,6 @@ def main():
 
     # Merge new rows with master data to create a complete dataset
     if not master_df.empty:
-        # master_df IDs are strings from CSV, convert to numeric
-        master_df['id'] = pd.to_numeric(master_df['id'], errors='coerce')
         # If the master data already has geo columns, keep them for old rows
         # and only add the new tagged rows
         combined_df = pd.concat([master_df, tagged_new_df], ignore_index=True)
