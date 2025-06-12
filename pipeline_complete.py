@@ -1701,6 +1701,26 @@ def upload_to_supabase(df: pd.DataFrame):
 
         logger.info(f"Attempting to upload {len(df_to_upload)} new unique rows to Supabase.")
 
+        # ---- NEW ID ASSIGNMENT LOGIC ----
+        # Remove any pre-existing 'id' column to avoid conflicts with the DB.
+        if 'id' in df_to_upload.columns:
+            logger.info("Removing pre-assigned 'id' column to generate fresh IDs for Supabase.")
+            df_to_upload = df_to_upload.drop(columns=['id'])
+
+        # Fetch the latest max ID right before insertion to minimize race conditions.
+        max_id = get_max_id_from_supabase()
+        next_id = max_id + 1
+        
+        # Sort by date to ensure chronological IDs for the new batch.
+        if 'Date' in df_to_upload.columns:
+             df_to_upload['Date'] = pd.to_datetime(df_to_upload['Date'], errors='coerce')
+             df_to_upload = df_to_upload.sort_values('Date', ascending=True).reset_index(drop=True)
+
+        # Assign new sequential IDs.
+        df_to_upload['id'] = range(next_id, next_id + len(df_to_upload))
+        logger.info(f"Assigned Supabase IDs from {next_id} to {next_id + len(df_to_upload) - 1}.")
+        # ---- END NEW LOGIC ----
+
         df_to_upload.replace({np.nan: None}, inplace=True)
         
         if 'Date' in df_to_upload.columns and pd.api.types.is_datetime64_any_dtype(df_to_upload['Date']):
@@ -1910,10 +1930,11 @@ def main():
     logger.info("Standardizing country columns on the combined dataset...")
     combined_df = standardize_country_columns(combined_df)
     
-    # Standardize: sort by Date (oldest first), and reorder columns
-    # ID is already set correctly, so we don't re-index
+    # Standardize: sort by Date (oldest first), reassign id, and reorder columns
+    # This ID is for the local CSV file. Supabase ID is handled during upload.
     combined_df['Date'] = pd.to_datetime(combined_df['Date'], errors='coerce')
     combined_df = combined_df.sort_values('Date', ascending=True).reset_index(drop=True)
+    combined_df['id'] = combined_df.index
     
     # Define the preferred column order with geo columns
     # First get all columns in the DataFrame
