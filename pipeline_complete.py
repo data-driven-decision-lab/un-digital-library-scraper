@@ -1668,11 +1668,6 @@ def upload_to_supabase(df: pd.DataFrame):
 
         logger.info(f"Attempting to upload {len(df_to_upload)} new unique rows to Supabase.")
 
-        # Always drop the 'id' column before upload so the DB can auto-increment.
-        if 'id' in df_to_upload.columns:
-            logger.info("Dropping 'id' column before upload to let the database handle it.")
-            df_to_upload = df_to_upload.drop(columns=['id'])
-
         df_to_upload.replace({np.nan: None}, inplace=True)
         
         if 'Date' in df_to_upload.columns and pd.api.types.is_datetime64_any_dtype(df_to_upload['Date']):
@@ -1681,7 +1676,6 @@ def upload_to_supabase(df: pd.DataFrame):
         rows_to_insert = df_to_upload.to_dict(orient='records')
         
         # Use upsert to avoid race conditions and duplicate entries
-        # By not specifying 'id' in the payload, the database's auto-increment will be used.
         supabase.table('un_votes_raw').upsert(rows_to_insert, on_conflict='Link').execute()
         
         logger.info(f"Successfully upserted {len(df_to_upload)} rows to Supabase.")
@@ -1848,19 +1842,29 @@ def main():
         max_workers=1 # Force sequential processing in CI/CD
     )
     
-    # Standardize country columns for the new rows before assigning IDs
-    logger.info("Standardizing country columns for new rows...")
-    tagged_new_df = standardize_country_columns(tagged_new_df)
+    # Get tokens from new rows to identify them later for Supabase upload
+    new_row_tokens = list(tagged_new_df['token'].unique()) if not tagged_new_df.empty else []
+
+    # Merge new rows with master data to create a complete dataset
+    if not master_df.empty:
+        # If the master data already has geo columns, keep them for old rows
+        # and only add the new tagged rows
+        combined_df = pd.concat([master_df, tagged_new_df], ignore_index=True)
+    else:
+        combined_df = tagged_new_df
+    
+    # Standardize country columns to ISO3 codes
+    logger.info("Standardizing country columns to ISO3 codes...")
+    combined_df = standardize_country_columns(combined_df)
     
     # Standardize: sort by Date (oldest first), reassign id, and reorder columns
-    # This ID is for the local CSV file only. Supabase ID is handled by the DB.
-    tagged_new_df['Date'] = pd.to_datetime(tagged_new_df['Date'], errors='coerce')
-    tagged_new_df = tagged_new_df.sort_values('Date', ascending=True).reset_index(drop=True)
-    tagged_new_df['id'] = tagged_new_df.index
+    combined_df['Date'] = pd.to_datetime(combined_df['Date'], errors='coerce')
+    combined_df = combined_df.sort_values('Date', ascending=True).reset_index(drop=True)
+    combined_df['id'] = combined_df.index
     
     # Define the preferred column order with geo columns
     # First get all columns in the DataFrame
-    cols = list(tagged_new_df.columns)
+    cols = list(combined_df.columns)
     
     # Remove id, country, subregion, continent, tags - we'll place these explicitly
     for col in ['id', 'country', 'subregion', 'continent', 'tags']:
@@ -1876,19 +1880,18 @@ def main():
         new_order = ['id'] + ['country', 'subregion', 'continent', 'tags'] + cols
     
     # Reorder the columns
-    final_cols = [col for col in new_order if col in tagged_new_df.columns]
-    tagged_new_df = tagged_new_df[final_cols]
+    final_cols = [col for col in new_order if col in combined_df.columns]
+    combined_df = combined_df[final_cols]
     
     # Write final CSV with the current scrape date appended
     scrape_date = datetime.now().strftime("%Y-%m-%d")
     output_csv = f"pipeline_output/UN_VOTING_DATA_RAW_WITH_TAGS_{scrape_date}.csv"
-    tagged_new_df.to_csv(output_csv, index=False)
-    logger.info(f"Final CSV written with {len(tagged_new_df)} rows to {output_csv}")
+    combined_df.to_csv(output_csv, index=False)
+    logger.info(f"Final CSV written with {len(combined_df)} rows to {output_csv}")
     
     # Upload new rows to Supabase
-    new_row_tokens = list(tagged_new_df['token'].unique()) if not tagged_new_df.empty else []
     if new_row_tokens:
-        rows_to_upload_df = tagged_new_df[tagged_new_df['token'].isin(new_row_tokens)].copy()
+        rows_to_upload_df = combined_df[combined_df['token'].isin(new_row_tokens)].copy()
         upload_to_supabase(rows_to_upload_df)
 
     # Master CSV remains unchanged
