@@ -71,7 +71,10 @@ jobs:
           API_KEY: ${{ secrets.API_KEY }}
         run: |
           echo "🤖 Testing OpenAI ChatCompletion API via SDK"
-          pip install openai --quiet
+          # ensure the SDK is installed
+          python -m pip install openai --quiet
+
+          # write a small test script
           cat << EOF > test_openai.py
 import openai
 import sys
@@ -89,6 +92,8 @@ except Exception as e:
     print("❌ ChatCompletion failed:", e)
     sys.exit(1)
 EOF
+
+          # run the test
           python test_openai.py
 
       - name: Run Python script with Supabase env
