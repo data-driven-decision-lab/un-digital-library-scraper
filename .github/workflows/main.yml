@@ -39,7 +39,6 @@ jobs:
               echo "✅ $name length: ${#value}"
             fi
           }
-
           check_var "API_KEY"
           check_var "SUPABASE_KEY"
           check_var "SUPABASE_URL"
@@ -59,46 +58,12 @@ jobs:
           API_KEY: ${{ secrets.API_KEY }}
         run: |
           echo "🌐 Testing HTTPS connection to OpenAI API with authentication"
-          if curl -s --head --fail -H "Authorization: Bearer $API_KEY" https://api.openai.com/v1/models > /dev/null; then
+          if curl -s --head --fail -H "Authorization: Bearer $API_KEY" \
+               https://api.openai.com/v1/models > /dev/null; then
             echo "✅ OpenAI API is reachable"
           else
             echo "❌ OpenAI API is not reachable (HTTP check failed)"
             exit 1
           fi
 
-      - name: OpenAI Chat Completion Test
-        env:
-          API_KEY: ${{ secrets.API_KEY }}
-        run: |
-          echo "🤖 Testing OpenAI ChatCompletion API via SDK"
-          # ensure the SDK is installed
-          python -m pip install openai --quiet
-
-          # write a small test script
-          cat << EOF > test_openai.py
-import openai
-import sys
-
-openai.api_key = "${API_KEY}"
-
-try:
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": "Hello from GitHub Actions"}],
-        max_tokens=10
-    )
-    print("✅ ChatCompletion succeeded. Sample response:", response["choices"][0]["message"]["content"])
-except Exception as e:
-    print("❌ ChatCompletion failed:", e)
-    sys.exit(1)
-EOF
-
-          # run the test
-          python test_openai.py
-
-      - name: Run Python script with Supabase env
-        env:
-          API_KEY: ${{ secrets.API_KEY }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-        run: python pipeline_complete.py
+      - name: OpenAI C
