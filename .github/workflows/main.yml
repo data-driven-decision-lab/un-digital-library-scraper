@@ -44,6 +44,16 @@ jobs:
           check_var "SUPABASE_KEY"
           check_var "SUPABASE_URL"
 
+      - name: DNS check for OpenAI API
+        run: |
+          echo "🔍 Checking DNS resolution for api.openai.com"
+          if dig +short api.openai.com | grep -qE '^[0-9.]+'; then
+            echo "✅ DNS resolution successful for api.openai.com"
+          else
+            echo "❌ DNS resolution failed for api.openai.com"
+            exit 1
+          fi
+
       - name: Run Python script with Supabase env
         env:
           API_KEY: ${{ secrets.API_KEY }}
