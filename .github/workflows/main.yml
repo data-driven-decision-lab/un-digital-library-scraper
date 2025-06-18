@@ -23,6 +23,27 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Check secrets are not empty and show lengths
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        run: |
+          check_var() {
+            local name="$1"
+            local value="${!name}"
+            if [ -z "$value" ]; then
+              echo "❌ $name is empty or not set."
+              exit 1
+            else
+              echo "✅ $name length: ${#value}"
+            fi
+          }
+
+          check_var "API_KEY"
+          check_var "SUPABASE_KEY"
+          check_var "SUPABASE_URL"
+
       - name: Run Python script with Supabase env
         env:
           API_KEY: ${{ secrets.API_KEY }}
