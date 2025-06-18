@@ -66,6 +66,30 @@ jobs:
             exit 1
           fi
 
+      - name: OpenAI Chat Completion Test
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+        run: |
+          echo "🤖 Testing OpenAI ChatCompletion API via SDK"
+          pip install openai --quiet
+          python -c "
+import openai
+import sys
+
+openai.api_key = '${API_KEY}'
+
+try:
+    response = openai.ChatCompletion.create(
+        model='gpt-3.5-turbo',
+        messages=[{'role': 'user', 'content': 'Hello from GitHub Actions'}],
+        max_tokens=10
+    )
+    print('✅ ChatCompletion succeeded. Sample response:', response['choices'][0]['message']['content'])
+except Exception as e:
+    print('❌ ChatCompletion failed:', e)
+    sys.exit(1)
+"
+
       - name: Run Python script with Supabase env
         env:
           API_KEY: ${{ secrets.API_KEY }}
