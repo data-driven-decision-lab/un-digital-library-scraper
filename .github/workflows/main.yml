@@ -72,19 +72,24 @@ jobs:
         run: |
           echo "🤖 Testing OpenAI ChatCompletion API via SDK"
           pip install openai --quiet
-          python -c "import openai, sys
-openai.api_key = '${API_KEY}'
+          cat << EOF > test_openai.py
+import openai
+import sys
+
+openai.api_key = "${API_KEY}"
+
 try:
     response = openai.ChatCompletion.create(
-        model='gpt-3.5-turbo',
-        messages=[{'role': 'user', 'content': 'Hello from GitHub Actions'}],
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": "Hello from GitHub Actions"}],
         max_tokens=10
     )
-    print('✅ ChatCompletion succeeded. Sample response:', response['choices'][0]['message']['content'])
+    print("✅ ChatCompletion succeeded. Sample response:", response["choices"][0]["message"]["content"])
 except Exception as e:
-    print('❌ ChatCompletion failed:', e)
+    print("❌ ChatCompletion failed:", e)
     sys.exit(1)
-"
+EOF
+          python test_openai.py
 
       - name: Run Python script with Supabase env
         env:
