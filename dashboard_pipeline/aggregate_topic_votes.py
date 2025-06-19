@@ -139,6 +139,15 @@ def aggregate_topic_votes(input_csv_path, output_csv_path):
         logging.error(f"ERROR: Failed to load input CSV: {e}")
         return
 
+    # --- Filter out Security Council Resolutions ---
+    if 'Resolution' in df_raw.columns:
+        initial_count = len(df_raw)
+        # Resolutions starting with 'S/' are from the Security Council.
+        df_raw = df_raw[~df_raw['Resolution'].str.startswith('S/', na=False)].copy()
+        logging.info(f"Filtered out Security Council resolutions. Kept {len(df_raw)} of {initial_count} records.")
+    else:
+        logging.warning("Warning: 'Resolution' column not found, cannot filter out Security Council votes.")
+
     # --- Data Preparation ---
     # Ensure 'Year' column exists and is numeric
     if 'Year' not in df_raw.columns:
@@ -282,7 +291,7 @@ if __name__ == "__main__":
 
     # Determine fixed output path relative to script location
     output_filename = "topic_votes_yearly.csv"
-    output_path = os.path.abspath(os.path.join(script_dir, "output", output_filename))
+    output_path = os.path.abspath(os.path.join(script_dir, "..", "un_report_api", "app", "required_csvs", output_filename))
 
     if not input_path:
         logging.error("No input file specified or found. Exiting.")
