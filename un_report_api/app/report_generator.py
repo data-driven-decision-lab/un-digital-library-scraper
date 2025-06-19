@@ -620,7 +620,7 @@ def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:
                     avg_regional_score = df_regional_peers_scores_sorted['alignment_score'].mean()
                     regional_context_data["average_regional_alignment_score"] = round(avg_regional_score, DECIMAL_PLACES)
                 else:
-                logging.warning(f"No regional peers or similarity data available to calculate regional context for {country_iso}.")
+                    logging.warning(f"No regional peers or similarity data available to calculate regional context for {country_iso}.")
         else:
             logging.warning(f"Could not determine UN Region for {country_iso}.")
     else:
