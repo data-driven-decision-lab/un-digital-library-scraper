@@ -108,7 +108,7 @@ if __name__ == "__main__":
 
     # Determine fixed output path relative to script location
     output_filename = "annual_scores.csv" # Changed output filename
-    output_path = os.path.abspath(os.path.join(script_dir, "output", output_filename))
+    output_path = os.path.abspath(os.path.join(script_dir, "..", "un_report_api", "app", "required_csvs", output_filename))
 
     process_annual_scores(input_path, output_path) # Changed function call
     logging.info("Script finished.")
