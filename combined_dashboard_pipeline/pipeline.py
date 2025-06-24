@@ -107,31 +107,13 @@ def generate_combined_index(df_main, country_to_region_map, bloc_size_p1=4):
         if norm1 == 0 or norm2 == 0: return np.nan
         return np.clip(np.dot(vec1, vec2) / (norm1 * norm2), -1.0, 1.0)
 
-    def boxcox_and_normalize(series):
-        positive_series = series[series > 0].dropna()
-        if len(positive_series) < 2: return pd.Series(np.nan, index=series.index)
-        result = pd.Series(np.nan, index=series.index)
-        try:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                adjusted_series_np, lmbda = boxcox(positive_series, lmbda=None)
-                adjusted_series = pd.Series(adjusted_series_np, index=positive_series.index)
-            if adjusted_series.isnull().any() or np.isinf(adjusted_series).any(): return pd.Series(np.nan, index=series.index)
-            mean_val, std_val = adjusted_series.mean(), adjusted_series.std()
-            if pd.isna(mean_val) or pd.isna(std_val) or std_val == 0:
-                result.loc[positive_series.index] = 0.5
-                return result
-            z_scores = (adjusted_series - mean_val) / std_val
-            max_abs_z = np.abs(z_scores).max()
-            scaling_factor = 0.5 / max_abs_z if max_abs_z > 0 else 0
-            adjusted_scores = 0.5 + z_scores * scaling_factor
-            result.loc[positive_series.index] = adjusted_scores.clip(0, 1)
-            return result
-        except (ValueError, RuntimeError):
-            if len(positive_series.unique()) == 1:
-                result.loc[positive_series.index] = 0.5
-                return result
-            return pd.Series(np.nan, index=series.index)
+    def min_max_normalize_100(series):
+        """Applies Min-Max scaling to a series to fit it into a 0-100 range."""
+        min_val = series.min()
+        max_val = series.max()
+        if pd.isna(min_val) or pd.isna(max_val) or max_val == min_val:
+            return pd.Series(50.0, index=series.index)
+        return 100 * (series - min_val) / (max_val - min_val)
 
     def parse_tags_p1(tag_string):
         if un_classification is None or pd.isna(tag_string): return None
@@ -287,7 +269,7 @@ def generate_combined_index(df_main, country_to_region_map, bloc_size_p1=4):
     pillars = ['Pillar1', 'Pillar2', 'Pillar3']
     for pillar in pillars:
         if pillar in final_df.columns:
-            final_df[f'{pillar}_Normalized'] = final_df.groupby('Year')[pillar].transform(boxcox_and_normalize)
+            final_df[f'{pillar}_Normalized'] = final_df.groupby('Year')[pillar].transform(min_max_normalize_100)
             final_df[f'{pillar}_Rank'] = final_df.groupby('Year')[pillar].rank(method='dense', ascending=False).astype(pd.Int64Dtype())
 
     raw_pillar_cols = [p for p in pillars if p in final_df.columns]
@@ -296,7 +278,7 @@ def generate_combined_index(df_main, country_to_region_map, bloc_size_p1=4):
         final_df['Overall Rank'] = final_df.groupby('Year')['Total Index Average'].rank(method='dense', ascending=False).astype(pd.Int64Dtype())
         final_df.sort_values(by=['Country', 'Year'], inplace=True)
         final_df['Overall Rank Rolling Avg (3y)'] = final_df.groupby('Country')['Overall Rank'].transform(lambda x: x.rolling(window=3, min_periods=1).mean())
-        final_df['Total Index Normalized'] = final_df.groupby('Year')['Total Index Average'].transform(boxcox_and_normalize)
+        final_df['Total Index Normalized'] = final_df.groupby('Year')['Total Index Average'].transform(min_max_normalize_100)
 
     final_df.rename(columns={'Country': 'Country name', 'Pillar1': 'Pillar 1 Score', 'Pillar2': 'Pillar 2 Score', 'Pillar3': 'Pillar 3 Score', 'Pillar1_Normalized': 'Pillar 1 Normalized', 'Pillar1_Rank': 'Pillar 1 Rank', 'Pillar2_Normalized': 'Pillar 2 Normalized', 'Pillar2_Rank': 'Pillar 2 Rank', 'Pillar3_Normalized': 'Pillar 3 Normalized', 'Pillar3_Rank': 'Pillar 3 Rank'}, inplace=True)
     
