@@ -267,18 +267,34 @@ def generate_combined_index(df_main, country_to_region_map, bloc_size_p1=4):
 
     logging.info("COMBINED INDEX: Normalizing and ranking...")
     pillars = ['Pillar1', 'Pillar2', 'Pillar3']
+    normalized_pillar_cols = []
     for pillar in pillars:
         if pillar in final_df.columns:
-            final_df[f'{pillar}_Normalized'] = final_df.groupby('Year')[pillar].transform(min_max_normalize_100)
+            normalized_col_name = f'{pillar}_Normalized'
+            final_df[normalized_col_name] = final_df.groupby('Year')[pillar].transform(min_max_normalize_100)
+            normalized_pillar_cols.append(normalized_col_name)
             final_df[f'{pillar}_Rank'] = final_df.groupby('Year')[pillar].rank(method='dense', ascending=False).astype(pd.Int64Dtype())
 
-    raw_pillar_cols = [p for p in pillars if p in final_df.columns]
-    if raw_pillar_cols:
-        final_df['Total Index Average'] = final_df[raw_pillar_cols].mean(axis=1, skipna=True)
+    if normalized_pillar_cols:
+        # Change 1: Calculate 'Total Index Average' from the mean of *normalized* pillars.
+        final_df['Total Index Average'] = final_df[normalized_pillar_cols].mean(axis=1, skipna=True)
+        
+        # The 'Total Index Normalized' is now a direct copy of this new average, without re-normalizing.
+        final_df['Total Index Normalized'] = final_df['Total Index Average']
+
         final_df['Overall Rank'] = final_df.groupby('Year')['Total Index Average'].rank(method='dense', ascending=False).astype(pd.Int64Dtype())
         final_df.sort_values(by=['Country', 'Year'], inplace=True)
         final_df['Overall Rank Rolling Avg (3y)'] = final_df.groupby('Country')['Overall Rank'].transform(lambda x: x.rolling(window=3, min_periods=1).mean())
-        final_df['Total Index Normalized'] = final_df.groupby('Year')['Total Index Average'].transform(min_max_normalize_100)
+        # Redundant normalization step has been removed.
+    else:
+        # Fallback for safety, though pillars should exist. This logic remains unchanged.
+        raw_pillar_cols = [p for p in pillars if p in final_df.columns]
+        if raw_pillar_cols:
+            final_df['Total Index Average'] = final_df[raw_pillar_cols].mean(axis=1, skipna=True)
+            final_df['Overall Rank'] = final_df.groupby('Year')['Total Index Average'].rank(method='dense', ascending=False).astype(pd.Int64Dtype())
+            final_df.sort_values(by=['Country', 'Year'], inplace=True)
+            final_df['Overall Rank Rolling Avg (3y)'] = final_df.groupby('Country')['Overall Rank'].transform(lambda x: x.rolling(window=3, min_periods=1).mean())
+            final_df['Total Index Normalized'] = final_df.groupby('Year')['Total Index Average'].transform(min_max_normalize_100)
 
     final_df.rename(columns={'Country': 'Country name', 'Pillar1': 'Pillar 1 Score', 'Pillar2': 'Pillar 2 Score', 'Pillar3': 'Pillar 3 Score', 'Pillar1_Normalized': 'Pillar 1 Normalized', 'Pillar1_Rank': 'Pillar 1 Rank', 'Pillar2_Normalized': 'Pillar 2 Normalized', 'Pillar2_Rank': 'Pillar 2 Rank', 'Pillar3_Normalized': 'Pillar 3 Normalized', 'Pillar3_Rank': 'Pillar 3 Rank'}, inplace=True)
     
@@ -325,6 +341,17 @@ def generate_annual_scores(df_combined_index):
         return pd.DataFrame()
         
     df_annual = df_combined_index[cols_to_keep].copy()
+
+    # Change 2: Overwrite 'score' columns with their 'normalized' counterparts for the final output.
+    logging.info("ANNUAL SCORES: Overwriting score columns with normalized values for export.")
+    if 'Pillar 1 Normalized' in df_annual.columns and 'Pillar 1 Score' in df_annual.columns:
+        df_annual['Pillar 1 Score'] = df_annual['Pillar 1 Normalized']
+    if 'Pillar 2 Normalized' in df_annual.columns and 'Pillar 2 Score' in df_annual.columns:
+        df_annual['Pillar 2 Score'] = df_annual['Pillar 2 Normalized']
+    if 'Pillar 3 Normalized' in df_annual.columns and 'Pillar 3 Score' in df_annual.columns:
+        df_annual['Pillar 3 Score'] = df_annual['Pillar 3 Normalized']
+    if 'Total Index Normalized' in df_annual.columns and 'Total Index Average' in df_annual.columns:
+        df_annual['Total Index Average'] = df_annual['Total Index Normalized']
 
     # Ensure numeric types for all score/vote/rank columns for consistency
     numeric_cols = [col for col in cols_to_keep if col not in [country_col, 'Year']]
