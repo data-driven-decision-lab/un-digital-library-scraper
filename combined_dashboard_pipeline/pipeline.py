@@ -376,24 +376,32 @@ def generate_topic_votes(df_raw):
     
     logging.info("Step 3A: Starting Topic Votes generation...")
 
-    def parse_tags_for_subtag1(tag_string):
-        if pd.isna(tag_string) or not isinstance(tag_string, str): return []
-        tag_items = [item.strip() for item in tag_string.split(',') if item.strip()]
-        if not tag_items: return []
-        found_tags = []
-        i = 0
-        while i < len(tag_items):
-            current_item = tag_items[i]
-            if current_item in main_category_keys:
-                tag_to_add = current_item
-                if i + 1 < len(tag_items):
-                    next_item = tag_items[i+1]
-                    if next_item in un_classification.get(current_item, {}):
-                        tag_to_add = next_item
-                        i += 1
-                found_tags.append(tag_to_add)
-            i += 1
-        return list(set(found_tags)) if found_tags else ["No Tag"]
+    # Define a new, robust parser that correctly identifies all valid main and sub-topics.
+    all_sub_tags = {sub_tag for main_tag in un_classification for sub_tag in un_classification[main_tag]}
+    def parse_all_topic_tags(tag_string):
+        if pd.isna(tag_string):
+            return ["No Tag"]
+
+        # Robustly parse the tag string, handling stringified lists and simple strings
+        try:
+            tags_list = ast.literal_eval(tag_string)
+            if isinstance(tags_list, list) and len(tags_list) > 0 and isinstance(tags_list[0], list):
+                tags_list = tags_list[0]  # Handle nested list case [['...']]
+        except (ValueError, SyntaxError):
+            # Fallback for simple comma-separated strings that are not list-like
+            tags_list = [tag.strip() for tag in str(tag_string).strip('[]').split(',')]
+
+        if not isinstance(tags_list, list):
+            return ["No Tag"]
+
+        found_tags = set()
+        for tag in tags_list:
+            clean_tag = str(tag).strip()
+            # Check if the tag is a known main topic or a known sub-topic
+            if clean_tag in main_category_keys or clean_tag in all_sub_tags:
+                found_tags.add(clean_tag)
+
+        return list(found_tags) if found_tags else ["No Tag"]
 
     country_cols = identify_country_columns(df_raw.columns)
     if not country_cols:
@@ -414,8 +422,7 @@ def generate_topic_votes(df_raw):
 
     logging.info("... parsing tags and exploding dataframe")
     df_melted['tags'] = df_melted['tags'].astype(str)
-    tqdm.pandas(desc="Parsing Topic Tags", leave=False)
-    df_melted['TopicTags'] = df_melted['tags'].progress_apply(parse_tags_for_subtag1)
+    df_melted['TopicTags'] = df_melted['tags'].apply(parse_all_topic_tags)
 
     df_exploded = df_melted.explode('TopicTags')
     df_exploded.dropna(subset=['TopicTags'], inplace=True)
@@ -504,30 +511,27 @@ def main():
     """
     logging.info("Starting the Combined Dashboard Pipeline...")
 
-    # --- 1. Load All Inputs ---
     raw_data_path = find_latest_raw_data_csv(RAW_DATA_DIR)
-    if not raw_data_path:
-        sys.exit(1) # Exit if no raw data is found
-
-    region_mapping_path = os.path.join(DICTIONARIES_DIR, 'UN_Country_Region_Mapping.csv')
-    region_mapping = load_region_mapping(region_mapping_path)
-    # Note: The pipeline can continue without region mapping, Pillar 2 will be skipped.
+    region_mapping = load_region_mapping(os.path.join(DICTIONARIES_DIR, 'UN_Country_Region_Mapping.csv'))
 
     try:
-        df_raw = pd.read_csv(raw_data_path, low_memory=False)
+        # Read headers first to identify country columns for robust dtype mapping
+        logging.info("Reading headers to identify country columns...")
+        df_headers = pd.read_csv(raw_data_path, nrows=0)
+        country_cols = identify_country_columns(df_headers.columns)
+        dtype_map = {col: str for col in country_cols}
+        
+        logging.info(f"Loading raw data from {raw_data_path} with string dtypes for vote columns...")
+        df_raw = pd.read_csv(raw_data_path, dtype=dtype_map)
         logging.info(f"Successfully loaded raw data with shape: {df_raw.shape}")
+
     except Exception as e:
         logging.error(f"Fatal error loading raw data CSV: {e}")
         sys.exit(1)
 
-    # --- 2. Initial Preprocessing (Apply to raw_df ONCE) ---
-    # Filter out Security Council Resolutions
-    if 'Resolution' in df_raw.columns:
-        initial_count = len(df_raw)
+    # Step 0: Initial Filtering
         df_raw = df_raw[~df_raw['Resolution'].str.startswith('S/', na=False)].copy()
-        logging.info(f"Filtered out Security Council votes. Kept {len(df_raw)} of {initial_count} records.")
-    else:
-        logging.warning("'Resolution' column not found, cannot filter out Security Council votes.")
+    logging.info(f"Filtered out Security Council votes. New shape: {df_raw.shape}")
 
     # Basic date and year processing
     try:
