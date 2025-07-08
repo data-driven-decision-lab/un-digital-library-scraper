@@ -6,7 +6,6 @@ __pycache__/
 
 #hide testing file
 test_files/
-test.py
 pipeline_LLM_test.ipynb
 pipeline copy.py
 
@@ -15,9 +14,6 @@ checkpoints/
 
 #hide venv
 venv/
-
-#hide data
-data/
 
 #hide index analysis
 index_analysis/
@@ -37,8 +33,6 @@ create_country_classification.py
 
 gdp_population_2023.py
 
-.cursor/
+/report_analysis/
 
-report_analysis/
-
-logs/
+/logs/
