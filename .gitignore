@@ -36,3 +36,21 @@ gdp_population_2023.py
 /report_analysis/
 
 /logs/
+/.cursor
+data/cleaned_countries_output.csv
+data/copyWorking_UN_VOTING_DATA_RAW_WITH_TAGS_2025-03-19 copy 2.csv
+data/UN_VOTING_DATA_RAW_WITH_TAGS_2025-03-19.csv
+data/UN_VOTING_DATA_RAW_with_tags_2025-03-20.csv
+data/UN_VOTING_DATA_RAW_WITH_TAGS_2025-03-25.csv
+data/UN_VOTING_DATA_RAW_WITH_TAGS_2025-04-05.csv
+data/UN_VOTING_DATA_RAW_WITH_TAGS_2025-04-02.csv
+data/UN_VOTING_DATA_RAW.csv
+data/test.csv
+data/UN_VOTING_DATA_RAW_WITH_TAGS_2025-04-09.csv
+data/tags+country_gpt4o-mini_UN_VOTING_DATA_RAW.csv
+data/sample_data.csv
+data/UN_VOTING_DATA_RAW_with_tags_TAGS.csv
+data/UN_VOTING_DATA_RAW_with_tags_final_checkpoint.csv
+data/Oceans_Output_UN_VOTING_DATA_GEO_TAGGED copy.csv
+data/improved_gpt4o-mini_UN_VOTING_DATA_RAW_with_tags.csv
+data/Working_UN_VOTING_DATA_RAW_WITH_TAGS_2025-03-19 copy.csv
