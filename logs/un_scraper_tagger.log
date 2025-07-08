@@ -3910,3 +3910,34 @@ Processing year 2024 (141 records)
 21:54:39 [INFO] Stopping further year processing.
 21:54:41 [INFO] Scraping complete. 0 new rows collected.
 21:54:41 [INFO] No new rows to process. Exiting.
+23:03:03 [INFO] Fetching existing links from Supabase table 'scraped_links' to guide scraping...
+23:03:05 [INFO] HTTP Request: GET https://gjakiqtayqltssvbzasd.supabase.co/rest/v1/scraped_links?select=link "HTTP/2 200 OK"
+23:03:05 [INFO] Found 9870 unique links in Supabase table 'scraped_links'.
+23:03:05 [INFO] Loaded 9870 unique links for deduplication.
+23:03:06 [INFO] ====== WebDriver manager ======
+23:03:10 [INFO] Get LATEST chromedriver version for google-chrome
+23:03:10 [INFO] Get LATEST chromedriver version for google-chrome
+23:03:10 [INFO] Driver [C:\Users\gabeo\.wdm\drivers\chromedriver\win64\137.0.7151.119\chromedriver-win32/chromedriver.exe] found in cache
+23:03:13 [INFO] Initialized browser with user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36
+23:03:32 [INFO] Found 80 years to process
+23:03:32 [INFO] 
+============================================================
+Processing year 2025 (36 records)
+============================================================
+23:03:32 [INFO] Selecting year: 2025 (Attempt 1/10)
+23:03:35 [INFO] Selected year 2025 with 72 visible records
+23:03:35 [INFO] [Year 2025] Processing page 1.
+23:03:37 [INFO] [Year 2025] No new links found before duplicate.
+23:03:37 [INFO] No new links for 2025, will check one more year.
+23:03:43 [INFO] 
+============================================================
+Processing year 2024 (141 records)
+============================================================
+23:03:43 [INFO] Selecting year: 2024 (Attempt 1/10)
+23:03:46 [INFO] Selected year 2024 with 100 visible records
+23:03:46 [INFO] [Year 2024] Processing page 1.
+23:03:47 [INFO] [Year 2024] No new links found before duplicate.
+23:03:47 [INFO] No new links for second consecutive year, stopping.
+23:03:52 [INFO] Stopping further year processing.
+23:03:55 [INFO] Scraping complete. 0 new rows collected.
+23:03:55 [INFO] No new rows to process. Exiting.
