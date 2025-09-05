@@ -75,9 +75,13 @@ from bs4 import BeautifulSoup
 from webdriver_manager.chrome import ChromeDriverManager
 
 # ---------------- Configuration & Logging ----------------
+# Set logging level based on environment variable, default to INFO
+log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
+numeric_level = getattr(logging, log_level, logging.INFO)
+
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
+    level=numeric_level,
+    format="%(asctime)s [%(levelname)s] %(name)s:%(lineno)d - %(message)s",
     datefmt="%H:%M:%S",
     handlers=[
         logging.StreamHandler(),  # Console handler
@@ -85,6 +89,22 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+# Log the current logging level
+logger.info(f"Logging level set to: {logging.getLevelName(logger.getEffectiveLevel())}")
+logger.info("Use LOG_LEVEL environment variable to control verbosity (DEBUG, INFO, WARNING, ERROR)")
+
+def enable_debug_logging():
+    """Enable debug logging for troubleshooting"""
+    logging.getLogger().setLevel(logging.DEBUG)
+    for handler in logging.getLogger().handlers:
+        handler.setLevel(logging.DEBUG)
+    logger.info("Debug logging enabled")
+
+def enable_verbose_scraping():
+    """Enable verbose logging specifically for scraping operations"""
+    logging.getLogger(__name__).setLevel(logging.DEBUG)
+    logger.info("Verbose scraping logging enabled")
 
 # Load environment variables
 load_dotenv()
@@ -151,7 +171,7 @@ FIXED_COLUMNS = [
 
 # Scraper constants
 BASE_SEARCH_URL = ("https://digitallibrary.un.org/search?cc=Voting%20Data&ln=en&p=&f=&rm=&sf=&so=d"
-                   "&rg=50&c=Voting%20Data&c=&of=hb&fti=1&fct__9=Vote&fti=1")
+                   "&rg=100&c=Voting%20Data&c=&of=hb&fti=1&fct__9=Vote&fti=1")  # 100 results per page for faster scraping
 MAX_PAGES_PER_YEAR = 50
 MAX_WORKERS = 2
 
@@ -1142,21 +1162,30 @@ def get_driver():
 def normalize_link(href):
     """Normalize a UN record URL from the given href."""
     if not href:
+        logger.debug(f"normalize_link: Empty href provided")
         return None
+    
+    logger.debug(f"normalize_link: Processing href: {href}")
+    
     if '/record/' in href:
         try:
             record_part = href.split('/record/')[1]
             record_id = record_part.split('?')[0].split('/')[0].strip()
             if record_id.isdigit():
-                return f"https://digitallibrary.un.org/record/{record_id}"
-        except (IndexError, ValueError):
-            pass
+                normalized = f"https://digitallibrary.un.org/record/{record_id}"
+                logger.debug(f"normalize_link: Normalized {href} -> {normalized}")
+                return normalized
+        except (IndexError, ValueError) as e:
+            logger.debug(f"normalize_link: Failed to extract record ID from {href}: {e}")
+    
     base_url = href.split('?')[0]
     if '?' in href:
         params = href.split('?')[1].split('&')
         ln_param = [p for p in params if p.startswith('ln=')]
         if ln_param:
             base_url = f"{base_url}?{ln_param[0]}"
+    
+    logger.debug(f"normalize_link: Fallback normalization {href} -> {base_url}")
     return base_url
 
 def get_links_from_csv_regex(csv_file):
@@ -1185,34 +1214,65 @@ def extract_vote_data_from_html(html_content):
     """Extract vote data and metadata from the page HTML."""
     soup = BeautifulSoup(html_content, "html.parser")
     data = {}
+    logger.debug("Starting HTML vote data extraction")
+    
+    # Try to extract from JSON-LD structured data
     try:
         script_tag = soup.find('script', {'type': 'application/ld+json', 'id': 'detailed-schema-org'})
         if script_tag and script_tag.string:
             json_data = json.loads(script_tag.string)
             data['Title'] = json_data.get('name', '')
             data['Date'] = json_data.get('datePublished', '')
-    except Exception:
-        pass
-    for row in soup.find_all('div', class_='metadata-row'):
+            logger.debug(f"Extracted from JSON-LD - Title: '{data.get('Title', 'N/A')}', Date: '{data.get('Date', 'N/A')}'")
+        else:
+            logger.debug("No JSON-LD structured data found")
+    except Exception as e:
+        logger.debug(f"Failed to parse JSON-LD structured data: {e}")
+    
+    # Extract from metadata rows
+    metadata_rows = soup.find_all('div', class_='metadata-row')
+    logger.debug(f"Found {len(metadata_rows)} metadata rows")
+    
+    for i, row in enumerate(metadata_rows):
         try:
             title_elem = row.find('span', class_='title')
             value_elem = row.find('span', class_='value')
             if title_elem and value_elem:
                 title_text = title_elem.text.strip()
+                logger.debug(f"Processing metadata row {i+1}: '{title_text}'")
+                
                 if title_text == 'Vote':
                     value = value_elem.get_text('\n').strip()
                     vote_data = {}
-                    for line in value.split('\n'):
+                    lines = value.split('\n')
+                    logger.debug(f"Processing Vote data with {len(lines)} lines")
+                    
+                    vote_count = 0
+                    for line in lines:
                         line = line.strip()
                         if line:
                             parts = re.match(r'^\s*([YNA])\s+(.+)', line)
                             if parts:
-                                vote_data[parts.group(2).strip().upper()] = parts.group(1).upper()
+                                country = parts.group(2).strip().upper()
+                                vote = parts.group(1).upper()
+                                vote_data[country] = vote
+                                vote_count += 1
+                            else:
+                                logger.debug(f"Vote line didn't match pattern: '{line}'")
+                    
                     data['Vote Data'] = vote_data
+                    logger.debug(f"Extracted {vote_count} country votes")
                 else:
-                    data[title_text] = value_elem.text.strip()
-        except Exception:
+                    value_text = value_elem.text.strip()
+                    data[title_text] = value_text
+                    logger.debug(f"Extracted {title_text}: '{value_text[:100]}{'...' if len(value_text) > 100 else ''}'")
+            else:
+                logger.debug(f"Row {i+1} missing title or value element")
+        except Exception as e:
+            logger.debug(f"Error processing metadata row {i+1}: {e}")
             continue
+    
+    logger.debug(f"Final extracted data keys: {list(data.keys())}")
     return data
 
 def determine_council(title):
@@ -1232,50 +1292,123 @@ def process_resolution(link, driver, year):
     """
     try:
         record_id = link.split('/record/')[1].split('?')[0] if '/record/' in link else link.split('/')[-1]
-        logger.info(f"Processing record: {record_id}")
+        logger.info(f"Processing record: {record_id} - {link}")
+        
+        # Navigate to page
+        logger.debug(f"Navigating to: {link}")
         driver.get(link)
-        WebDriverWait(driver, 15).until(
-            EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'metadata-row')]"))
-        )
+        
+        # Wait for page to load
+        try:
+            WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'metadata-row')]"))
+            )
+            logger.debug(f"Page loaded successfully for record {record_id}")
+        except TimeoutException:
+            logger.warning(f"Timeout waiting for metadata rows to load for record {record_id}")
+            return None
+        
+        # Initialize row data
         row_data = {"Link": link, "token": record_id, "Scrape_Year": year}
+        logger.debug(f"Initialized row data for record {record_id}")
+        
+        # Extract HTML content and parse
         html_content = driver.page_source
+        logger.debug(f"Retrieved HTML content ({len(html_content)} chars) for record {record_id}")
+        
         extracted = extract_vote_data_from_html(html_content)
+        logger.debug(f"Extracted data keys for record {record_id}: {list(extracted.keys()) if extracted else 'None'}")
+        
         if extracted:
+            # Process title
             if extracted.get('Title'):
                 row_data['Title'] = extracted['Title']
                 row_data['Council'] = determine_council(extracted['Title'])
+                logger.debug(f"Record {record_id} - Title: '{extracted['Title']}', Council: '{row_data['Council']}'")
+            else:
+                logger.debug(f"Record {record_id} - No title found")
+            
+            # Process resolution
             if extracted.get('Resolution'):
                 row_data['Resolution'] = extracted['Resolution']
+                logger.debug(f"Record {record_id} - Resolution: '{extracted['Resolution']}'")
+            else:
+                logger.debug(f"Record {record_id} - No resolution found")
+            
+            # Process vote date
             if extracted.get('Vote date'):
                 row_data['Date'] = extracted['Vote date']
+                logger.debug(f"Record {record_id} - Vote date: '{extracted['Vote date']}'")
+            else:
+                logger.debug(f"Record {record_id} - No vote date found")
+            
+            # Process vote summary
             if extracted.get('Vote summary'):
                 summary = extracted['Vote summary']
+                logger.debug(f"Record {record_id} - Processing vote summary: '{summary[:100]}{'...' if len(summary) > 100 else ''}'")
+                
+                vote_counts = {}
                 if m := re.search(r'Yes:\s*(\d+)', summary):
                     row_data['YES COUNT'] = m.group(1)
+                    vote_counts['YES'] = m.group(1)
                 if m := re.search(r'No:\s*(\d+)', summary):
                     row_data['NO COUNT'] = m.group(1)
+                    vote_counts['NO'] = m.group(1)
                 if m := re.search(r'Abstentions:\s*(\d+)', summary):
                     row_data['ABSTAIN COUNT'] = m.group(1)
+                    vote_counts['ABSTAIN'] = m.group(1)
                 if m := re.search(r'Non-Voting:\s*(\d+)', summary):
                     row_data['NO-VOTE COUNT'] = m.group(1)
+                    vote_counts['NO-VOTE'] = m.group(1)
                 if m := re.search(r'Total voting membership:\s*(\d+)', summary):
                     row_data['TOTAL VOTES'] = m.group(1)
+                    vote_counts['TOTAL'] = m.group(1)
+                    
+                logger.debug(f"Record {record_id} - Vote counts: {vote_counts}")
+            else:
+                logger.debug(f"Record {record_id} - No vote summary found")
+            
+            # Process individual country votes
             if 'Vote Data' in extracted:
-                for country, vote in extracted['Vote Data'].items():
+                vote_data = extracted['Vote Data']
+                country_count = len(vote_data)
+                logger.debug(f"Record {record_id} - Processing {country_count} country votes")
+                
+                vote_stats = {'YES': 0, 'NO': 0, 'ABSTAIN': 0}
+                for country, vote in vote_data.items():
                     if vote == 'Y':
                         row_data[country] = 'YES'
+                        vote_stats['YES'] += 1
                     elif vote == 'N':
                         row_data[country] = 'NO'
+                        vote_stats['NO'] += 1
                     elif vote == 'A':
                         row_data[country] = 'ABSTAIN'
-        if row_data.get('Title') or row_data.get('Resolution'):
+                        vote_stats['ABSTAIN'] += 1
+                
+                logger.debug(f"Record {record_id} - Country vote breakdown: {vote_stats}")
+            else:
+                logger.debug(f"Record {record_id} - No individual vote data found")
+        else:
+            logger.warning(f"Record {record_id} - No data extracted from HTML")
+        
+        # Validation check
+        has_title = bool(row_data.get('Title'))
+        has_resolution = bool(row_data.get('Resolution'))
+        logger.debug(f"Record {record_id} - Validation: Title={has_title}, Resolution={has_resolution}")
+        
+        if has_title or has_resolution:
+            logger.info(f"Record {record_id} - Successfully processed with {len(row_data)} fields")
             return row_data
-        return None
+        else:
+            logger.warning(f"Record {record_id} - SKIPPED: Missing both title and resolution")
+            return None
+            
     except Exception as e:
-        logger.error(f"Error processing link {link}: {e}")
+        logger.error(f"Error processing link {link}: {e}", exc_info=True)
         return None
 
-def batch_scrape_resolutions(links, driver, year, batch_size=15):
+def batch_scrape_resolutions(links, driver, year, batch_size=30):
     """
     Scrape resolution pages in batches.
     Returns (successful_rows, failed_links).
@@ -1283,21 +1416,42 @@ def batch_scrape_resolutions(links, driver, year, batch_size=15):
     batch_rows = []
     failed_links = []
     total_links = len(links)
+    
+    logger.info(f"Starting batch scraping for year {year}: {total_links} links in batches of {batch_size}")
+    
     for i in range(0, total_links, batch_size):
         batch = links[i:i+batch_size]
-        logger.info(f"Processing batch {i//batch_size + 1}/{(total_links + batch_size - 1)//batch_size} with {len(batch)} links.")
-        for link in batch:
+        batch_num = i//batch_size + 1
+        total_batches = (total_links + batch_size - 1)//batch_size
+        
+        logger.info(f"Year {year}: Processing batch {batch_num}/{total_batches} with {len(batch)} links")
+        logger.debug(f"Year {year}: Batch {batch_num} links: {batch}")
+        
+        batch_success = 0
+        batch_failed = 0
+        
+        for j, link in enumerate(batch):
+            link_num = i + j + 1
+            logger.debug(f"Year {year}: Batch {batch_num}, Link {j+1}/{len(batch)} (overall {link_num}/{total_links}): {link}")
+            
             row_data = process_resolution(link, driver, year)
             if row_data:
                 batch_rows.append(row_data)
+                batch_success += 1
+                logger.debug(f"Year {year}: Batch {batch_num}, Link {j+1}: SUCCESS")
             else:
-                logger.warning(f"No data for link: {link}. Marking as failed.")
+                logger.warning(f"Year {year}: Batch {batch_num}, Link {j+1}: FAILED - {link}")
                 failed_links.append(link)
+                batch_failed += 1
             time.sleep(0.2)
+        
+        logger.info(f"Year {year}: Batch {batch_num} completed - {batch_success} successful, {batch_failed} failed")
         time.sleep(0.5)
+    
+    logger.info(f"Year {year}: Batch scraping completed - {len(batch_rows)} total successful, {len(failed_links)} total failed")
     return batch_rows, failed_links
 
-def parallel_scrape_resolutions(links, year, num_workers=2, batch_size=15):
+def parallel_scrape_resolutions(links, year, num_workers=2, batch_size=30):
     """
     Scrape resolution pages in parallel using multiple browser instances.
     Returns (all_rows, all_failed_links).
@@ -1346,47 +1500,68 @@ def collect_links_for_year(driver, year, existing_links):
     all_links = set()
     page_count = 0
 
+    logger.info(f"[Year {year}] Starting link collection with {len(existing_links)} existing links for deduplication")
+
     while page_count < MAX_PAGES_PER_YEAR:
         page_count += 1
         logger.info(f"[Year {year}] Processing page {page_count}.")
+        
         try:
             WebDriverWait(driver, 15).until(
                 EC.presence_of_element_located((By.XPATH, "//a[contains(@href, '/record/')]"))
             )
+            logger.debug(f"[Year {year}] Page {page_count} loaded successfully")
         except TimeoutException:
             logger.warning(f"Timeout on page {page_count} for year {year}.")
             break
 
         elements = driver.find_elements(By.XPATH, "//a[contains(@href, '/record/')]")
+        logger.debug(f"[Year {year}] Page {page_count} found {len(elements)} record links")
+        
         new_links_on_page = False
         duplicate_found = False
         page_links = []
         
         # First pass: collect all valid links from the page
-        for elem in elements:
+        for i, elem in enumerate(elements):
             try:
                 href = elem.get_attribute("href")
                 norm_link = normalize_link(href)
                 if norm_link:
                     page_links.append(norm_link)
+                    logger.debug(f"[Year {year}] Page {page_count} link {i+1}: {norm_link}")
+                else:
+                    logger.debug(f"[Year {year}] Page {page_count} link {i+1}: Invalid href - {href}")
             except StaleElementReferenceException:
+                logger.debug(f"[Year {year}] Page {page_count} link {i+1}: Stale element reference")
                 continue
         
+        logger.debug(f"[Year {year}] Page {page_count} collected {len(page_links)} valid links")
+        
         # Second pass: process all links from the page
-        for link in page_links:
+        new_count_this_page = 0
+        duplicate_count_this_page = 0
+        
+        for j, link in enumerate(page_links):
             if link in existing_links:
                 duplicate_found = True
+                duplicate_count_this_page += 1
+                logger.debug(f"[Year {year}] Page {page_count} link {j+1}: DUPLICATE - {link}")
             else:
                 all_links.add(link)
                 new_links_on_page = True
+                new_count_this_page += 1
+                logger.debug(f"[Year {year}] Page {page_count} link {j+1}: NEW - {link}")
+        
+        logger.info(f"[Year {year}] Page {page_count} summary: {new_count_this_page} new, {duplicate_count_this_page} duplicates")
         
         # If we found any duplicates on this page
         if duplicate_found:
             if len(all_links) > 0:
-                logger.info(f"[Year {year}] Found {len(all_links)} unique new links before duplicate.")
+                logger.info(f"[Year {year}] Found {len(all_links)} unique new links before duplicate encountered")
                 raise DuplicateLinkFound(f"Duplicate link encountered in year {year}", list(all_links))
             else:
-                logger.info(f"[Year {year}] No new links found before duplicate.")
+                logger.info(f"[Year {year}] No new links found before duplicate encountered")
                 return []
         
         # If no new links were found on this page, stop processing
@@ -1398,18 +1573,20 @@ def collect_links_for_year(driver, year, existing_links):
         next_button = check_for_next_button(driver)
         if next_button:
             try:
+                logger.debug(f"[Year {year}] Page {page_count}: Found next button, clicking...")
                 driver.execute_script("arguments[0].scrollIntoView();", next_button)
                 time.sleep(0.2)
                 driver.execute_script("arguments[0].click();", next_button)
                 time.sleep(1)
+                logger.debug(f"[Year {year}] Page {page_count}: Successfully clicked next button")
             except Exception as e:
-                logger.error(f"[Year {year}] Error clicking next button: {e}")
+                logger.error(f"[Year {year}] Error clicking next button on page {page_count}: {e}")
                 break
         else:
-            logger.info(f"[Year {year}] No next button found; reached last page.")
+            logger.info(f"[Year {year}] No next button found on page {page_count}; reached last page.")
             break
 
-    logger.info(f"[Year {year}] Collected {len(all_links)} new links.")
+    logger.info(f"[Year {year}] Completed link collection: {len(all_links)} new links across {page_count} pages")
     return list(all_links)
 
 def get_available_years(driver):
@@ -1771,63 +1948,92 @@ def main():
     check_one_more_year = False
 
     try:
-        for year_data in years_data:
+        for i, year_data in enumerate(years_data):
             year = year_data['year']
-            logger.info(f"\n{'='*60}\nProcessing year {year} ({year_data['count']} records)\n{'='*60}")
+            logger.info(f"\n{'='*60}\nProcessing year {year} ({year_data['count']} records) - Year {i+1}/{len(years_data)}\n{'='*60}")
+            logger.debug(f"Year {year} data: {year_data}")
             
             if session_request_count > SESSION_RESET_THRESHOLD:
+                logger.info(f"Session request count ({session_request_count}) exceeded threshold ({SESSION_RESET_THRESHOLD}), resetting browser")
                 driver.quit()
                 driver = get_driver()
                 driver.get(BASE_SEARCH_URL)
                 time.sleep(2)
                 session_request_count = 0
             
+            logger.debug(f"Year {year}: Attempting to select year facet")
             success, driver = select_year_facet(driver, year_data)
             if not success:
-                logger.error(f"Failed to select facet for {year}; skipping.")
+                logger.error(f"Failed to select facet for {year}; skipping this year.")
                 continue
             session_request_count += 1
+            logger.debug(f"Year {year}: Successfully selected year facet")
             
             try:
+                logger.debug(f"Year {year}: Starting link collection")
                 new_links = collect_links_for_year(driver, year, existing_links)
+                logger.info(f"Year {year}: Link collection completed normally")
             except DuplicateLinkFound as e:
                 new_links = e.new_links
-                logger.info(f"Duplicate link rule triggered; found {len(new_links)} new links in {year}.")
+                logger.info(f"Year {year}: Duplicate link rule triggered; found {len(new_links)} new links.")
                 if not check_one_more_year:
+                    logger.info(f"Year {year}: First consecutive year with duplicates, will check one more year")
                     check_one_more_year = True
                 else:
+                    logger.info(f"Year {year}: Second consecutive year with duplicates, stopping processing")
                     stop_processing = True
 
             if new_links:
-                logger.info(f"Collected {len(new_links)} new links for year {year}")
-                check_one_more_year = False
+                logger.info(f"Year {year}: Collected {len(new_links)} new links, proceeding to scrape")
+                check_one_more_year = False  # Reset the flag since we found new links
                 
-                BATCH_SIZE = 40
+                # Log some sample links
+                sample_links = new_links[:3] if len(new_links) >= 3 else new_links
+                logger.debug(f"Year {year}: Sample new links: {sample_links}")
+                
+                BATCH_SIZE = 80  # Increased batch size to work better with 100 results per page
                 if len(new_links) > 50 and MAX_WORKERS > 1:
+                    logger.info(f"Year {year}: Using parallel scraping with {MAX_WORKERS} workers for {len(new_links)} links")
                     batch_rows, failed_links = parallel_scrape_resolutions(new_links, year, MAX_WORKERS)
                 else:
-                    batch_rows, failed_links = batch_scrape_resolutions(new_links, driver, year)
+                    logger.info(f"Year {year}: Using sequential scraping for {len(new_links)} links")
+                    batch_rows, failed_links = batch_scrape_resolutions(new_links, driver, year, BATCH_SIZE)
 
-                if batch_rows: new_rows_all.extend(batch_rows)
+                logger.info(f"Year {year}: Scraping completed - {len(batch_rows)} successful, {len(failed_links)} failed")
+                
+                if batch_rows: 
+                    new_rows_all.extend(batch_rows)
+                    logger.debug(f"Year {year}: Added {len(batch_rows)} rows to total collection")
+                
                 if failed_links:
+                    logger.info(f"Year {year}: Retrying {len(failed_links)} failed links")
                     retry_rows = retry_failed_links(failed_links, year)
-                    if retry_rows: new_rows_all.extend(retry_rows)
+                    if retry_rows: 
+                        new_rows_all.extend(retry_rows)
+                        logger.info(f"Year {year}: Recovered {len(retry_rows)} rows from retry")
 
+                # Update existing_links to prevent re-processing
                 existing_links.update(new_links)
+                logger.debug(f"Year {year}: Updated existing_links set, now contains {len(existing_links)} links")
             else:
+                logger.info(f"Year {year}: No new links found")
                 if not check_one_more_year:
-                    logger.info(f"No new links for {year}, will check one more year.")
+                    logger.info(f"Year {year}: First consecutive year with no new links, will check one more year")
                     check_one_more_year = True
                 else:
-                    logger.info("No new links for second consecutive year, stopping.")
+                    logger.info(f"Year {year}: Second consecutive year with no new links, stopping")
                     stop_processing = True
             
+            # Clear filters and prepare for next year
+            logger.debug(f"Year {year}: Clearing filters")
             clear_filters(driver)
             time.sleep(1)
 
             if stop_processing:
-                logger.info("Stopping further year processing.")
+                logger.info(f"Year {year}: Stopping criteria met, ending year processing loop")
                 break
+                
+        logger.info(f"Year processing completed. Total new rows collected: {len(new_rows_all)}")
     
     except Exception as general_e:
         logger.error(f"An error occurred during scraping: {general_e}", exc_info=True)
