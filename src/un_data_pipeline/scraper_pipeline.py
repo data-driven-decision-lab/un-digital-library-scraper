@@ -174,6 +174,7 @@ BASE_SEARCH_URL = ("https://digitallibrary.un.org/search?cc=Voting%20Data&ln=en&
                    "&rg=100&c=Voting%20Data&c=&of=hb&fti=1&fct__9=Vote&fti=1")  # 100 results per page for faster scraping
 MAX_PAGES_PER_YEAR = 50
 MAX_WORKERS = 2
+MAX_CONSECUTIVE_EMPTY_PAGES = 3  # Stop after this many consecutive pages with no new links
 
 # User agent rotation for Selenium
 USER_AGENTS = [
@@ -1492,13 +1493,14 @@ def check_for_next_button(driver):
 def collect_links_for_year(driver, year, existing_links):
     """
     Paginate the search results for a given year and collect new links.
-    Once a duplicate link is encountered on a page, finish collecting any new links
-    from that page and then stop. If all links on a page are duplicates, stop immediately.
+    Uses intelligent duplicate detection that continues processing pages even when duplicates are found.
+    Only stops when we encounter consecutive pages with no new documents or reach maximum pages.
     
     Returns a list of new links (i.e. not in existing_links).
     """
     all_links = set()
     page_count = 0
+    consecutive_pages_with_no_new_links = 0
 
     logger.info(f"[Year {year}] Starting link collection with {len(existing_links)} existing links for deduplication")
 
@@ -1519,7 +1521,6 @@ def collect_links_for_year(driver, year, existing_links):
         logger.debug(f"[Year {year}] Page {page_count} found {len(elements)} record links")
         
         new_links_on_page = False
-        duplicate_found = False
         page_links = []
         
         # First pass: collect all valid links from the page
@@ -1544,7 +1545,6 @@ def collect_links_for_year(driver, year, existing_links):
         
         for j, link in enumerate(page_links):
             if link in existing_links:
-                duplicate_found = True
                 duplicate_count_this_page += 1
                 logger.debug(f"[Year {year}] Page {page_count} link {j+1}: DUPLICATE - {link}")
             else:
@@ -1555,21 +1555,25 @@ def collect_links_for_year(driver, year, existing_links):
         
         logger.info(f"[Year {year}] Page {page_count} summary: {new_count_this_page} new, {duplicate_count_this_page} duplicates")
         
-        # If we found any duplicates on this page
-        if duplicate_found:
-            if len(all_links) > 0:
-                logger.info(f"[Year {year}] Found {len(all_links)} unique new links before duplicate encountered")
-                raise DuplicateLinkFound(f"Duplicate link encountered in year {year}", list(all_links))
-            else:
-                logger.info(f"[Year {year}] No new links found before duplicate encountered")
-                return []
+        # Track consecutive pages with no new links
+        if new_links_on_page:
+            consecutive_pages_with_no_new_links = 0
+            logger.debug(f"[Year {year}] Page {page_count} had new links, resetting consecutive empty count")
+        else:
+            consecutive_pages_with_no_new_links += 1
+            logger.info(f"[Year {year}] Page {page_count} had no new links. Consecutive empty pages: {consecutive_pages_with_no_new_links}")
         
-        # If no new links were found on this page, stop processing
-        if not new_links_on_page:
-            logger.info(f"[Year {year}] No new links on page {page_count}; stopping collection.")
-            break
+        # Stop if we've seen too many consecutive pages with no new links
+        if consecutive_pages_with_no_new_links >= MAX_CONSECUTIVE_EMPTY_PAGES:
+            logger.info(f"[Year {year}] Stopping after {consecutive_pages_with_no_new_links} consecutive pages with no new links")
+            # If we have collected some links and hit consecutive empty pages, raise DuplicateLinkFound
+            # to maintain compatibility with existing stopping logic
+            if len(all_links) > 0:
+                raise DuplicateLinkFound(f"Reached {consecutive_pages_with_no_new_links} consecutive pages with no new links in year {year}", list(all_links))
+            else:
+                return []
 
-        # Only continue to next page if we found new links and no duplicates
+        # Continue to next page if available
         next_button = check_for_next_button(driver)
         if next_button:
             try:
