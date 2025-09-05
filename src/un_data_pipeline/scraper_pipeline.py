@@ -1597,39 +1597,103 @@ def get_available_years(driver):
     """Extract available years and their counts from the date facet."""
     date_facets = []
     try:
+        # Wait for the page to fully load and then wait a bit more for dynamic content
         WebDriverWait(driver, 15).until(
             EC.presence_of_element_located((By.XPATH, "//ul[contains(@class, 'option-fct')]"))
         )
-        date_headers = driver.find_elements(By.XPATH, "//h2[text()='Date']")
-        for header in date_headers:
+        time.sleep(2)  # Additional wait for dynamic content
+        
+        # Look for the date facet section - try multiple selectors
+        facet_section = None
+        try:
+            # Try to find by ID first (more specific)
+            facet_section = driver.find_element(By.XPATH, "//ul[@id='option-fct-fct__3']")
+            logger.debug("Found date facet section by ID")
+        except NoSuchElementException:
+            # Fallback to class-based search
+            facet_sections = driver.find_elements(By.XPATH, "//ul[contains(@class, 'option-fct')]")
+            if facet_sections:
+                facet_section = facet_sections[0]  # Use the first one found
+                logger.debug("Found date facet section by class")
+        
+        if not facet_section:
+            logger.error("Could not find date facet section")
+            return []
+            
+        # Look for show more button and click if needed
+        try:
+            show_more_buttons = driver.find_elements(By.XPATH, "//span[contains(@class, 'showmore')] | //button[contains(@class, 'showmore')] | //a[contains(text(), 'show more')]")
+            for show_more in show_more_buttons:
+                if show_more.is_displayed():
+                    logger.debug("Clicking show more button")
+                    driver.execute_script("arguments[0].click();", show_more)
+                    time.sleep(1)
+                    break
+        except Exception as e:
+            logger.debug(f"Show more button interaction failed: {e}")
+        
+        # Find all year buttons/checkboxes with their labels
+        year_elements = facet_section.find_elements(By.XPATH, ".//button[@data-value] | .//input[@type='checkbox']")
+        logger.debug(f"Found {len(year_elements)} year elements")
+        
+        for i, elem in enumerate(year_elements):
             try:
-                facet_section = header.find_element(By.XPATH, "./following-sibling::ul[contains(@class, 'option-fct')]")
-                if "expanded" not in facet_section.get_attribute("class"):
-                    try:
-                        show_more = header.find_element(By.XPATH, "./following-sibling::span[contains(@class, 'showmore')]")
-                        driver.execute_script("arguments[0].click();", show_more)
-                        time.sleep(0.5)
-                    except (NoSuchElementException, ElementNotInteractableException):
-                        pass
-                year_inputs = facet_section.find_elements(By.XPATH, ".//input[@type='checkbox']")
-                for inp in year_inputs:
-                    year_value = inp.get_attribute("value")
-                    try:
-                        label = driver.find_element(By.XPATH, f"//label[@for='{inp.get_attribute('id')}']")
-                        year_text = label.text.strip()
-                        match = re.match(r'(\d{4})\s*\((\d+)\)', year_text)
-                        if match:
-                            year, count = match.group(1), int(match.group(2))
-                            date_facets.append({
-                                'year': year,
-                                'count': count,
-                                'input_id': inp.get_attribute('id'),
-                                'input_value': year_value
-                            })
-                    except NoSuchElementException:
-                        continue
+                # Get the data value (could be base64 encoded)
+                data_value = elem.get_attribute("data-value") or elem.get_attribute("value")
+                
+                # Find the associated label text
+                label_text = ""
+                try:
+                    # For button elements, look for the span with checkbox-label class
+                    if elem.tag_name == "button":
+                        # Try different ways to find the label
+                        label_span = None
+                        try:
+                            label_span = elem.find_element(By.XPATH, "./following-sibling::span[contains(@class, 'checkbox-label')]")
+                        except NoSuchElementException:
+                            try:
+                                label_span = elem.find_element(By.XPATH, "../span[contains(@class, 'checkbox-label')]")
+                            except NoSuchElementException:
+                                # Look in the parent div
+                                parent_div = elem.find_element(By.XPATH, "./..")
+                                label_span = parent_div.find_element(By.XPATH, ".//span[contains(@class, 'checkbox-label')]")
+                        
+                        if label_span:
+                            label_text = label_span.text.strip()
+                            # If text is empty, try getting innerHTML or other attributes
+                            if not label_text:
+                                label_text = label_span.get_attribute("innerHTML").strip()
+                                # Clean HTML tags if any
+                                import re
+                                label_text = re.sub(r'<[^>]+>', '', label_text).strip()
+                    else:
+                        # For input elements, look for associated label
+                        input_id = elem.get_attribute('id')
+                        if input_id:
+                            label = driver.find_element(By.XPATH, f"//label[@for='{input_id}']")
+                            label_text = label.text.strip()
+                except NoSuchElementException as e:
+                    logger.debug(f"Could not find label for element {i}: {e}")
+                    continue
+                
+                # Parse year and count from label text (format: "2024 (141)")
+                if label_text:
+                    match = re.match(r'(\d{4})\s*\((\d+)\)', label_text)
+                    if match:
+                        year, count = match.group(1), int(match.group(2))
+                        date_facets.append({
+                            'year': year,
+                            'count': count,
+                            'element_id': elem.get_attribute('id'),
+                            'data_value': data_value,
+                            'element_type': elem.tag_name
+                        })
+                        logger.debug(f"Found year: {year} with {count} records")
+                else:
+                    logger.debug(f"Empty label text for element {i}")
+                    
             except Exception as e:
-                logger.error(f"Error processing date header: {e}")
+                logger.debug(f"Error processing year element {i}: {e}")
                 continue
         return sorted(date_facets, key=lambda x: x['year'], reverse=True)
     except Exception as e:
@@ -1638,7 +1702,7 @@ def get_available_years(driver):
 
 def select_year_facet(driver, year_data, max_retries=10):
     """
-    Select a specific year by clicking its checkbox.
+    Select a specific year by clicking its checkbox or button.
     If "no such element" errors occur five times, refresh the browser session (switching user agent).
     Returns a tuple: (True/False, driver)
     """
@@ -1647,11 +1711,39 @@ def select_year_facet(driver, year_data, max_retries=10):
     for retry in range(max_retries):
         try:
             logger.info(f"Selecting year: {year_data['year']} (Attempt {retry+1}/{max_retries})")
-            checkbox = driver.find_element(By.ID, year_data['input_id'])
-            driver.execute_script("arguments[0].scrollIntoView();", checkbox)
+            
+            # Try to find the element by ID first, then by data-value as fallback
+            element = None
+            element_id = year_data.get('element_id') or year_data.get('input_id')
+            
+            if element_id:
+                try:
+                    element = driver.find_element(By.ID, element_id)
+                except NoSuchElementException:
+                    pass
+            
+            # Fallback: find by data-value if ID doesn't work
+            if not element and year_data.get('data_value'):
+                try:
+                    element = driver.find_element(By.XPATH, f"//button[@data-value='{year_data['data_value']}']")
+                except NoSuchElementException:
+                    pass
+            
+            # Another fallback: find by year text
+            if not element:
+                try:
+                    element = driver.find_element(By.XPATH, f"//span[contains(@class, 'checkbox-label') and contains(text(), '{year_data['year']}')]/preceding-sibling::button | //label[contains(text(), '{year_data['year']}')]/preceding-sibling::input")
+                except NoSuchElementException:
+                    pass
+            
+            if not element:
+                raise NoSuchElementException(f"Could not find year element for {year_data['year']}")
+            
+            driver.execute_script("arguments[0].scrollIntoView();", element)
             time.sleep(0.2)
-            driver.execute_script("arguments[0].click();", checkbox)
+            driver.execute_script("arguments[0].click();", element)
             time.sleep(1)
+            
             WebDriverWait(driver, 15).until(
                 EC.presence_of_element_located((By.XPATH, "//a[contains(@href, '/record/')]"))
             )
@@ -1683,22 +1775,41 @@ def select_year_facet(driver, year_data, max_retries=10):
                     continue
             if retry < max_retries - 1:
                 clear_filters(driver)
+    
     try:
         logger.warning(f"Trying fallback for year {year_data['year']}...")
         driver.get(BASE_SEARCH_URL)
         time.sleep(1.5)
         WebDriverWait(driver, 15).until(
-            EC.presence_of_element_located((By.XPATH, "//h2[text()='Date']"))
+            EC.presence_of_element_located((By.XPATH, "//ul[contains(@class, 'option-fct')]"))
         )
-        checkbox = driver.find_element(By.ID, year_data['input_id'])
-        driver.execute_script("arguments[0].click();", checkbox)
-        time.sleep(1.5)
-        records = driver.find_elements(By.XPATH, "//a[contains(@href, '/record/')]")
-        if records and len(records) > 0:
-            logger.info(f"Fallback: Selected year {year_data['year']} with {len(records)} visible records")
-            return True, driver
+        
+        # Try multiple fallback strategies
+        element = None
+        element_id = year_data.get('element_id') or year_data.get('input_id')
+        
+        if element_id:
+            try:
+                element = driver.find_element(By.ID, element_id)
+            except NoSuchElementException:
+                pass
+        
+        if not element and year_data.get('data_value'):
+            try:
+                element = driver.find_element(By.XPATH, f"//button[@data-value='{year_data['data_value']}']")
+            except NoSuchElementException:
+                pass
+        
+        if element:
+            driver.execute_script("arguments[0].click();", element)
+            time.sleep(1.5)
+            records = driver.find_elements(By.XPATH, "//a[contains(@href, '/record/')]")
+            if records and len(records) > 0:
+                logger.info(f"Fallback: Selected year {year_data['year']} with {len(records)} visible records")
+                return True, driver
     except Exception as e:
         logger.error(f"Fallback selection failed: {e}")
+    
     logger.error(f"Failed to select year {year_data['year']} after multiple attempts")
     return False, driver
 
