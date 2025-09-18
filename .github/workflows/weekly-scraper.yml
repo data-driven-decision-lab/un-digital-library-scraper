@@ -33,4 +33,4 @@ jobs:
 
       - name: Run Scraper
         run: |
-          python -c "import sys; sys.path.insert(0, 'src'); from un_data_pipeline.scraper_pipeline import main; main()"
+          python -c "import sys; sys.path.insert(0, 'un-digital-library-scraper-main/src'); from un_data_pipeline.scraper_pipeline import main; main()"
