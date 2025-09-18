@@ -1,9 +1,9 @@
-name: Weekly UN Scraper
+name: UN Scraper (Every 6 Days)
 
 on:
   workflow_dispatch: # Allows manual triggering
   schedule:
-    - cron: '0 2 * * 1' # Runs every Monday at 2:00 AM UTC
+    - cron: '0 2 */6 * *' # Runs every 6 days at 2:00 AM UTC
 
 jobs:
   scrape:

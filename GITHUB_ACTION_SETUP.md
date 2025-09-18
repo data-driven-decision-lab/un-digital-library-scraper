@@ -39,7 +39,7 @@ After each run, you can check the results:
 - **Local Script**: Run `python check_logs.py` to see recent runs
 
 ## Workflow Schedule
-- **Automatic**: Every Monday at 2:00 AM UTC
+- **Automatic**: Every 6 days at 2:00 AM UTC
 - **Manual**: Can be triggered anytime from the Actions tab
 
 ## Troubleshooting
