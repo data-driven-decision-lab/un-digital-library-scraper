@@ -1,5 +1,6 @@
 #hides openai api key
 .env
+.secrets
 
 #hide pycache
 __pycache__/
