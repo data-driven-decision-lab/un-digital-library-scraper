@@ -1,7 +1,7 @@
 beautifulsoup4
 selenium
 python-dotenv
-supabase-py
+supabase
 pandas
 tqdm
 openai
