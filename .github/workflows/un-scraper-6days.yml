@@ -1,0 +1,79 @@
+name: UN Scraper (Every 6 Days)
+
+on:
+  workflow_dispatch: # Allows manual triggering
+  schedule:
+    - cron: '0 2 */6 * *' # Runs every 6 days at 2:00 AM UTC
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      API_KEY: ${{ secrets.API_KEY }} # For OpenAI API
+      LOG_LEVEL: INFO
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          # Install Chrome for Selenium
+          sudo apt-get update
+          sudo apt-get install google-chrome-stable -y
+
+      - name: Check secrets are not empty and show lengths
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        run: |
+          check_var() {
+            local name="$1"
+            local value="${!name}"
+            if [ -z "$value" ]; then
+              echo "❌ $name is empty or not set."
+              exit 1
+            else
+              echo "✅ $name length: ${#value}"
+            fi
+          }
+          check_var "API_KEY"
+          check_var "SUPABASE_KEY"
+          check_var "SUPABASE_URL"
+
+      - name: DNS check for OpenAI API
+        run: |
+          echo "🔍 Checking DNS resolution for api.openai.com"
+          if dig +short api.openai.com | grep -qE '^[0-9.]+'; then
+            echo "✅ DNS resolution successful for api.openai.com"
+          else
+            echo "❌ DNS resolution failed for api.openai.com"
+            exit 1
+          fi
+
+      - name: HTTP check for OpenAI API availability (with auth)
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+        run: |
+          echo "🌐 Testing HTTPS connection to OpenAI API with authentication"
+          if curl -s --head --fail -H "Authorization: Bearer $API_KEY" \
+               https://api.openai.com/v1/models > /dev/null; then
+            echo "✅ OpenAI API is reachable"
+          else
+            echo "❌ OpenAI API is not reachable (HTTP check failed)"
+            exit 1
+          fi
+
+      - name: Run Scraper
+        run: |
+          python -c "import sys; sys.path.insert(0, 'src'); from un_data_pipeline.scraper_pipeline import main; main()"
