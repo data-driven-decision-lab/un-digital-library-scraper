@@ -18,10 +18,10 @@ app = FastAPI(
 )
 
 # --- CORS Middleware Configuration (User Specified) ---
-# Enable CORS for all origins, methods, headers
+# Enable CORS for datadrivendecisionlab.com
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],        # allow any origin
+    allow_origins=["https://datadrivendecisionlab.com"],  # allow specific origin
     allow_credentials=True,     # allow cookies, Authorization headers, etc.
     allow_methods=["*"],        # allow all HTTP methods (GET, POST, PUT, DELETE, …)
     allow_headers=["*"],        # allow all headers

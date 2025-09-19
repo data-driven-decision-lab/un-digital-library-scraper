@@ -552,10 +552,10 @@ def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:
         "note": None
     }
 
-    if not df_similarity_country.empty and 'CosineSimilarity' in df_similarity_country.columns:
+    if not df_similarity_country.empty and 'cosinesimilarity' in df_similarity_country.columns:
         # Determine the 'partner' country in each row (the one that is not country_iso)
         df_similarity_country['partner_iso3'] = df_similarity_country.apply(
-            lambda row: row['Country2_ISO3'] if row[country_col_sim].upper() == country_iso.upper() else row[country_col_sim],
+            lambda row: row['country2_iso3'] if row[country_col_sim].upper() == country_iso.upper() else row[country_col_sim],
             axis=1
         )
         
@@ -574,8 +574,8 @@ def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:
         df_p5_partners = df_similarity_country[df_similarity_country['partner_iso3'].str.upper().isin(target_p5_list)]
 
         if not df_p5_partners.empty:
-            avg_similarity_with_p5 = df_p5_partners.groupby('partner_iso3')['CosineSimilarity'].mean().reset_index()
-            avg_similarity_with_p5 = avg_similarity_with_p5.rename(columns={'CosineSimilarity': 'average_similarity_score'})
+            avg_similarity_with_p5 = df_p5_partners.groupby('partner_iso3')['cosinesimilarity'].mean().reset_index()
+            avg_similarity_with_p5 = avg_similarity_with_p5.rename(columns={'cosinesimilarity': 'average_similarity_score'})
             
             if not avg_similarity_with_p5.empty:
                 # Most Aligned

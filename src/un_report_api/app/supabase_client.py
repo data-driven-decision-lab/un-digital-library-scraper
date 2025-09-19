@@ -29,127 +29,129 @@ class SupabaseDataLoader:
         logger.info("Supabase client initialized successfully")
     
     def load_annual_scores(self, year: Optional[int] = None) -> pd.DataFrame:
-        """Load annual scores data from Supabase with pagination support."""
+        """Load annual scores data from local CSV file."""
         try:
-            all_data = []
-            page_size = 1000
-            offset = 0
+            # Load from local CSV file in required_csvs folder
+            csv_path = os.path.join(os.path.dirname(__file__), 'required_csvs', 'annual_scores.csv')
             
-            while True:
-                query = self.client.table('annual_scores').select('*')
-                
-                if year is not None:
-                    query = query.eq('Year', year)
-                
-                query = query.range(offset, offset + page_size - 1)
-                response = query.execute()
-                
-                if not response.data:
-                    break
-                    
-                all_data.extend(response.data)
-                
-                # If we got fewer records than page_size, we've reached the end
-                if len(response.data) < page_size:
-                    break
-                    
-                offset += page_size
+            if not os.path.exists(csv_path):
+                logger.error(f"Annual scores CSV file not found at: {csv_path}")
+                raise FileNotFoundError(f"Annual scores CSV file not found at: {csv_path}")
             
-            if all_data:
-                df = pd.DataFrame(all_data)
-                logger.info(f"Successfully loaded {len(df)} rows from annual_scores table")
+            df = pd.read_csv(csv_path)
+            
+            if year is not None:
+                df = df[df['Year'] == year]
+            
+            if not df.empty:
+                logger.info(f"Successfully loaded {len(df)} rows from annual_scores.csv")
                 return df
             else:
-                logger.warning("No data found in annual_scores table")
+                logger.warning("No data found in annual_scores.csv")
                 return pd.DataFrame()
                 
         except Exception as e:
-            logger.error(f"Error loading annual_scores from Supabase: {e}")
+            logger.error(f"Error loading annual_scores from CSV: {e}")
             raise
     
     def load_pairwise_similarity(self, year: Optional[int] = None) -> pd.DataFrame:
-        """Load pairwise similarity data from Supabase."""
+        """Load pairwise similarity data from local CSV file."""
         try:
-            query = self.client.table('pairwise_similarity_yearly').select('*')
+            # Load from local CSV file in required_csvs folder
+            csv_path = os.path.join(os.path.dirname(__file__), 'required_csvs', 'pairwise_similarity_yearly.csv')
+            
+            if not os.path.exists(csv_path):
+                logger.error(f"Pairwise similarity CSV file not found at: {csv_path}")
+                raise FileNotFoundError(f"Pairwise similarity CSV file not found at: {csv_path}")
+            
+            df = pd.read_csv(csv_path)
             
             if year is not None:
-                query = query.eq('Year', year)
+                df = df[df['Year'] == year]
             
-            response = query.execute()
-            
-            if response.data:
-                df = pd.DataFrame(response.data)
-                logger.info(f"Successfully loaded {len(df)} rows from pairwise_similarity_yearly table")
+            if not df.empty:
+                logger.info(f"Successfully loaded {len(df)} rows from pairwise_similarity_yearly.csv")
                 return df
             else:
-                logger.warning("No data found in pairwise_similarity_yearly table")
+                logger.warning("No data found in pairwise_similarity_yearly.csv")
                 return pd.DataFrame()
                 
         except Exception as e:
-            logger.error(f"Error loading pairwise_similarity_yearly from Supabase: {e}")
+            logger.error(f"Error loading pairwise_similarity_yearly from CSV: {e}")
             raise
     
     def load_topic_votes(self, year: Optional[int] = None) -> pd.DataFrame:
-        """Load topic votes data from Supabase."""
+        """Load topic votes data from local CSV file."""
         try:
-            query = self.client.table('topic_votes_yearly').select('*')
+            # Load from local CSV file in required_csvs folder
+            csv_path = os.path.join(os.path.dirname(__file__), 'required_csvs', 'topic_votes_yearly.csv')
+            
+            if not os.path.exists(csv_path):
+                logger.error(f"Topic votes CSV file not found at: {csv_path}")
+                raise FileNotFoundError(f"Topic votes CSV file not found at: {csv_path}")
+            
+            df = pd.read_csv(csv_path)
             
             if year is not None:
-                query = query.eq('Year', year)
+                df = df[df['Year'] == year]
             
-            response = query.execute()
-            
-            if response.data:
-                df = pd.DataFrame(response.data)
-                logger.info(f"Successfully loaded {len(df)} rows from topic_votes_yearly table")
+            if not df.empty:
+                logger.info(f"Successfully loaded {len(df)} rows from topic_votes_yearly.csv")
                 return df
             else:
-                logger.warning("No data found in topic_votes_yearly table")
+                logger.warning("No data found in topic_votes_yearly.csv")
                 return pd.DataFrame()
                 
         except Exception as e:
-            logger.error(f"Error loading topic_votes_yearly from Supabase: {e}")
+            logger.error(f"Error loading topic_votes_yearly from CSV: {e}")
             raise
     
     def load_country_classifications(self) -> pd.DataFrame:
-        """Load country classifications data from Supabase."""
+        """Load country classifications data from local CSV file."""
         try:
-            # For now, we'll load from the reference data table or create a simple mapping
-            # This might need to be adjusted based on your actual Supabase schema
-            query = self.client.table('country_classifications_2023').select('*')
-            response = query.execute()
+            # Load from local CSV file in required_csvs folder
+            csv_path = os.path.join(os.path.dirname(__file__), 'required_csvs', 'country_classifications_2023.csv')
             
-            if response.data:
-                df = pd.DataFrame(response.data)
-                logger.info(f"Successfully loaded {len(df)} rows from country_classifications_2023 table")
+            if not os.path.exists(csv_path):
+                logger.error(f"Country classifications CSV file not found at: {csv_path}")
+                raise FileNotFoundError(f"Country classifications CSV file not found at: {csv_path}")
+            
+            df = pd.read_csv(csv_path)
+            
+            if not df.empty:
+                logger.info(f"Successfully loaded {len(df)} rows from country_classifications_2023.csv")
                 return df
             else:
-                logger.warning("No data found in country_classifications_2023 table")
+                logger.warning("No data found in country_classifications_2023.csv")
                 return pd.DataFrame()
                 
         except Exception as e:
-            logger.error(f"Error loading country_classifications_2023 from Supabase: {e}")
-            # Return empty DataFrame if table doesn't exist
+            logger.error(f"Error loading country_classifications_2023 from CSV: {e}")
+            # Return empty DataFrame if file doesn't exist
             return pd.DataFrame()
     
     def load_un_region_mapping(self) -> pd.DataFrame:
-        """Load UN region mapping data from Supabase."""
+        """Load UN region mapping data from local CSV file."""
         try:
-            # This might need to be adjusted based on your actual Supabase schema
-            query = self.client.table('un_country_region_mapping').select('*')
-            response = query.execute()
+            # Load from local CSV file in required_csvs folder
+            csv_path = os.path.join(os.path.dirname(__file__), 'required_csvs', 'UN_Country_Region_Mapping_clean.csv')
             
-            if response.data:
-                df = pd.DataFrame(response.data)
-                logger.info(f"Successfully loaded {len(df)} rows from un_country_region_mapping table")
+            if not os.path.exists(csv_path):
+                logger.error(f"UN region mapping CSV file not found at: {csv_path}")
+                raise FileNotFoundError(f"UN region mapping CSV file not found at: {csv_path}")
+            
+            df = pd.read_csv(csv_path)
+            
+            if not df.empty:
+                logger.info(f"Successfully loaded {len(df)} rows from UN_Country_Region_Mapping_clean.csv")
                 return df
             else:
-                logger.warning("No data found in un_country_region_mapping table")
+                logger.warning("No data found in UN_Country_Region_Mapping_clean.csv")
                 return pd.DataFrame()
                 
         except Exception as e:
-            logger.error(f"Error loading un_country_region_mapping from Supabase: {e}")
-            # Return empty DataFrame if table doesn't exist
+            logger.error(f"Error loading UN region mapping from CSV: {e}")
+            # Return empty DataFrame if file doesn't exist
             return pd.DataFrame()
 
 # Global instance

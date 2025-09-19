@@ -66,6 +66,5 @@ un-digital-library-scraper-main/
 #hide CSV data files (now using Supabase)
 *.csv
 **/data/
-**/required_csvs/
 **/processed/
 **/reference/
