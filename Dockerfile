@@ -52,5 +52,5 @@ EXPOSE 8080
 # Set the entrypoint
 ENTRYPOINT ["/app/entrypoint.sh"]
 
-# Default to running the scraper
-CMD ["scraper"]
+# Default to running the API for Cloud Run
+CMD ["api"]
