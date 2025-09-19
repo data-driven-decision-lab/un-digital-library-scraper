@@ -1,0 +1,247 @@
+Country,ISO-alpha3 code,UN Region
+Algeria,DZA,Northern Africa
+Egypt,EGY,Northern Africa
+Libya,LBY,Northern Africa
+Morocco,MAR,Northern Africa
+Sudan,SDN,Northern Africa
+Tunisia,TUN,Northern Africa
+Burundi,BDI,Sub-Saharan Africa
+Comoros,COM,Sub-Saharan Africa
+Djibouti,DJI,Sub-Saharan Africa
+Eritrea,ERI,Sub-Saharan Africa
+Ethiopia,ETH,Sub-Saharan Africa
+French Southern Territories,ATF,Sub-Saharan Africa
+Kenya,KEN,Sub-Saharan Africa
+Madagascar,MDG,Sub-Saharan Africa
+Malawi,MWI,Sub-Saharan Africa
+Mauritius,MUS,Sub-Saharan Africa
+Mayotte,MYT,Sub-Saharan Africa
+Mozambique,MOZ,Sub-Saharan Africa
+Réunion,REU,Sub-Saharan Africa
+Rwanda,RWA,Sub-Saharan Africa
+Seychelles,SYC,Sub-Saharan Africa
+Somalia,SOM,Sub-Saharan Africa
+South Sudan,SSD,Sub-Saharan Africa
+Uganda,UGA,Sub-Saharan Africa
+United Republic of Tanzania,TZA,Sub-Saharan Africa
+Zambia,ZMB,Sub-Saharan Africa
+Zimbabwe,ZWE,Sub-Saharan Africa
+Angola,AGO,Sub-Saharan Africa
+Cameroon,CMR,Sub-Saharan Africa
+Central African Republic,CAF,Sub-Saharan Africa
+Chad,TCD,Sub-Saharan Africa
+Congo,COG,Sub-Saharan Africa
+Democratic Republic of the Congo,COD,Sub-Saharan Africa
+Equatorial Guinea,GNQ,Sub-Saharan Africa
+Gabon,GAB,Sub-Saharan Africa
+Sao Tome and Principe,STP,Sub-Saharan Africa
+Botswana,BWA,Sub-Saharan Africa
+Eswatini,SWZ,Sub-Saharan Africa
+Lesotho,LSO,Sub-Saharan Africa
+Namibia,NAM,Sub-Saharan Africa
+South Africa,ZAF,Sub-Saharan Africa
+Benin,BEN,Sub-Saharan Africa
+Burkina Faso,BFA,Sub-Saharan Africa
+Cabo Verde,CPV,Sub-Saharan Africa
+Côte d’Ivoire,CIV,Sub-Saharan Africa
+Gambia,GMB,Sub-Saharan Africa
+Ghana,GHA,Sub-Saharan Africa
+Guinea,GIN,Sub-Saharan Africa
+Guinea-Bissau,GNB,Sub-Saharan Africa
+Liberia,LBR,Sub-Saharan Africa
+Mali,MLI,Sub-Saharan Africa
+Mauritania,MRT,Sub-Saharan Africa
+Niger,NER,Sub-Saharan Africa
+Nigeria,NGA,Sub-Saharan Africa
+Saint Helena,SHN,Sub-Saharan Africa
+Senegal,SEN,Sub-Saharan Africa
+Sierra Leone,SLE,Sub-Saharan Africa
+Togo,TGO,Sub-Saharan Africa
+Anguilla,AIA,Latin America and the Caribbean
+Antigua and Barbuda,ATG,Latin America and the Caribbean
+Aruba,ABW,Latin America and the Caribbean
+Bahamas,BHS,Latin America and the Caribbean
+Barbados,BRB,Latin America and the Caribbean
+"Bonaire, Sint Eustatius and Saba",BES,Latin America and the Caribbean
+British Virgin Islands,VGB,Latin America and the Caribbean
+Cayman Islands,CYM,Latin America and the Caribbean
+Cuba,CUB,Latin America and the Caribbean
+Curaçao,CUW,Latin America and the Caribbean
+Dominica,DMA,Latin America and the Caribbean
+Dominican Republic,DOM,Latin America and the Caribbean
+Grenada,GRD,Latin America and the Caribbean
+Guadeloupe,GLP,Latin America and the Caribbean
+Haiti,HTI,Latin America and the Caribbean
+Jamaica,JAM,Latin America and the Caribbean
+Martinique,MTQ,Latin America and the Caribbean
+Montserrat,MSR,Latin America and the Caribbean
+Puerto Rico,PRI,Latin America and the Caribbean
+Saint Barthélemy,BLM,Latin America and the Caribbean
+Saint Kitts and Nevis,KNA,Latin America and the Caribbean
+Saint Lucia,LCA,Latin America and the Caribbean
+Saint Martin (French Part),MAF,Latin America and the Caribbean
+Saint Vincent and the Grenadines,VCT,Latin America and the Caribbean
+Sint Maarten (Dutch part),SXM,Latin America and the Caribbean
+Trinidad and Tobago,TTO,Latin America and the Caribbean
+Turks and Caicos Islands,TCA,Latin America and the Caribbean
+United States Virgin Islands,VIR,Latin America and the Caribbean
+Belize,BLZ,Latin America and the Caribbean
+Costa Rica,CRI,Latin America and the Caribbean
+El Salvador,SLV,Latin America and the Caribbean
+Guatemala,GTM,Latin America and the Caribbean
+Honduras,HND,Latin America and the Caribbean
+Mexico,MEX,Latin America and the Caribbean
+Nicaragua,NIC,Latin America and the Caribbean
+Panama,PAN,Latin America and the Caribbean
+Argentina,ARG,Latin America and the Caribbean
+Bolivia (Plurinational State of),BOL,Latin America and the Caribbean
+Bouvet Island,BVT,Latin America and the Caribbean
+Brazil,BRA,Latin America and the Caribbean
+Chile,CHL,Latin America and the Caribbean
+Colombia,COL,Latin America and the Caribbean
+Ecuador,ECU,Latin America and the Caribbean
+Falkland Islands (Malvinas),FLK,Latin America and the Caribbean
+French Guiana,GUF,Latin America and the Caribbean
+Guyana,GUY,Latin America and the Caribbean
+Paraguay,PRY,Latin America and the Caribbean
+Peru,PER,Latin America and the Caribbean
+South Georgia and the South Sandwich Islands,SGS,Latin America and the Caribbean
+Suriname,SUR,Latin America and the Caribbean
+Uruguay,URY,Latin America and the Caribbean
+Venezuela (Bolivarian Republic of),VEN,Latin America and the Caribbean
+Bermuda,BMU,Northern America
+Canada,CAN,Northern America
+Greenland,GRL,Northern America
+Saint Pierre and Miquelon,SPM,Northern America
+United States of America,USA,Northern America
+Antarctica,ATA,Northern America
+Kazakhstan,KAZ,Central Asia
+Kyrgyzstan,KGZ,Central Asia
+Tajikistan,TJK,Central Asia
+Turkmenistan,TKM,Central Asia
+Uzbekistan,UZB,Central Asia
+China,CHN,Eastern Asia
+"China, Hong Kong Special Administrative Region",HKG,Eastern Asia
+"China, Macao Special Administrative Region",MAC,Eastern Asia
+Democratic People's Republic of Korea,PRK,Eastern Asia
+Japan,JPN,Eastern Asia
+Mongolia,MNG,Eastern Asia
+Republic of Korea,KOR,Eastern Asia
+Brunei Darussalam,BRN,South-eastern Asia
+Cambodia,KHM,South-eastern Asia
+Indonesia,IDN,South-eastern Asia
+Lao People's Democratic Republic,LAO,South-eastern Asia
+Malaysia,MYS,South-eastern Asia
+Myanmar,MMR,South-eastern Asia
+Philippines,PHL,South-eastern Asia
+Singapore,SGP,South-eastern Asia
+Thailand,THA,South-eastern Asia
+Timor-Leste,TLS,South-eastern Asia
+Viet Nam,VNM,South-eastern Asia
+Afghanistan,AFG,Southern Asia
+Bangladesh,BGD,Southern Asia
+Bhutan,BTN,Southern Asia
+India,IND,Southern Asia
+Iran (Islamic Republic of),IRN,Southern Asia
+Maldives,MDV,Southern Asia
+Nepal,NPL,Southern Asia
+Pakistan,PAK,Southern Asia
+Sri Lanka,LKA,Southern Asia
+Armenia,ARM,Western Asia
+Azerbaijan,AZE,Western Asia
+Bahrain,BHR,Western Asia
+Cyprus,CYP,Western Asia
+Georgia,GEO,Western Asia
+Iraq,IRQ,Western Asia
+Israel,ISR,Western Asia
+Jordan,JOR,Western Asia
+Kuwait,KWT,Western Asia
+Lebanon,LBN,Western Asia
+Oman,OMN,Western Asia
+Qatar,QAT,Western Asia
+Saudi Arabia,SAU,Western Asia
+State of Palestine,PSE,Western Asia
+Syrian Arab Republic,SYR,Western Asia
+Türkiye,TUR,Western Asia
+United Arab Emirates,ARE,Western Asia
+Yemen,YEM,Western Asia
+Belarus,BLR,Eastern Europe
+Bulgaria,BGR,Eastern Europe
+Czechia,CZE,Eastern Europe
+Hungary,HUN,Eastern Europe
+Poland,POL,Eastern Europe
+Republic of Moldova,MDA,Eastern Europe
+Romania,ROU,Eastern Europe
+Russian Federation,RUS,Eastern Europe
+Slovakia,SVK,Eastern Europe
+Ukraine,UKR,Eastern Europe
+Åland Islands,ALA,Northern Europe
+Denmark,DNK,Northern Europe
+Estonia,EST,Northern Europe
+Faroe Islands,FRO,Northern Europe
+Finland,FIN,Northern Europe
+Guernsey,GGY,Northern Europe
+Iceland,ISL,Northern Europe
+Ireland,IRL,Northern Europe
+Isle of Man,IMN,Northern Europe
+Jersey,JEY,Northern Europe
+Latvia,LVA,Northern Europe
+Lithuania,LTU,Northern Europe
+Norway,NOR,Northern Europe
+Svalbard and Jan Mayen Islands,SJM,Northern Europe
+Sweden,SWE,Northern Europe
+United Kingdom of Great Britain and Northern Ireland,GBR,Northern Europe
+Albania,ALB,Southern Europe
+Andorra,AND,Southern Europe
+Bosnia and Herzegovina,BIH,Southern Europe
+Croatia,HRV,Southern Europe
+Gibraltar,GIB,Southern Europe
+Greece,GRC,Southern Europe
+Holy See,VAT,Southern Europe
+Italy,ITA,Southern Europe
+Malta,MLT,Southern Europe
+Montenegro,MNE,Southern Europe
+North Macedonia,MKD,Southern Europe
+Portugal,PRT,Southern Europe
+San Marino,SMR,Southern Europe
+Serbia,SRB,Southern Europe
+Slovenia,SVN,Southern Europe
+Spain,ESP,Southern Europe
+Austria,AUT,Western Europe
+Belgium,BEL,Western Europe
+France,FRA,Western Europe
+Germany,DEU,Western Europe
+Liechtenstein,LIE,Western Europe
+Luxembourg,LUX,Western Europe
+Monaco,MCO,Western Europe
+Netherlands (Kingdom of the),NLD,Western Europe
+Switzerland,CHE,Western Europe
+Australia,AUS,Oceania
+Christmas Island,CXR,Oceania
+Cocos (Keeling) Islands,CCK,Oceania
+Heard Island and McDonald Islands,HMD,Oceania
+New Zealand,NZL,Oceania
+Norfolk Island,NFK,Oceania
+Fiji,FJI,Oceania
+New Caledonia,NCL,Oceania
+Papua New Guinea,PNG,Oceania
+Solomon Islands,SLB,Oceania
+Vanuatu,VUT,Oceania
+Guam,GUM,Oceania
+Kiribati,KIR,Oceania
+Marshall Islands,MHL,Oceania
+Micronesia (Federated States of),FSM,Oceania
+Nauru,NRU,Oceania
+Northern Mariana Islands,MNP,Oceania
+Palau,PLW,Oceania
+United States Minor Outlying Islands,UMI,Oceania
+American Samoa,ASM,Oceania
+Cook Islands,COK,Oceania
+French Polynesia,PYF,Oceania
+Niue,NIU,Oceania
+Pitcairn,PCN,Oceania
+Samoa,WSM,Oceania
+Tokelau,TKL,Oceania
+Tonga,TON,Oceania
+Tuvalu,TUV,Oceania
+Wallis and Futuna Islands,WLF,Oceania
