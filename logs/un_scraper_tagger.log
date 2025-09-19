@@ -7879,3 +7879,1307 @@ Stacktrace:
 ============================================================
 Processing year 2008 (143 records) - Year 18/80
 ============================================================
+16:55:22 [INFO] src.un_data_pipeline.scraper_pipeline:87 - Logging level set to: INFO
+16:55:22 [INFO] src.un_data_pipeline.scraper_pipeline:88 - Use LOG_LEVEL environment variable to control verbosity (DEBUG, INFO, WARNING, ERROR)
+16:55:26 [INFO] src.un_data_pipeline.scraper_pipeline:87 - Logging level set to: INFO
+16:55:26 [INFO] src.un_data_pipeline.scraper_pipeline:88 - Use LOG_LEVEL environment variable to control verbosity (DEBUG, INFO, WARNING, ERROR)
+16:55:26 [INFO] src.un_data_pipeline.scraper_pipeline:2222 - Starting Supabase-native UN voting data scraper...
+16:55:27 [INFO] httpx:1025 - HTTP Request: POST https://gjakiqtayqltssvbzasd.supabase.co/rest/v1/scraper_logs "HTTP/2 401 Unauthorized"
+16:55:27 [ERROR] src.un_data_pipeline.scraper_pipeline:150 - Failed to create scraper log entry: {'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\'{"message":"Invalid API key","hint":"Double check your Supabase `anon` or `service_role` API key."}\''}
+16:55:27 [INFO] src.un_data_pipeline.scraper_pipeline:2228 - Loading existing links from Supabase for deduplication...
+16:55:27 [INFO] src.un_data_pipeline.scraper_pipeline:1917 - Fetching existing links from Supabase table 'un_votes_with_sc' to guide scraping...
+16:55:27 [INFO] httpx:1025 - HTTP Request: GET https://gjakiqtayqltssvbzasd.supabase.co/rest/v1/un_votes_with_sc?select=Link&limit=1 "HTTP/2 401 Unauthorized"
+16:55:27 [ERROR] src.un_data_pipeline.scraper_pipeline:1941 - Could not fetch links from Supabase: {'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\'{"message":"Invalid API key","hint":"Double check your Supabase `anon` or `service_role` API key."}\''}
+16:55:27 [INFO] src.un_data_pipeline.scraper_pipeline:1942 - Continuing without deduplication...
+16:55:27 [INFO] src.un_data_pipeline.scraper_pipeline:2230 - Loaded 0 unique links for deduplication.
+16:55:27 [INFO] httpx:1025 - HTTP Request: PATCH https://gjakiqtayqltssvbzasd.supabase.co/rest/v1/scraper_logs?run_id=eq.4286ea2d-5196-4792-98a0-cbd37f7f4e77 "HTTP/2 401 Unauthorized"
+16:55:27 [ERROR] src.un_data_pipeline.scraper_pipeline:170 - Failed to update scraper log: {'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\'{"message":"Invalid API key","hint":"Double check your Supabase `anon` or `service_role` API key."}\''}
+16:55:27 [INFO] WDM:11 - ====== WebDriver manager ======
+16:55:30 [INFO] WDM:11 - Get LATEST chromedriver version for google-chrome
+16:55:30 [INFO] WDM:11 - Get LATEST chromedriver version for google-chrome
+16:55:30 [INFO] WDM:11 - Driver [C:\Users\Gabriel.Omara\.wdm\drivers\chromedriver\win64\140.0.7339.185\chromedriver-win32/chromedriver.exe] found in cache
+16:55:31 [INFO] src.un_data_pipeline.scraper_pipeline:1204 - Initialized browser with user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36
+16:55:37 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001F1D09C34D0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/469bc13e08037c8dd0513dab7cf1845c
+16:55:41 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001F1D09C3A90>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/469bc13e08037c8dd0513dab7cf1845c
+16:55:45 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001F1D09C03D0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/469bc13e08037c8dd0513dab7cf1845c
+16:56:11 [INFO] src.un_data_pipeline.scraper_pipeline:87 - Logging level set to: INFO
+16:56:11 [INFO] src.un_data_pipeline.scraper_pipeline:88 - Use LOG_LEVEL environment variable to control verbosity (DEBUG, INFO, WARNING, ERROR)
+16:56:11 [INFO] src.un_data_pipeline.scraper_pipeline:2222 - Starting Supabase-native UN voting data scraper...
+16:56:12 [INFO] httpx:1025 - HTTP Request: POST https://gjakiqtayqltssvbzasd.supabase.co/rest/v1/scraper_logs "HTTP/2 401 Unauthorized"
+16:56:12 [ERROR] src.un_data_pipeline.scraper_pipeline:150 - Failed to create scraper log entry: {'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\'{"message":"Invalid API key","hint":"Double check your Supabase `anon` or `service_role` API key."}\''}
+16:56:12 [INFO] src.un_data_pipeline.scraper_pipeline:2228 - Loading existing links from Supabase for deduplication...
+16:56:12 [INFO] src.un_data_pipeline.scraper_pipeline:1917 - Fetching existing links from Supabase table 'un_votes_with_sc' to guide scraping...
+16:56:12 [INFO] httpx:1025 - HTTP Request: GET https://gjakiqtayqltssvbzasd.supabase.co/rest/v1/un_votes_with_sc?select=Link&limit=1 "HTTP/2 401 Unauthorized"
+16:56:12 [ERROR] src.un_data_pipeline.scraper_pipeline:1941 - Could not fetch links from Supabase: {'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\'{"message":"Invalid API key","hint":"Double check your Supabase `anon` or `service_role` API key."}\''}
+16:56:12 [INFO] src.un_data_pipeline.scraper_pipeline:1942 - Continuing without deduplication...
+16:56:12 [INFO] src.un_data_pipeline.scraper_pipeline:2230 - Loaded 0 unique links for deduplication.
+16:56:12 [INFO] httpx:1025 - HTTP Request: PATCH https://gjakiqtayqltssvbzasd.supabase.co/rest/v1/scraper_logs?run_id=eq.e955001b-a3bb-4ed3-9de9-b5d451abe5bb "HTTP/2 401 Unauthorized"
+16:56:12 [ERROR] src.un_data_pipeline.scraper_pipeline:170 - Failed to update scraper log: {'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\'{"message":"Invalid API key","hint":"Double check your Supabase `anon` or `service_role` API key."}\''}
+16:56:12 [INFO] WDM:11 - ====== WebDriver manager ======
+16:56:14 [INFO] WDM:11 - Get LATEST chromedriver version for google-chrome
+16:56:14 [INFO] WDM:11 - Get LATEST chromedriver version for google-chrome
+16:56:14 [INFO] WDM:11 - Driver [C:\Users\Gabriel.Omara\.wdm\drivers\chromedriver\win64\140.0.7339.185\chromedriver-win32/chromedriver.exe] found in cache
+16:56:15 [INFO] src.un_data_pipeline.scraper_pipeline:1204 - Initialized browser with user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36
+16:56:28 [INFO] src.un_data_pipeline.scraper_pipeline:2244 - Found 80 years to process
+16:56:28 [INFO] src.un_data_pipeline.scraper_pipeline:2252 - 
+============================================================
+Processing year 2025 (56 records) - Year 1/80
+============================================================
+16:56:28 [INFO] httpx:1025 - HTTP Request: PATCH https://gjakiqtayqltssvbzasd.supabase.co/rest/v1/scraper_logs?run_id=eq.e955001b-a3bb-4ed3-9de9-b5d451abe5bb "HTTP/2 401 Unauthorized"
+16:56:28 [ERROR] src.un_data_pipeline.scraper_pipeline:170 - Failed to update scraper log: {'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\'{"message":"Invalid API key","hint":"Double check your Supabase `anon` or `service_role` API key."}\''}
+16:56:28 [INFO] src.un_data_pipeline.scraper_pipeline:1739 - Selecting year: 2025 (Attempt 1/10)
+16:56:30 [INFO] src.un_data_pipeline.scraper_pipeline:1778 - Selected year 2025 with 112 visible records
+16:56:30 [INFO] src.un_data_pipeline.scraper_pipeline:1531 - [Year 2025] Starting link collection with 0 existing links for deduplication
+16:56:30 [INFO] src.un_data_pipeline.scraper_pipeline:1535 - [Year 2025] Processing page 1.
+16:56:31 [INFO] src.un_data_pipeline.scraper_pipeline:1582 - [Year 2025] Page 1 summary: 112 new, 0 duplicates
+16:56:31 [INFO] src.un_data_pipeline.scraper_pipeline:1616 - [Year 2025] No next button found on page 1; reached last page.
+16:56:31 [INFO] src.un_data_pipeline.scraper_pipeline:1619 - [Year 2025] Completed link collection: 56 new links across 1 pages
+16:56:31 [INFO] src.un_data_pipeline.scraper_pipeline:2277 - Year 2025: Link collection completed normally
+16:56:31 [INFO] src.un_data_pipeline.scraper_pipeline:2298 - Year 2025: Collected 56 new links, proceeding to scrape
+16:56:31 [INFO] src.un_data_pipeline.scraper_pipeline:2306 - Year 2025: Using parallel scraping with 2 workers for 56 links
+16:56:31 [INFO] WDM:11 - ====== WebDriver manager ======
+16:56:31 [INFO] WDM:11 - ====== WebDriver manager ======
+16:56:33 [INFO] WDM:11 - Get LATEST chromedriver version for google-chrome
+16:56:33 [INFO] WDM:11 - Get LATEST chromedriver version for google-chrome
+16:56:33 [INFO] WDM:11 - Get LATEST chromedriver version for google-chrome
+16:56:33 [INFO] WDM:11 - Driver [C:\Users\Gabriel.Omara\.wdm\drivers\chromedriver\win64\140.0.7339.185\chromedriver-win32/chromedriver.exe] found in cache
+16:56:33 [INFO] WDM:11 - Get LATEST chromedriver version for google-chrome
+16:56:33 [INFO] WDM:11 - Driver [C:\Users\Gabriel.Omara\.wdm\drivers\chromedriver\win64\140.0.7339.185\chromedriver-win32/chromedriver.exe] found in cache
+16:56:34 [INFO] src.un_data_pipeline.scraper_pipeline:1204 - Initialized browser with user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15
+16:56:34 [INFO] src.un_data_pipeline.scraper_pipeline:1447 - Starting batch scraping for year 2025: 28 links in batches of 30
+16:56:34 [INFO] src.un_data_pipeline.scraper_pipeline:1454 - Year 2025: Processing batch 1/1 with 28 links
+16:56:34 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4085720 - https://digitallibrary.un.org/record/4085720
+16:56:34 [INFO] src.un_data_pipeline.scraper_pipeline:1204 - Initialized browser with user-agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.5481.100 Safari/537.36
+16:56:34 [INFO] src.un_data_pipeline.scraper_pipeline:1447 - Starting batch scraping for year 2025: 28 links in batches of 30
+16:56:34 [INFO] src.un_data_pipeline.scraper_pipeline:1454 - Year 2025: Processing batch 1/1 with 28 links
+16:56:34 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4084764 - https://digitallibrary.un.org/record/4084764
+16:56:36 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4085720 - Successfully processed with 27 fields
+16:56:36 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4087782 - https://digitallibrary.un.org/record/4087782
+16:56:36 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4084764 - Successfully processed with 27 fields
+16:56:36 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4085850 - https://digitallibrary.un.org/record/4085850
+16:56:37 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4087782 - Successfully processed with 172 fields
+16:56:37 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4079240 - https://digitallibrary.un.org/record/4079240
+16:56:37 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4085850 - Successfully processed with 164 fields
+16:56:37 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4087780 - https://digitallibrary.un.org/record/4087780
+16:56:38 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4079240 - Successfully processed with 171 fields
+16:56:38 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4087780 - Successfully processed with 187 fields
+16:56:38 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4076221 - https://digitallibrary.un.org/record/4076221
+16:56:38 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4078992 - https://digitallibrary.un.org/record/4078992
+16:56:39 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4076221 - Successfully processed with 27 fields
+16:56:39 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4078992 - Successfully processed with 27 fields
+16:56:39 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4076899 - https://digitallibrary.un.org/record/4076899
+16:56:39 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4087776 - https://digitallibrary.un.org/record/4087776
+16:56:40 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4087776 - Successfully processed with 182 fields
+16:56:40 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4076899 - Successfully processed with 27 fields
+16:56:40 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4084395 - https://digitallibrary.un.org/record/4084395
+16:56:40 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4087778 - https://digitallibrary.un.org/record/4087778
+16:56:41 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4084395 - Successfully processed with 163 fields
+16:56:41 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4087778 - Successfully processed with 183 fields
+16:56:41 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4080624 - https://digitallibrary.un.org/record/4080624
+16:56:41 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4084878 - https://digitallibrary.un.org/record/4084878
+16:56:41 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4080624 - Successfully processed with 159 fields
+16:56:42 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4084878 - Successfully processed with 27 fields
+16:56:42 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4083048 - https://digitallibrary.un.org/record/4083048
+16:56:42 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4079241 - https://digitallibrary.un.org/record/4079241
+16:56:42 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4083048 - Successfully processed with 177 fields
+16:56:42 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4079241 - Successfully processed with 163 fields
+16:56:42 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4087781 - https://digitallibrary.un.org/record/4087781
+16:56:43 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4077822 - https://digitallibrary.un.org/record/4077822
+16:56:43 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4087781 - Successfully processed with 174 fields
+16:56:43 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4085849 - https://digitallibrary.un.org/record/4085849
+16:56:43 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4077822 - Successfully processed with 27 fields
+16:56:44 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4085181 - https://digitallibrary.un.org/record/4085181
+16:56:44 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4085849 - Successfully processed with 166 fields
+16:56:44 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4073333 - https://digitallibrary.un.org/record/4073333
+16:56:44 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4085181 - Successfully processed with 27 fields
+16:56:44 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4078357 - https://digitallibrary.un.org/record/4078357
+16:56:45 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4073333 - Successfully processed with 27 fields
+16:56:45 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4088074 - https://digitallibrary.un.org/record/4088074
+16:56:45 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4078357 - Successfully processed with 179 fields
+16:56:45 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4081857 - https://digitallibrary.un.org/record/4081857
+16:56:45 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4088074 - Successfully processed with 176 fields
+16:56:46 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4084879 - https://digitallibrary.un.org/record/4084879
+16:56:46 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4081857 - Successfully processed with 27 fields
+16:56:46 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4087205 - https://digitallibrary.un.org/record/4087205
+16:56:46 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4084879 - Successfully processed with 27 fields
+16:56:46 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4082671 - https://digitallibrary.un.org/record/4082671
+16:56:47 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4087205 - Successfully processed with 146 fields
+16:56:47 [ERROR] src.un_data_pipeline.scraper_pipeline:1435 - Error processing link https://digitallibrary.un.org/record/4082671: ('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 534, in _make_request
+    response = conn.getresponse()
+               ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 565, in getresponse
+    httplib_response = super().getresponse()
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1374, in getresponse
+    response.begin()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 318, in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 279, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\socket.py", line 705, in readinto
+    return self._sock.recv_into(b)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+ConnectionResetError: [WinError 10054] An existing connection was forcibly closed by the remote host
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\Downloads\un-digital-library-scraper-main (1)\src\un_data_pipeline\scraper_pipeline.py", line 1324, in process_resolution
+    driver.get(link)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 483, in get
+    self.execute(Command.GET, {"url": url})
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 455, in execute
+    response = cast(RemoteConnection, self.command_executor).execute(driver_command, params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 406, in execute
+    return self._request(command_info[0], url, body=data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 430, in _request
+    response = self._conn.request(method, url, body=body, headers=headers, timeout=self._client_config.timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 143, in request
+    return self.request_encode_body(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 278, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\poolmanager.py", line 459, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\retry.py", line 474, in increment
+    raise reraise(type(error), error, _stacktrace)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\util.py", line 38, in reraise
+    raise value.with_traceback(tb)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 534, in _make_request
+    response = conn.getresponse()
+               ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 565, in getresponse
+    httplib_response = super().getresponse()
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1374, in getresponse
+    response.begin()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 318, in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 279, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\socket.py", line 705, in readinto
+    return self._sock.recv_into(b)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.ProtocolError: ('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))
+16:56:47 [WARNING] src.un_data_pipeline.scraper_pipeline:1470 - Year 2025: Batch 1, Link 14: FAILED - https://digitallibrary.un.org/record/4082671
+16:56:47 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4082960 - https://digitallibrary.un.org/record/4082960
+16:56:47 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4076673 - https://digitallibrary.un.org/record/4076673
+16:56:51 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F19FAD0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/5c38d39439f450a06ef6fe736a8e6060/url
+16:56:51 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13E590F10>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/fd5696e2ad62c5706f1839d1cf9b18af/url
+16:56:55 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF705D0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/5c38d39439f450a06ef6fe736a8e6060/url
+16:56:55 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF71110>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/fd5696e2ad62c5706f1839d1cf9b18af/url
+16:56:59 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF72790>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/fd5696e2ad62c5706f1839d1cf9b18af/url
+16:56:59 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF72190>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/5c38d39439f450a06ef6fe736a8e6060/url
+16:57:03 [ERROR] src.un_data_pipeline.scraper_pipeline:1435 - Error processing link https://digitallibrary.un.org/record/4082960: HTTPConnectionPool(host='localhost', port=65529): Max retries exceeded with url: /session/fd5696e2ad62c5706f1839d1cf9b18af/url (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF73810>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 198, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\connection.py", line 85, in create_connection
+    raise err
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\connection.py", line 73, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 493, in _make_request
+    conn.request(
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 494, in request
+    self.endheaders()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1277, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1037, in _send_output
+    self.send(msg)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 975, in send
+    self.connect()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 325, in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 213, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x000001E13EF73810>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\Downloads\un-digital-library-scraper-main (1)\src\un_data_pipeline\scraper_pipeline.py", line 1324, in process_resolution
+    driver.get(link)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 483, in get
+    self.execute(Command.GET, {"url": url})
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 455, in execute
+    response = cast(RemoteConnection, self.command_executor).execute(driver_command, params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 406, in execute
+    return self._request(command_info[0], url, body=data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 430, in _request
+    response = self._conn.request(method, url, body=body, headers=headers, timeout=self._client_config.timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 143, in request
+    return self.request_encode_body(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 278, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\poolmanager.py", line 459, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\retry.py", line 519, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=65529): Max retries exceeded with url: /session/fd5696e2ad62c5706f1839d1cf9b18af/url (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF73810>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+16:57:03 [WARNING] src.un_data_pipeline.scraper_pipeline:1470 - Year 2025: Batch 1, Link 14: FAILED - https://digitallibrary.un.org/record/4082960
+16:57:03 [ERROR] src.un_data_pipeline.scraper_pipeline:1435 - Error processing link https://digitallibrary.un.org/record/4076673: HTTPConnectionPool(host='localhost', port=65532): Max retries exceeded with url: /session/5c38d39439f450a06ef6fe736a8e6060/url (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF73ED0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 198, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\connection.py", line 85, in create_connection
+    raise err
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\connection.py", line 73, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 493, in _make_request
+    conn.request(
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 494, in request
+    self.endheaders()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1277, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1037, in _send_output
+    self.send(msg)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 975, in send
+    self.connect()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 325, in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 213, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x000001E13EF73ED0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\Downloads\un-digital-library-scraper-main (1)\src\un_data_pipeline\scraper_pipeline.py", line 1324, in process_resolution
+    driver.get(link)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 483, in get
+    self.execute(Command.GET, {"url": url})
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 455, in execute
+    response = cast(RemoteConnection, self.command_executor).execute(driver_command, params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 406, in execute
+    return self._request(command_info[0], url, body=data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 430, in _request
+    response = self._conn.request(method, url, body=body, headers=headers, timeout=self._client_config.timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 143, in request
+    return self.request_encode_body(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 278, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\poolmanager.py", line 459, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\retry.py", line 519, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=65532): Max retries exceeded with url: /session/5c38d39439f450a06ef6fe736a8e6060/url (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF73ED0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+16:57:03 [WARNING] src.un_data_pipeline.scraper_pipeline:1470 - Year 2025: Batch 1, Link 15: FAILED - https://digitallibrary.un.org/record/4076673
+16:57:04 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4083624 - https://digitallibrary.un.org/record/4083624
+16:57:04 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4081432 - https://digitallibrary.un.org/record/4081432
+16:57:08 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F1DA250>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/5c38d39439f450a06ef6fe736a8e6060/url
+16:57:08 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F1D9750>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/fd5696e2ad62c5706f1839d1cf9b18af/url
+16:57:12 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F1DAE10>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/5c38d39439f450a06ef6fe736a8e6060/url
+16:57:12 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF71090>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/fd5696e2ad62c5706f1839d1cf9b18af/url
+16:57:16 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF73050>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/5c38d39439f450a06ef6fe736a8e6060/url
+16:57:16 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF72CD0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/fd5696e2ad62c5706f1839d1cf9b18af/url
+16:57:20 [ERROR] src.un_data_pipeline.scraper_pipeline:1435 - Error processing link https://digitallibrary.un.org/record/4081432: HTTPConnectionPool(host='localhost', port=65532): Max retries exceeded with url: /session/5c38d39439f450a06ef6fe736a8e6060/url (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF716D0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 198, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\connection.py", line 85, in create_connection
+    raise err
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\connection.py", line 73, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 493, in _make_request
+    conn.request(
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 494, in request
+    self.endheaders()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1277, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1037, in _send_output
+    self.send(msg)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 975, in send
+    self.connect()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 325, in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 213, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x000001E13EF716D0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\Downloads\un-digital-library-scraper-main (1)\src\un_data_pipeline\scraper_pipeline.py", line 1324, in process_resolution
+    driver.get(link)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 483, in get
+    self.execute(Command.GET, {"url": url})
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 455, in execute
+    response = cast(RemoteConnection, self.command_executor).execute(driver_command, params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 406, in execute
+    return self._request(command_info[0], url, body=data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 430, in _request
+    response = self._conn.request(method, url, body=body, headers=headers, timeout=self._client_config.timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 143, in request
+    return self.request_encode_body(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 278, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\poolmanager.py", line 459, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\retry.py", line 519, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=65532): Max retries exceeded with url: /session/5c38d39439f450a06ef6fe736a8e6060/url (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF716D0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+16:57:20 [WARNING] src.un_data_pipeline.scraper_pipeline:1470 - Year 2025: Batch 1, Link 16: FAILED - https://digitallibrary.un.org/record/4081432
+16:57:20 [ERROR] src.un_data_pipeline.scraper_pipeline:1435 - Error processing link https://digitallibrary.un.org/record/4083624: HTTPConnectionPool(host='localhost', port=65529): Max retries exceeded with url: /session/fd5696e2ad62c5706f1839d1cf9b18af/url (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF70F90>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 198, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\connection.py", line 85, in create_connection
+    raise err
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\connection.py", line 73, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 493, in _make_request
+    conn.request(
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 494, in request
+    self.endheaders()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1277, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1037, in _send_output
+    self.send(msg)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 975, in send
+    self.connect()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 325, in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 213, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x000001E13EF70F90>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\Downloads\un-digital-library-scraper-main (1)\src\un_data_pipeline\scraper_pipeline.py", line 1324, in process_resolution
+    driver.get(link)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 483, in get
+    self.execute(Command.GET, {"url": url})
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 455, in execute
+    response = cast(RemoteConnection, self.command_executor).execute(driver_command, params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 406, in execute
+    return self._request(command_info[0], url, body=data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 430, in _request
+    response = self._conn.request(method, url, body=body, headers=headers, timeout=self._client_config.timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 143, in request
+    return self.request_encode_body(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 278, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\poolmanager.py", line 459, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\retry.py", line 519, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=65529): Max retries exceeded with url: /session/fd5696e2ad62c5706f1839d1cf9b18af/url (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF70F90>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+16:57:20 [WARNING] src.un_data_pipeline.scraper_pipeline:1470 - Year 2025: Batch 1, Link 15: FAILED - https://digitallibrary.un.org/record/4083624
+16:57:20 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4072364 - https://digitallibrary.un.org/record/4072364
+16:57:20 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4074024 - https://digitallibrary.un.org/record/4074024
+16:57:24 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F19FE50>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/5c38d39439f450a06ef6fe736a8e6060/url
+16:57:24 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EE4E490>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/fd5696e2ad62c5706f1839d1cf9b18af/url
+16:57:28 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF4C4D0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/5c38d39439f450a06ef6fe736a8e6060/url
+16:57:29 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F1DB3D0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/fd5696e2ad62c5706f1839d1cf9b18af/url
+16:57:33 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F1DBDD0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/5c38d39439f450a06ef6fe736a8e6060/url
+16:57:33 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F1E0790>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/fd5696e2ad62c5706f1839d1cf9b18af/url
+16:57:37 [ERROR] src.un_data_pipeline.scraper_pipeline:1435 - Error processing link https://digitallibrary.un.org/record/4072364: HTTPConnectionPool(host='localhost', port=65532): Max retries exceeded with url: /session/5c38d39439f450a06ef6fe736a8e6060/url (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F1E1190>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 198, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\connection.py", line 85, in create_connection
+    raise err
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\connection.py", line 73, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 493, in _make_request
+    conn.request(
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 494, in request
+    self.endheaders()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1277, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1037, in _send_output
+    self.send(msg)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 975, in send
+    self.connect()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 325, in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 213, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x000001E13F1E1190>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\Downloads\un-digital-library-scraper-main (1)\src\un_data_pipeline\scraper_pipeline.py", line 1324, in process_resolution
+    driver.get(link)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 483, in get
+    self.execute(Command.GET, {"url": url})
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 455, in execute
+    response = cast(RemoteConnection, self.command_executor).execute(driver_command, params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 406, in execute
+    return self._request(command_info[0], url, body=data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 430, in _request
+    response = self._conn.request(method, url, body=body, headers=headers, timeout=self._client_config.timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 143, in request
+    return self.request_encode_body(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 278, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\poolmanager.py", line 459, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\retry.py", line 519, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=65532): Max retries exceeded with url: /session/5c38d39439f450a06ef6fe736a8e6060/url (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F1E1190>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+16:57:37 [WARNING] src.un_data_pipeline.scraper_pipeline:1470 - Year 2025: Batch 1, Link 17: FAILED - https://digitallibrary.un.org/record/4072364
+16:57:37 [ERROR] src.un_data_pipeline.scraper_pipeline:1435 - Error processing link https://digitallibrary.un.org/record/4074024: HTTPConnectionPool(host='localhost', port=65529): Max retries exceeded with url: /session/fd5696e2ad62c5706f1839d1cf9b18af/url (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F1E1B10>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 198, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\connection.py", line 85, in create_connection
+    raise err
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\connection.py", line 73, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 493, in _make_request
+    conn.request(
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 494, in request
+    self.endheaders()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1277, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1037, in _send_output
+    self.send(msg)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 975, in send
+    self.connect()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 325, in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 213, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x000001E13F1E1B10>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\Downloads\un-digital-library-scraper-main (1)\src\un_data_pipeline\scraper_pipeline.py", line 1324, in process_resolution
+    driver.get(link)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 483, in get
+    self.execute(Command.GET, {"url": url})
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 455, in execute
+    response = cast(RemoteConnection, self.command_executor).execute(driver_command, params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 406, in execute
+    return self._request(command_info[0], url, body=data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 430, in _request
+    response = self._conn.request(method, url, body=body, headers=headers, timeout=self._client_config.timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 143, in request
+    return self.request_encode_body(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 278, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\poolmanager.py", line 459, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\retry.py", line 519, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=65529): Max retries exceeded with url: /session/fd5696e2ad62c5706f1839d1cf9b18af/url (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F1E1B10>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+16:57:37 [WARNING] src.un_data_pipeline.scraper_pipeline:1470 - Year 2025: Batch 1, Link 16: FAILED - https://digitallibrary.un.org/record/4074024
+16:57:37 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4084392 - https://digitallibrary.un.org/record/4084392
+16:57:37 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4080625 - https://digitallibrary.un.org/record/4080625
+16:57:41 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F1E2E90>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/5c38d39439f450a06ef6fe736a8e6060/url
+16:57:41 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F1E3990>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/fd5696e2ad62c5706f1839d1cf9b18af/url
+16:57:45 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F1E1E10>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/5c38d39439f450a06ef6fe736a8e6060/url
+16:57:45 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F1E07D0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/fd5696e2ad62c5706f1839d1cf9b18af/url
+16:57:49 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F1E0BD0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/5c38d39439f450a06ef6fe736a8e6060/url
+16:57:49 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF4C350>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/fd5696e2ad62c5706f1839d1cf9b18af/url
+16:57:53 [ERROR] src.un_data_pipeline.scraper_pipeline:1435 - Error processing link https://digitallibrary.un.org/record/4084392: HTTPConnectionPool(host='localhost', port=65532): Max retries exceeded with url: /session/5c38d39439f450a06ef6fe736a8e6060/url (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EE4F250>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 198, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\connection.py", line 85, in create_connection
+    raise err
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\connection.py", line 73, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 493, in _make_request
+    conn.request(
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 494, in request
+    self.endheaders()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1277, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1037, in _send_output
+    self.send(msg)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 975, in send
+    self.connect()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 325, in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 213, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x000001E13EE4F250>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\Downloads\un-digital-library-scraper-main (1)\src\un_data_pipeline\scraper_pipeline.py", line 1324, in process_resolution
+    driver.get(link)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 483, in get
+    self.execute(Command.GET, {"url": url})
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 455, in execute
+    response = cast(RemoteConnection, self.command_executor).execute(driver_command, params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 406, in execute
+    return self._request(command_info[0], url, body=data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 430, in _request
+    response = self._conn.request(method, url, body=body, headers=headers, timeout=self._client_config.timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 143, in request
+    return self.request_encode_body(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 278, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\poolmanager.py", line 459, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\retry.py", line 519, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=65532): Max retries exceeded with url: /session/5c38d39439f450a06ef6fe736a8e6060/url (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EE4F250>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+16:57:53 [WARNING] src.un_data_pipeline.scraper_pipeline:1470 - Year 2025: Batch 1, Link 18: FAILED - https://digitallibrary.un.org/record/4084392
+16:57:53 [ERROR] src.un_data_pipeline.scraper_pipeline:1435 - Error processing link https://digitallibrary.un.org/record/4080625: HTTPConnectionPool(host='localhost', port=65529): Max retries exceeded with url: /session/fd5696e2ad62c5706f1839d1cf9b18af/url (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F19FC90>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 198, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\connection.py", line 85, in create_connection
+    raise err
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\connection.py", line 73, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 493, in _make_request
+    conn.request(
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 494, in request
+    self.endheaders()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1277, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1037, in _send_output
+    self.send(msg)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 975, in send
+    self.connect()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 325, in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 213, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x000001E13F19FC90>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\Downloads\un-digital-library-scraper-main (1)\src\un_data_pipeline\scraper_pipeline.py", line 1324, in process_resolution
+    driver.get(link)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 483, in get
+    self.execute(Command.GET, {"url": url})
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 455, in execute
+    response = cast(RemoteConnection, self.command_executor).execute(driver_command, params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 406, in execute
+    return self._request(command_info[0], url, body=data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 430, in _request
+    response = self._conn.request(method, url, body=body, headers=headers, timeout=self._client_config.timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 143, in request
+    return self.request_encode_body(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 278, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\poolmanager.py", line 459, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\retry.py", line 519, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=65529): Max retries exceeded with url: /session/fd5696e2ad62c5706f1839d1cf9b18af/url (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F19FC90>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+16:57:53 [WARNING] src.un_data_pipeline.scraper_pipeline:1470 - Year 2025: Batch 1, Link 17: FAILED - https://digitallibrary.un.org/record/4080625
+16:57:53 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4076672 - https://digitallibrary.un.org/record/4076672
+16:57:54 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4087777 - https://digitallibrary.un.org/record/4087777
+16:57:58 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F1D8210>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/5c38d39439f450a06ef6fe736a8e6060/url
+16:57:58 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F1DA610>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/fd5696e2ad62c5706f1839d1cf9b18af/url
+16:58:02 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF70A10>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/5c38d39439f450a06ef6fe736a8e6060/url
+16:58:02 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF715D0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/fd5696e2ad62c5706f1839d1cf9b18af/url
+16:58:06 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF72350>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/5c38d39439f450a06ef6fe736a8e6060/url
+16:58:06 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF72190>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/fd5696e2ad62c5706f1839d1cf9b18af/url
+16:58:10 [ERROR] src.un_data_pipeline.scraper_pipeline:1435 - Error processing link https://digitallibrary.un.org/record/4076672: HTTPConnectionPool(host='localhost', port=65532): Max retries exceeded with url: /session/5c38d39439f450a06ef6fe736a8e6060/url (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF73ED0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 198, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\connection.py", line 85, in create_connection
+    raise err
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\connection.py", line 73, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 493, in _make_request
+    conn.request(
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 494, in request
+    self.endheaders()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1277, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1037, in _send_output
+    self.send(msg)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 975, in send
+    self.connect()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 325, in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 213, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x000001E13EF73ED0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\Downloads\un-digital-library-scraper-main (1)\src\un_data_pipeline\scraper_pipeline.py", line 1324, in process_resolution
+    driver.get(link)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 483, in get
+    self.execute(Command.GET, {"url": url})
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 455, in execute
+    response = cast(RemoteConnection, self.command_executor).execute(driver_command, params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 406, in execute
+    return self._request(command_info[0], url, body=data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 430, in _request
+    response = self._conn.request(method, url, body=body, headers=headers, timeout=self._client_config.timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 143, in request
+    return self.request_encode_body(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 278, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\poolmanager.py", line 459, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\retry.py", line 519, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=65532): Max retries exceeded with url: /session/5c38d39439f450a06ef6fe736a8e6060/url (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF73ED0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+16:58:10 [WARNING] src.un_data_pipeline.scraper_pipeline:1470 - Year 2025: Batch 1, Link 19: FAILED - https://digitallibrary.un.org/record/4076672
+16:58:10 [ERROR] src.un_data_pipeline.scraper_pipeline:1435 - Error processing link https://digitallibrary.un.org/record/4087777: HTTPConnectionPool(host='localhost', port=65529): Max retries exceeded with url: /session/fd5696e2ad62c5706f1839d1cf9b18af/url (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F1F08D0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 198, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\connection.py", line 85, in create_connection
+    raise err
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\connection.py", line 73, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 493, in _make_request
+    conn.request(
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 494, in request
+    self.endheaders()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1277, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 1037, in _send_output
+    self.send(msg)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 975, in send
+    self.connect()
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 325, in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connection.py", line 213, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x000001E13F1F08D0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Gabriel.Omara\Downloads\un-digital-library-scraper-main (1)\src\un_data_pipeline\scraper_pipeline.py", line 1324, in process_resolution
+    driver.get(link)
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 483, in get
+    self.execute(Command.GET, {"url": url})
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 455, in execute
+    response = cast(RemoteConnection, self.command_executor).execute(driver_command, params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 406, in execute
+    return self._request(command_info[0], url, body=data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 430, in _request
+    response = self._conn.request(method, url, body=body, headers=headers, timeout=self._client_config.timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 143, in request
+    return self.request_encode_body(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\_request_methods.py", line 278, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\poolmanager.py", line 459, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 871, in urlopen
+    return self.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gabriel.Omara\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\util\retry.py", line 519, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=65529): Max retries exceeded with url: /session/fd5696e2ad62c5706f1839d1cf9b18af/url (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F1F08D0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+16:58:10 [WARNING] src.un_data_pipeline.scraper_pipeline:1470 - Year 2025: Batch 1, Link 18: FAILED - https://digitallibrary.un.org/record/4087777
+16:58:10 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4072548 - https://digitallibrary.un.org/record/4072548
+16:58:10 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4085238 - https://digitallibrary.un.org/record/4085238
+16:58:14 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F1F1590>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/5c38d39439f450a06ef6fe736a8e6060/url
+16:58:14 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13F1F2150>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/fd5696e2ad62c5706f1839d1cf9b18af/url
+16:58:18 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF71990>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/5c38d39439f450a06ef6fe736a8e6060/url
+16:58:18 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF73690>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/fd5696e2ad62c5706f1839d1cf9b18af/url
+16:58:22 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF71D90>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/5c38d39439f450a06ef6fe736a8e6060/url
+16:58:22 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001E13EF71710>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/fd5696e2ad62c5706f1839d1cf9b18af/url
+17:00:02 [INFO] src.un_data_pipeline.scraper_pipeline:87 - Logging level set to: INFO
+17:00:02 [INFO] src.un_data_pipeline.scraper_pipeline:88 - Use LOG_LEVEL environment variable to control verbosity (DEBUG, INFO, WARNING, ERROR)
+17:00:02 [INFO] src.un_data_pipeline.scraper_pipeline:2222 - Starting Supabase-native UN voting data scraper...
+17:00:03 [INFO] httpx:1025 - HTTP Request: POST https://gjakiqtayqltssvbzasd.supabase.co/rest/v1/scraper_logs "HTTP/2 201 Created"
+17:00:04 [INFO] src.un_data_pipeline.scraper_pipeline:146 - Started scraper run log: b4a0177a-f865-4ab6-9e2d-34f282a5f885
+17:00:04 [INFO] src.un_data_pipeline.scraper_pipeline:2228 - Loading existing links from Supabase for deduplication...
+17:00:04 [INFO] src.un_data_pipeline.scraper_pipeline:1917 - Fetching existing links from Supabase table 'un_votes_with_sc' to guide scraping...
+17:00:04 [INFO] httpx:1025 - HTTP Request: GET https://gjakiqtayqltssvbzasd.supabase.co/rest/v1/un_votes_with_sc?select=Link&limit=1 "HTTP/2 200 OK"
+17:00:04 [INFO] httpx:1025 - HTTP Request: GET https://gjakiqtayqltssvbzasd.supabase.co/rest/v1/un_votes_with_sc?select=Link "HTTP/2 200 OK"
+17:00:04 [INFO] src.un_data_pipeline.scraper_pipeline:1937 - Found 9920 unique links in Supabase table 'un_votes_with_sc'.
+17:00:04 [INFO] src.un_data_pipeline.scraper_pipeline:2230 - Loaded 9920 unique links for deduplication.
+17:00:04 [INFO] httpx:1025 - HTTP Request: PATCH https://gjakiqtayqltssvbzasd.supabase.co/rest/v1/scraper_logs?run_id=eq.b4a0177a-f865-4ab6-9e2d-34f282a5f885 "HTTP/2 200 OK"
+17:00:04 [INFO] WDM:11 - ====== WebDriver manager ======
+17:00:07 [INFO] WDM:11 - Get LATEST chromedriver version for google-chrome
+17:00:07 [INFO] WDM:11 - Get LATEST chromedriver version for google-chrome
+17:00:07 [INFO] WDM:11 - Driver [C:\Users\Gabriel.Omara\.wdm\drivers\chromedriver\win64\140.0.7339.185\chromedriver-win32/chromedriver.exe] found in cache
+17:00:08 [INFO] src.un_data_pipeline.scraper_pipeline:1204 - Initialized browser with user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36
+17:00:19 [INFO] src.un_data_pipeline.scraper_pipeline:2244 - Found 80 years to process
+17:00:19 [INFO] src.un_data_pipeline.scraper_pipeline:2252 - 
+============================================================
+Processing year 2025 (56 records) - Year 1/80
+============================================================
+17:00:20 [INFO] httpx:1025 - HTTP Request: PATCH https://gjakiqtayqltssvbzasd.supabase.co/rest/v1/scraper_logs?run_id=eq.b4a0177a-f865-4ab6-9e2d-34f282a5f885 "HTTP/2 200 OK"
+17:00:20 [INFO] src.un_data_pipeline.scraper_pipeline:1739 - Selecting year: 2025 (Attempt 1/10)
+17:00:22 [INFO] src.un_data_pipeline.scraper_pipeline:1778 - Selected year 2025 with 112 visible records
+17:00:22 [INFO] src.un_data_pipeline.scraper_pipeline:1531 - [Year 2025] Starting link collection with 9920 existing links for deduplication
+17:00:22 [INFO] src.un_data_pipeline.scraper_pipeline:1535 - [Year 2025] Processing page 1.
+17:00:23 [INFO] src.un_data_pipeline.scraper_pipeline:1582 - [Year 2025] Page 1 summary: 2 new, 110 duplicates
+17:00:23 [INFO] src.un_data_pipeline.scraper_pipeline:1616 - [Year 2025] No next button found on page 1; reached last page.
+17:00:23 [INFO] src.un_data_pipeline.scraper_pipeline:1619 - [Year 2025] Completed link collection: 1 new links across 1 pages
+17:00:23 [INFO] src.un_data_pipeline.scraper_pipeline:2277 - Year 2025: Link collection completed normally
+17:00:23 [INFO] src.un_data_pipeline.scraper_pipeline:2298 - Year 2025: Collected 1 new links, proceeding to scrape
+17:00:23 [INFO] src.un_data_pipeline.scraper_pipeline:2309 - Year 2025: Using sequential scraping for 1 links
+17:00:23 [INFO] src.un_data_pipeline.scraper_pipeline:1447 - Starting batch scraping for year 2025: 1 links in batches of 80
+17:00:23 [INFO] src.un_data_pipeline.scraper_pipeline:1454 - Year 2025: Processing batch 1/1 with 1 links
+17:00:23 [INFO] src.un_data_pipeline.scraper_pipeline:1320 - Processing record: 4088074 - https://digitallibrary.un.org/record/4088074
+17:00:24 [INFO] src.un_data_pipeline.scraper_pipeline:1428 - Record 4088074 - Successfully processed with 176 fields
+17:00:24 [INFO] src.un_data_pipeline.scraper_pipeline:1475 - Year 2025: Batch 1 completed - 1 successful, 0 failed
+17:00:24 [INFO] src.un_data_pipeline.scraper_pipeline:1478 - Year 2025: Batch scraping completed - 1 total successful, 0 total failed
+17:00:24 [INFO] src.un_data_pipeline.scraper_pipeline:2312 - Year 2025: Scraping completed - 1 successful, 0 failed
+17:00:24 [INFO] src.un_data_pipeline.scraper_pipeline:2330 - Year 2025: Checkpointing progress - uploading 1 total new records so far
+17:00:24 [INFO] src.un_data_pipeline.scraper_pipeline:2189 - Year 2025: Starting checkpoint process...
+17:00:24 [INFO] src.un_data_pipeline.scraper_pipeline:2202 - Year 2025: Processing and uploading 1 new rows for current year...
+17:00:24 [INFO] src.un_data_pipeline.scraper_pipeline:2114 - Processing 1 new rows...
+17:00:24 [INFO] src.un_data_pipeline.scraper_pipeline:2117 - Applying tagging to new rows...
+17:00:24 [INFO] src.un_data_pipeline.scraper_pipeline:1148 - Tagging 1 new rows...
+17:00:26 [INFO] httpx:1025 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+17:00:29 [INFO] httpx:1025 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+17:00:32 [INFO] httpx:1025 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+17:00:36 [INFO] httpx:1025 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+17:00:39 [INFO] httpx:1025 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+17:00:39 [INFO] src.un_data_pipeline.scraper_pipeline:472 - Starting regex pattern matching phase...
+17:00:39 [INFO] src.un_data_pipeline.scraper_pipeline:511 - Starting LLM enrichment phase...
+17:00:39 [INFO] src.un_data_pipeline.scraper_pipeline:549 - Processing LLM rows sequentially
+17:00:39 [INFO] src.un_data_pipeline.scraper_pipeline:362 - Getting LLM tags for: Endorsement of the New York Declaration on the Pea...
+17:00:39 [INFO] src.un_data_pipeline.scraper_pipeline:328 - Calling LLM API for resolution classification: Endorsement of the New York Declaration on the Pea...
+17:00:41 [INFO] httpx:1025 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:333 - API call successful.
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:375 - Extracted LLM tags: [['Asia', 'Western Asia', 'PS']]
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:1169 - Tagging complete.
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:2134 - Standardizing country columns...
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:619 - Starting country column standardization...
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:674 - Mapping original columns to ISO3 codes...
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:738 - Consolidating columns...
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for TKM: ['TURKMENISTAN']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for KOR: ['REPUBLIC OF KOREA']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for IRL: ['IRELAND']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for LUX: ['LUXEMBOURG']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for POL: ['POLAND']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for MUS: ['MAURITIUS']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for QAT: ['QATAR']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for SLB: ['SOLOMON ISLANDS']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for BGD: ['BANGLADESH']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for GAB: ['GABON']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for CHN: ['CHINA']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for CRI: ['COSTA RICA']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for KEN: ['KENYA']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for VNM: ['VIET NAM']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for LKA: ['SRI LANKA']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for MKD: ['NORTH MACEDONIA']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for SUR: ['SURINAME']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for CIV: ["COTE D'IVOIRE"]
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for EST: ['ESTONIA']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for CMR: ['CAMEROON']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for BDI: ['BURUNDI']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for NER: ['NIGER']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for MDA: ['REPUBLIC OF MOLDOVA']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for GUY: ['GUYANA']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for FJI: ['FIJI']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for BLR: ['BELARUS']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for ARE: ['UNITED ARAB EMIRATES']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for PRT: ['PORTUGAL']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for ESP: ['SPAIN']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for SAU: ['SAUDI ARABIA']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for ECU: ['ECUADOR']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for TUR: ['T?RK?YE']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for SLV: ['EL SALVADOR']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for RWA: ['RWANDA']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for MMR: ['MYANMAR']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for UKR: ['UKRAINE']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for PAK: ['PAKISTAN']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for RUS: ['RUSSIAN FEDERATION']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for URY: ['URUGUAY']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for MYS: ['MALAYSIA']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for HUN: ['HUNGARY']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for GRC: ['GREECE']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for BHR: ['BAHRAIN']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for AUT: ['AUSTRIA']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for GIN: ['GUINEA']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for IDN: ['INDONESIA']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for UGA: ['UGANDA']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for OMN: ['OMAN']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for USA: ['UNITED STATES']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for GMB: ['GAMBIA']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for GBR: ['UNITED KINGDOM']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for UZB: ['UZBEKISTAN']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for LBN: ['LEBANON']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for YEM: ['YEMEN']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for MOZ: ['MOZAMBIQUE']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for PER: ['PERU']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for KWT: ['KUWAIT']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for SOM: ['SOMALIA']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for IND: ['INDIA']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for JPN: ['JAPAN']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for KNA: ['SAINT KITTS AND NEVIS']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for SLE: ['SIERRA LEONE']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for DNK: ['DENMARK']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for ZWE: ['ZIMBABWE']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for TTO: ['TRINIDAD AND TOBAGO']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for MAR: ['MOROCCO']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for NAM: ['NAMIBIA']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for TGO: ['TOGO']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for BWA: ['BOTSWANA']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for BRA: ['BRAZIL']
+17:00:41 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for ARG: ['ARGENTINA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for CUB: ['CUBA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for GTM: ['GUATEMALA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for BIH: ['BOSNIA AND HERZEGOVINA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for BGR: ['BULGARIA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for PRK: ["DEMOCRATIC PEOPLE'S REPUBLIC OF KOREA"]
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for NIC: ['NICARAGUA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for NOR: ['NORWAY']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for ETH: ['ETHIOPIA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for LVA: ['LATVIA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for FIN: ['FINLAND']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for SRB: ['SERBIA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for LBY: ['LIBYA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for SGP: ['SINGAPORE']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for SDN: ['SUDAN']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for BEL: ['BELGIUM']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for DJI: ['DJIBOUTI']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for CYP: ['CYPRUS']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for TON: ['TONGA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for BRB: ['BARBADOS']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for NZL: ['NEW ZEALAND']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for NPL: ['NEPAL']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for ROU: ['ROMANIA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for MNE: ['MONTENEGRO']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for TCD: ['CHAD']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for COD: ['DEMOCRATIC REPUBLIC OF THE CONGO']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for AUS: ['AUSTRALIA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for MHL: ['MARSHALL ISLANDS']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for CZE: ['CZECHIA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for NGA: ['NIGERIA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for LCA: ['SAINT LUCIA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for MNG: ['MONGOLIA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for CHE: ['SWITZERLAND']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for SYR: ['SYRIAN ARAB REPUBLIC']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for SVK: ['SLOVAKIA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for BFA: ['BURKINA FASO']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for PRY: ['PARAGUAY']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for LTU: ['LITHUANIA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for ZAF: ['SOUTH AFRICA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for MLT: ['MALTA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for PHL: ['PHILIPPINES']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for ISR: ['ISRAEL']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for TZA: ['UNITED REPUBLIC OF TANZANIA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for DOM: ['DOMINICAN REPUBLIC']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for KAZ: ['KAZAKHSTAN']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for CHL: ['CHILE']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for AGO: ['ANGOLA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for SYC: ['SEYCHELLES']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for WSM: ['SAMOA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for LAO: ["LAO PEOPLE'S DEMOCRATIC REPUBLIC"]
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for TLS: ['TIMOR-LESTE']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for LIE: ['LIECHTENSTEIN']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for MEX: ['MEXICO']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for CAN: ['CANADA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for MDV: ['MALDIVES']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for SEN: ['SENEGAL']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for SSD: ['SOUTH SUDAN']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for CPV: ['CABO VERDE']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for SMR: ['SAN MARINO']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for BRN: ['BRUNEI DARUSSALAM']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for MLI: ['MALI']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for AZE: ['AZERBAIJAN']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for PLW: ['PALAU']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for SWE: ['SWEDEN']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for THA: ['THAILAND']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for COG: ['CONGO']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for VCT: ['SAINT VINCENT AND THE GRENADINES']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for GHA: ['GHANA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for KHM: ['CAMBODIA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for PNG: ['PAPUA NEW GUINEA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for SVN: ['SLOVENIA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for JOR: ['JORDAN']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for FRA: ['FRANCE']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for NLD: ['NETHERLANDS (KINGDOM OF THE)']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for BHS: ['BAHAMAS']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for FSM: ['MICRONESIA (FEDERATED STATES OF)']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for HRV: ['CROATIA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for EGY: ['EGYPT']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for JAM: ['JAMAICA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for ARM: ['ARMENIA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for DZA: ['ALGERIA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for MRT: ['MAURITANIA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for LSO: ['LESOTHO']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for ISL: ['ICELAND']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for COL: ['COLOMBIA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for DEU: ['GERMANY']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for ALB: ['ALBANIA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for ITA: ['ITALY']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for KGZ: ['KYRGYZSTAN']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for NRU: ['NAURU']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for AND: ['ANDORRA']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for TJK: ['TAJIKISTAN']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for COM: ['COMOROS']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:767 - Combining columns for BLZ: ['BELIZE']
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:783 - Consolidated data for 164 ISO3 codes.
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:800 - Checking for suffixed columns to drop...
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:839 - Reordering columns...
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:857 - Checking for original mapped columns to drop...
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:881 - Reordering columns to place sorted ISO3 codes after fixed columns.
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:884 - Column standardization complete.
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:2159 - Uploading processed data to un_votes_with_sc table...
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:2023 - Starting upload to un_votes_with_sc table...
+17:00:42 [INFO] httpx:1025 - HTTP Request: POST https://gjakiqtayqltssvbzasd.supabase.co/rest/v1/un_votes_with_sc?columns=%22TKM%22%2C%22KOR%22%2C%22IRL%22%2C%22LUX%22%2C%22continent%22%2C%22POL%22%2C%22Scrape_Year%22%2C%22MUS%22%2C%22QAT%22%2C%22SLB%22%2C%22BGD%22%2C%22GAB%22%2C%22CHN%22%2C%22CRI%22%2C%22KEN%22%2C%22VNM%22%2C%22LKA%22%2C%22MKD%22%2C%22SUR%22%2C%22CIV%22%2C%22EST%22%2C%22CMR%22%2C%22country%22%2C%22BDI%22%2C%22NER%22%2C%22MDA%22%2C%22GUY%22%2C%22FJI%22%2C%22BLR%22%2C%22ARE%22%2C%22PRT%22%2C%22ESP%22%2C%22SAU%22%2C%22ECU%22%2C%22TUR%22%2C%22SLV%22%2C%22RWA%22%2C%22MMR%22%2C%22UKR%22%2C%22PAK%22%2C%22RUS%22%2C%22URY%22%2C%22MYS%22%2C%22HUN%22%2C%22GRC%22%2C%22BHR%22%2C%22AUT%22%2C%22GIN%22%2C%22Council%22%2C%22IDN%22%2C%22UGA%22%2C%22OMN%22%2C%22USA%22%2C%22GMB%22%2C%22GBR%22%2C%22UZB%22%2C%22LBN%22%2C%22YEM%22%2C%22MOZ%22%2C%22PER%22%2C%22NO-VOTE+COUNT%22%2C%22KWT%22%2C%22Date%22%2C%22SOM%22%2C%22IND%22%2C%22JPN%22%2C%22Title%22%2C%22KNA%22%2C%22SLE%22%2C%22DNK%22%2C%22ZWE%22%2C%22TTO%22%2C%22MAR%22%2C%22NAM%22%2C%22TGO%22%2C%22BWA%22%2C%22BRA%22%2C%22ARG%22%2C%22CUB%22%2C%22GTM%22%2C%22BIH%22%2C%22BGR%22%2C%22NIC%22%2C%22NOR%22%2C%22PRK%22%2C%22ETH%22%2C%22LVA%22%2C%22FIN%22%2C%22SDN%22%2C%22LBY%22%2C%22SGP%22%2C%22SRB%22%2C%22BEL%22%2C%22DJI%22%2C%22CYP%22%2C%22TON%22%2C%22BRB%22%2C%22NZL%22%2C%22NPL%22%2C%22YES+COUNT%22%2C%22ROU%22%2C%22MNE%22%2C%22Link%22%2C%22TCD%22%2C%22COD%22%2C%22AUS%22%2C%22MHL%22%2C%22CZE%22%2C%22NGA%22%2C%22LCA%22%2C%22CHE%22%2C%22MNG%22%2C%22SYR%22%2C%22SVK%22%2C%22BFA%22%2C%22PRY%22%2C%22ABSTAIN+COUNT%22%2C%22LTU%22%2C%22ZAF%22%2C%22MLT%22%2C%22PHL%22%2C%22ISR%22%2C%22TZA%22%2C%22DOM%22%2C%22KAZ%22%2C%22CHL%22%2C%22AGO%22%2C%22SYC%22%2C%22TLS%22%2C%22LAO%22%2C%22WSM%22%2C%22LIE%22%2C%22MEX%22%2C%22CAN%22%2C%22MDV%22%2C%22SEN%22%2C%22SSD%22%2C%22CPV%22%2C%22SMR%22%2C%22BRN%22%2C%22MLI%22%2C%22AZE%22%2C%22token%22%2C%22PLW%22%2C%22SWE%22%2C%22THA%22%2C%22COG%22%2C%22tags%22%2C%22GHA%22%2C%22VCT%22%2C%22KHM%22%2C%22Resolution%22%2C%22PNG%22%2C%22SVN%22%2C%22JOR%22%2C%22FRA%22%2C%22NLD%22%2C%22BHS%22%2C%22FSM%22%2C%22HRV%22%2C%22EGY%22%2C%22JAM%22%2C%22TOTAL+VOTES%22%2C%22ARM%22%2C%22DZA%22%2C%22MRT%22%2C%22LSO%22%2C%22ISL%22%2C%22COL%22%2C%22subregion%22%2C%22DEU%22%2C%22ALB%22%2C%22ITA%22%2C%22KGZ%22%2C%22NRU%22%2C%22NO+COUNT%22%2C%22AND%22%2C%22TJK%22%2C%22COM%22%2C%22BLZ%22 "HTTP/2 201 Created"
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:2072 - Successfully inserted 1 rows to un_votes_with_sc table.
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:2163 - Filtering for non-SC records to upload to un_votes_raw table...
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:2167 - Uploading 1 non-SC records to un_votes_raw table...
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:1957 - Starting upload to un_votes_raw table...
+17:00:42 [INFO] httpx:1025 - HTTP Request: POST https://gjakiqtayqltssvbzasd.supabase.co/rest/v1/un_votes_raw?columns=%22TKM%22%2C%22KOR%22%2C%22IRL%22%2C%22LUX%22%2C%22continent%22%2C%22POL%22%2C%22Scrape_Year%22%2C%22MUS%22%2C%22QAT%22%2C%22SLB%22%2C%22BGD%22%2C%22GAB%22%2C%22CHN%22%2C%22CRI%22%2C%22KEN%22%2C%22VNM%22%2C%22LKA%22%2C%22MKD%22%2C%22SUR%22%2C%22CIV%22%2C%22EST%22%2C%22CMR%22%2C%22country%22%2C%22BDI%22%2C%22NER%22%2C%22MDA%22%2C%22GUY%22%2C%22FJI%22%2C%22BLR%22%2C%22ARE%22%2C%22PRT%22%2C%22ESP%22%2C%22SAU%22%2C%22ECU%22%2C%22TUR%22%2C%22SLV%22%2C%22RWA%22%2C%22MMR%22%2C%22UKR%22%2C%22PAK%22%2C%22RUS%22%2C%22URY%22%2C%22MYS%22%2C%22HUN%22%2C%22GRC%22%2C%22BHR%22%2C%22AUT%22%2C%22GIN%22%2C%22Council%22%2C%22IDN%22%2C%22UGA%22%2C%22OMN%22%2C%22USA%22%2C%22GMB%22%2C%22GBR%22%2C%22UZB%22%2C%22LBN%22%2C%22YEM%22%2C%22MOZ%22%2C%22PER%22%2C%22NO-VOTE+COUNT%22%2C%22KWT%22%2C%22Date%22%2C%22SOM%22%2C%22IND%22%2C%22JPN%22%2C%22Title%22%2C%22KNA%22%2C%22SLE%22%2C%22DNK%22%2C%22ZWE%22%2C%22TTO%22%2C%22MAR%22%2C%22NAM%22%2C%22TGO%22%2C%22BWA%22%2C%22BRA%22%2C%22ARG%22%2C%22CUB%22%2C%22GTM%22%2C%22BIH%22%2C%22BGR%22%2C%22NIC%22%2C%22NOR%22%2C%22PRK%22%2C%22ETH%22%2C%22LVA%22%2C%22FIN%22%2C%22SDN%22%2C%22LBY%22%2C%22SGP%22%2C%22SRB%22%2C%22BEL%22%2C%22DJI%22%2C%22CYP%22%2C%22TON%22%2C%22BRB%22%2C%22NZL%22%2C%22NPL%22%2C%22YES+COUNT%22%2C%22ROU%22%2C%22MNE%22%2C%22Link%22%2C%22TCD%22%2C%22COD%22%2C%22AUS%22%2C%22MHL%22%2C%22CZE%22%2C%22NGA%22%2C%22LCA%22%2C%22CHE%22%2C%22MNG%22%2C%22SYR%22%2C%22SVK%22%2C%22BFA%22%2C%22PRY%22%2C%22ABSTAIN+COUNT%22%2C%22LTU%22%2C%22ZAF%22%2C%22MLT%22%2C%22PHL%22%2C%22ISR%22%2C%22TZA%22%2C%22DOM%22%2C%22KAZ%22%2C%22CHL%22%2C%22AGO%22%2C%22SYC%22%2C%22TLS%22%2C%22LAO%22%2C%22WSM%22%2C%22LIE%22%2C%22MEX%22%2C%22CAN%22%2C%22MDV%22%2C%22SEN%22%2C%22SSD%22%2C%22CPV%22%2C%22SMR%22%2C%22BRN%22%2C%22MLI%22%2C%22AZE%22%2C%22token%22%2C%22PLW%22%2C%22SWE%22%2C%22THA%22%2C%22COG%22%2C%22tags%22%2C%22GHA%22%2C%22VCT%22%2C%22KHM%22%2C%22Resolution%22%2C%22PNG%22%2C%22SVN%22%2C%22JOR%22%2C%22FRA%22%2C%22NLD%22%2C%22BHS%22%2C%22FSM%22%2C%22HRV%22%2C%22EGY%22%2C%22JAM%22%2C%22TOTAL+VOTES%22%2C%22ARM%22%2C%22DZA%22%2C%22MRT%22%2C%22LSO%22%2C%22ISL%22%2C%22COL%22%2C%22subregion%22%2C%22DEU%22%2C%22ALB%22%2C%22ITA%22%2C%22KGZ%22%2C%22NRU%22%2C%22NO+COUNT%22%2C%22AND%22%2C%22TJK%22%2C%22COM%22%2C%22BLZ%22 "HTTP/2 201 Created"
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:2006 - Successfully inserted 1 rows to un_votes_raw table.
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:2172 - Data processing and upload completed successfully.
+17:00:42 [INFO] src.un_data_pipeline.scraper_pipeline:2205 - Year 2025: Checkpoint process completed successfully
+17:00:48 [INFO] src.un_data_pipeline.scraper_pipeline:2252 - 
+============================================================
+Processing year 2024 (141 records) - Year 2/80
+============================================================
+17:00:48 [INFO] httpx:1025 - HTTP Request: PATCH https://gjakiqtayqltssvbzasd.supabase.co/rest/v1/scraper_logs?run_id=eq.b4a0177a-f865-4ab6-9e2d-34f282a5f885 "HTTP/2 200 OK"
+17:00:48 [INFO] src.un_data_pipeline.scraper_pipeline:1739 - Selecting year: 2024 (Attempt 1/10)
+17:00:51 [INFO] src.un_data_pipeline.scraper_pipeline:1778 - Selected year 2024 with 200 visible records
+17:00:51 [INFO] src.un_data_pipeline.scraper_pipeline:1531 - [Year 2024] Starting link collection with 9921 existing links for deduplication
+17:00:51 [INFO] src.un_data_pipeline.scraper_pipeline:1535 - [Year 2024] Processing page 1.
+17:00:52 [INFO] src.un_data_pipeline.scraper_pipeline:1582 - [Year 2024] Page 1 summary: 0 new, 200 duplicates
+17:00:52 [INFO] src.un_data_pipeline.scraper_pipeline:1590 - [Year 2024] Page 1 had no new links. Consecutive empty pages: 1
+17:00:55 [INFO] src.un_data_pipeline.scraper_pipeline:1535 - [Year 2024] Processing page 2.
+17:00:55 [INFO] src.un_data_pipeline.scraper_pipeline:1582 - [Year 2024] Page 2 summary: 0 new, 123 duplicates
+17:00:55 [INFO] src.un_data_pipeline.scraper_pipeline:1590 - [Year 2024] Page 2 had no new links. Consecutive empty pages: 2
+17:00:55 [INFO] src.un_data_pipeline.scraper_pipeline:1616 - [Year 2024] No next button found on page 2; reached last page.
+17:00:55 [INFO] src.un_data_pipeline.scraper_pipeline:1619 - [Year 2024] Completed link collection: 0 new links across 2 pages
+17:00:55 [INFO] src.un_data_pipeline.scraper_pipeline:2277 - Year 2024: Link collection completed normally
+17:00:55 [INFO] src.un_data_pipeline.scraper_pipeline:2333 - Year 2024: No new links found, continuing to next year
+17:01:00 [INFO] src.un_data_pipeline.scraper_pipeline:2252 - 
+============================================================
+Processing year 2023 (138 records) - Year 3/80
+============================================================
+17:01:00 [INFO] httpx:1025 - HTTP Request: PATCH https://gjakiqtayqltssvbzasd.supabase.co/rest/v1/scraper_logs?run_id=eq.b4a0177a-f865-4ab6-9e2d-34f282a5f885 "HTTP/2 200 OK"
+17:01:00 [INFO] src.un_data_pipeline.scraper_pipeline:1739 - Selecting year: 2023 (Attempt 1/10)
+17:01:00 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None)': /session/425230d15d0cfb5a7a5459ad5a85cef3
+17:01:05 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000021145634490>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/425230d15d0cfb5a7a5459ad5a85cef3
+17:01:09 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002114565C690>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/425230d15d0cfb5a7a5459ad5a85cef3
+17:07:25 [INFO] src.un_data_pipeline.scraper_pipeline:87 - Logging level set to: INFO
+17:07:25 [INFO] src.un_data_pipeline.scraper_pipeline:88 - Use LOG_LEVEL environment variable to control verbosity (DEBUG, INFO, WARNING, ERROR)
+17:07:25 [INFO] src.un_data_pipeline.scraper_pipeline:2222 - Starting Supabase-native UN voting data scraper...
+17:07:26 [INFO] httpx:1025 - HTTP Request: POST https://gjakiqtayqltssvbzasd.supabase.co/rest/v1/scraper_logs "HTTP/2 201 Created"
+17:07:26 [INFO] src.un_data_pipeline.scraper_pipeline:146 - Started scraper run log: a0baff32-c2ca-4e22-ae16-20f5b1bf8b37
+17:07:26 [INFO] src.un_data_pipeline.scraper_pipeline:2228 - Loading existing links from Supabase for deduplication...
+17:07:26 [INFO] src.un_data_pipeline.scraper_pipeline:1917 - Fetching existing links from Supabase table 'un_votes_with_sc' to guide scraping...
+17:07:26 [INFO] httpx:1025 - HTTP Request: GET https://gjakiqtayqltssvbzasd.supabase.co/rest/v1/un_votes_with_sc?select=Link&limit=1 "HTTP/2 200 OK"
+17:07:26 [INFO] httpx:1025 - HTTP Request: GET https://gjakiqtayqltssvbzasd.supabase.co/rest/v1/un_votes_with_sc?select=Link "HTTP/2 200 OK"
+17:07:26 [INFO] src.un_data_pipeline.scraper_pipeline:1937 - Found 9921 unique links in Supabase table 'un_votes_with_sc'.
+17:07:26 [INFO] src.un_data_pipeline.scraper_pipeline:2230 - Loaded 9921 unique links for deduplication.
+17:07:26 [INFO] httpx:1025 - HTTP Request: PATCH https://gjakiqtayqltssvbzasd.supabase.co/rest/v1/scraper_logs?run_id=eq.a0baff32-c2ca-4e22-ae16-20f5b1bf8b37 "HTTP/2 200 OK"
+17:07:26 [INFO] WDM:11 - ====== WebDriver manager ======
+17:07:29 [INFO] WDM:11 - Get LATEST chromedriver version for google-chrome
+17:07:29 [INFO] WDM:11 - Get LATEST chromedriver version for google-chrome
+17:07:29 [INFO] WDM:11 - Driver [C:\Users\Gabriel.Omara\.wdm\drivers\chromedriver\win64\140.0.7339.185\chromedriver-win32/chromedriver.exe] found in cache
+17:07:30 [INFO] src.un_data_pipeline.scraper_pipeline:1204 - Initialized browser with user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36
+17:07:38 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001FDCD33FDD0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/4f048b74add67571d5c74259d66282ff
+17:07:42 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001FDCCD92350>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/4f048b74add67571d5c74259d66282ff
+17:07:46 [WARNING] urllib3.connectionpool:868 - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001FDCCD92F10>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it')': /session/4f048b74add67571d5c74259d66282ff
