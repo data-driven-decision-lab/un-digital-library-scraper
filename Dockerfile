@@ -18,7 +18,7 @@ COPY requirements.txt /app/requirements.txt
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
 
-# Copy only the API source code
+# Copy only the API source code and required CSV files
 COPY src/un_report_api/ /app/src/un_report_api/
 
 # Set the Python path to include the src directory
