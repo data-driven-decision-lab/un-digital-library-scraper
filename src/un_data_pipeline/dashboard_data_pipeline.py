@@ -1,16 +1,14 @@
 import pandas as pd
 import numpy as np
 import os
-import glob
 import sys
 import logging
-import argparse
 from collections import Counter
 import warnings
-from scipy.stats import boxcox
 from sklearn.metrics.pairwise import cosine_similarity
 from tqdm.auto import tqdm
 import ast
+from supabase import create_client, Client
 
 # ==============================================================================
 # INITIAL SETUP
@@ -21,9 +19,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - [%(levelname)s] - 
 
 # --- Path Constants ---
 # Set paths relative to the project root.
-RAW_DATA_DIR = 'data/raw'
-REFERENCE_DATA_DIR = 'data/reference'
-OUTPUT_DATA_DIR = 'data/processed'
+REFERENCE_DATA_DIR = '../../data/reference'
 
 # --- Dictionary Import ---
 # Add the 'src' directory to sys.path to allow for package imports
@@ -41,20 +37,160 @@ except ImportError:
     main_category_keys = set()
 
 # ==============================================================================
+# SUPABASE FUNCTIONS
+# ==============================================================================
+
+def get_supabase_client():
+    """Get Supabase client with error handling."""
+    supabase_url = os.getenv("SUPABASE_URL", "https://gjakiqtayqltssvbzasd.supabase.co")
+    supabase_key = os.getenv("SUPABASE_KEY")
+    
+    if not supabase_key:
+        raise ValueError("SUPABASE_KEY environment variable not set.")
+    
+    return create_client(supabase_url, supabase_key)
+
+def load_data_from_supabase(table_name='un_votes_with_sc'):
+    """
+    Loads data from Supabase table.
+    
+    Args:
+        table_name: Name of the Supabase table to load from
+        
+    Returns:
+        pandas.DataFrame: Loaded data
+    """
+    logging.info(f"Loading data from Supabase table: {table_name}")
+    
+    try:
+        supabase = get_supabase_client()
+        
+        # Fetch all data from the table
+        response = supabase.table(table_name).select('*').execute()
+        
+        if response.data:
+            df = pd.DataFrame(response.data)
+            logging.info(f"Successfully loaded {len(df)} rows from {table_name}")
+            return df
+        else:
+            logging.warning(f"No data found in {table_name} table")
+            return pd.DataFrame()
+            
+    except Exception as e:
+        logging.error(f"Error loading data from Supabase table {table_name}: {e}")
+        return pd.DataFrame()
+
+def save_data_to_supabase(df, table_name):
+    """
+    Saves processed data to Supabase table.
+    
+    Args:
+        df: DataFrame to save
+        table_name: Name of the Supabase table to save to
+    """
+    if df.empty:
+        logging.info(f"No data to save to {table_name}")
+        return
+    
+    logging.info(f"Saving {len(df)} rows to Supabase table: {table_name}")
+    
+    try:
+        supabase = get_supabase_client()
+        
+        # Prepare data for upload
+        df_to_upload = df.copy()
+        df_to_upload.replace({np.nan: None}, inplace=True)
+        
+        # Handle datetime columns
+        for col in df_to_upload.columns:
+            if pd.api.types.is_datetime64_any_dtype(df_to_upload[col]):
+                df_to_upload[col] = df_to_upload[col].dt.strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Handle numeric columns properly and fix JSON serialization issues
+        for col in df_to_upload.columns:
+            if col in ['Yes Votes', 'No Votes', 'Abstain Votes', 'Total Votes in Year', 'YesVotes_Topic', 'NoVotes_Topic', 'AbstainVotes_Topic', 'TotalVotes_Topic', 'Year', 'Overall Rank', 'Pillar 1 Rank', 'Pillar 2 Rank', 'Pillar 3 Rank']:
+                # Convert to integer, handling NaN values
+                df_to_upload[col] = pd.to_numeric(df_to_upload[col], errors='coerce').astype('Int64')
+            elif col in ['Pillar 1 Score', 'Pillar 2 Score', 'Pillar 3 Score', 'Total Index Average', 'Overall Rank Rolling Avg (3y)', 'Total Index Normalized', 'Pillar 1 Normalized', 'Pillar 2 Normalized', 'Pillar 3 Normalized', 'CosineSimilarity']:
+                # Convert to numeric, handling NaN values and replacing inf/-inf with None
+                df_to_upload[col] = pd.to_numeric(df_to_upload[col], errors='coerce')
+                # Replace inf, -inf, and very large values with None for JSON compatibility
+                df_to_upload[col] = df_to_upload[col].replace([np.inf, -np.inf], None)
+                # Replace very large values that might cause JSON issues (very conservative threshold)
+                df_to_upload[col] = df_to_upload[col].apply(lambda x: None if pd.isna(x) or abs(x) > 1e3 else x)
+                # Round to reasonable precision to avoid floating point issues
+                df_to_upload[col] = df_to_upload[col].apply(lambda x: round(x, 4) if pd.notna(x) and isinstance(x, (int, float)) else x)
+                # Convert to string to avoid any JSON serialization issues
+                df_to_upload[col] = df_to_upload[col].astype(str)
+                # Replace 'nan' strings with None
+                df_to_upload[col] = df_to_upload[col].replace('nan', None)
+        
+        # Remove id column if it exists (let Supabase auto-generate it)
+        if 'id' in df_to_upload.columns:
+            df_to_upload = df_to_upload.drop('id', axis=1)
+        
+        rows_to_insert = df_to_upload.to_dict(orient='records')
+        
+        # Clear existing data
+        supabase.table(table_name).delete().neq('id', 0).execute()  # Delete all rows
+        
+        # Insert data in batches to avoid timeout issues
+        batch_size = 1000 if len(rows_to_insert) > 10000 else 5000
+        total_rows = len(rows_to_insert)
+        num_batches = (total_rows + batch_size - 1) // batch_size
+        
+        logging.info(f"Uploading {total_rows} rows to {table_name} in {num_batches} batches of {batch_size}")
+        
+        for i in range(num_batches):
+            start_idx = i * batch_size
+            end_idx = min((i + 1) * batch_size, total_rows)
+            batch_rows = rows_to_insert[start_idx:end_idx]
+            
+            # Debug the first batch for JSON issues
+            if i == 0:
+                logging.info(f"Debugging first batch ({len(batch_rows)} rows)...")
+                try:
+                    import json
+                    json.dumps(batch_rows)
+                    logging.info("First batch JSON serialization test passed")
+                except Exception as json_error:
+                    logging.error(f"First batch JSON serialization failed: {json_error}")
+                    # Check each row in the first batch
+                    for j, row in enumerate(batch_rows[:3]):  # Check first 3 rows
+                        try:
+                            json.dumps(row)
+                            logging.info(f"  Row {j}: OK")
+                        except Exception as row_error:
+                            logging.error(f"  Row {j}: FAILED - {row_error}")
+                            # Check each value in the problematic row
+                            for key, value in row.items():
+                                try:
+                                    json.dumps({key: value})
+                                except Exception as val_error:
+                                    logging.error(f"    Problematic value: {key} = {value} (type: {type(value)}) - {val_error}")
+                    raise json_error
+            
+            try:
+                supabase.table(table_name).insert(batch_rows).execute()
+                logging.info(f"Uploaded batch {i+1}/{num_batches} ({len(batch_rows)} rows)")
+                # Small delay to avoid overwhelming the API
+                if i < num_batches - 1:  # Don't delay after the last batch
+                    import time
+                    time.sleep(0.1)
+            except Exception as batch_error:
+                logging.error(f"Error uploading batch {i+1}/{num_batches}: {batch_error}")
+                raise batch_error
+        
+        logging.info(f"Successfully saved {len(df_to_upload)} rows to {table_name}")
+        
+    except Exception as e:
+        logging.error(f"Error saving data to Supabase table {table_name}: {e}")
+
+# ==============================================================================
 # UTILITY FUNCTIONS (Consolidated)
 # ==============================================================================
 
-def find_latest_raw_data_csv(directory):
-    """Finds the most recent raw voting data CSV file."""
-    logging.info(f"Searching for latest raw data file in: {directory}")
-    pattern = os.path.join(directory, 'UN_VOTING_DATA_RAW_WITH_TAGS_*.csv')
-    list_of_files = glob.glob(pattern)
-    if not list_of_files:
-        logging.error(f"No CSV files found matching the pattern in '{directory}'.")
-        return None
-    latest_file = max(list_of_files, key=os.path.getmtime)
-    logging.info(f"Found latest input file: {os.path.basename(latest_file)}")
-    return latest_file
+# Removed find_latest_raw_data_csv - now using Supabase
 
 def identify_country_columns(df_columns):
     """Identifies likely country ISO3 columns (3 uppercase letters)."""
@@ -272,7 +408,7 @@ def generate_combined_index(df_main, country_to_region_map, bloc_size_p1=4):
             normalized_col_name = f'{pillar}_Normalized'
             final_df[normalized_col_name] = final_df.groupby('Year')[pillar].transform(min_max_normalize_100)
             normalized_pillar_cols.append(normalized_col_name)
-            final_df[f'{pillar}_Rank'] = final_df.groupby('Year')[pillar].rank(method='dense', ascending=False).astype(pd.Int64Dtype())
+            final_df[f'{pillar}_Rank'] = final_df.groupby('Year')[pillar].rank(method='min', ascending=False).astype(pd.Int64Dtype())
 
     if normalized_pillar_cols:
         # Change 1: Calculate 'Total Index Average' from the mean of *normalized* pillars.
@@ -281,7 +417,7 @@ def generate_combined_index(df_main, country_to_region_map, bloc_size_p1=4):
         # The 'Total Index Normalized' is now a direct copy of this new average, without re-normalizing.
         final_df['Total Index Normalized'] = final_df['Total Index Average']
 
-        final_df['Overall Rank'] = final_df.groupby('Year')['Total Index Average'].rank(method='dense', ascending=False).astype(pd.Int64Dtype())
+        final_df['Overall Rank'] = final_df.groupby('Year')['Total Index Average'].rank(method='min', ascending=False).astype(pd.Int64Dtype())
         final_df.sort_values(by=['Country', 'Year'], inplace=True)
         final_df['Overall Rank Rolling Avg (3y)'] = final_df.groupby('Country')['Overall Rank'].transform(lambda x: x.rolling(window=3, min_periods=1).mean())
         # Redundant normalization step has been removed.
@@ -290,12 +426,32 @@ def generate_combined_index(df_main, country_to_region_map, bloc_size_p1=4):
         raw_pillar_cols = [p for p in pillars if p in final_df.columns]
         if raw_pillar_cols:
             final_df['Total Index Average'] = final_df[raw_pillar_cols].mean(axis=1, skipna=True)
-            final_df['Overall Rank'] = final_df.groupby('Year')['Total Index Average'].rank(method='dense', ascending=False).astype(pd.Int64Dtype())
+            final_df['Overall Rank'] = final_df.groupby('Year')['Total Index Average'].rank(method='min', ascending=False).astype(pd.Int64Dtype())
             final_df.sort_values(by=['Country', 'Year'], inplace=True)
             final_df['Overall Rank Rolling Avg (3y)'] = final_df.groupby('Country')['Overall Rank'].transform(lambda x: x.rolling(window=3, min_periods=1).mean())
             final_df['Total Index Normalized'] = final_df.groupby('Year')['Total Index Average'].transform(min_max_normalize_100)
 
     final_df.rename(columns={'Country': 'Country name', 'Pillar1': 'Pillar 1 Score', 'Pillar2': 'Pillar 2 Score', 'Pillar3': 'Pillar 3 Score', 'Pillar1_Normalized': 'Pillar 1 Normalized', 'Pillar1_Rank': 'Pillar 1 Rank', 'Pillar2_Normalized': 'Pillar 2 Normalized', 'Pillar2_Rank': 'Pillar 2 Rank', 'Pillar3_Normalized': 'Pillar 3 Normalized', 'Pillar3_Rank': 'Pillar 3 Rank'}, inplace=True)
+    
+    # Convert 2-letter country codes to 3-letter codes
+    logging.info("Converting country codes from 2-letter to 3-letter format...")
+    try:
+        import pycountry
+        def convert_country_code(country_code):
+            if len(country_code) == 2:
+                try:
+                    country = pycountry.countries.get(alpha_2=country_code)
+                    return country.alpha_3 if country else country_code
+                except:
+                    return country_code
+            return country_code
+        
+        final_df['Country name'] = final_df['Country name'].apply(convert_country_code)
+        logging.info("Country code conversion completed.")
+    except ImportError:
+        logging.warning("pycountry not available, skipping country code conversion.")
+    except Exception as e:
+        logging.warning(f"Error converting country codes: {e}")
     
     logging.info("Step 1: Combined Index generation finished.")
     return final_df
@@ -499,18 +655,19 @@ def generate_similarity_matrix(df_raw):
 def main():
     """
     Main function to orchestrate the entire data processing pipeline.
+    Now Supabase-native: reads from un_votes_with_sc and saves processed data to Supabase tables.
     """
     logging.info("==============================================================================")
-    logging.info("Starting Combined Dashboard Data Pipeline")
+    logging.info("Starting Supabase-native Dashboard Data Pipeline")
     logging.info("==============================================================================")
 
-    # --- 1. Load Data ---
-    raw_csv_path = find_latest_raw_data_csv(RAW_DATA_DIR)
-    if not raw_csv_path:
+    # --- 1. Load Data from Supabase ---
+    df_raw = load_data_from_supabase('un_votes_with_sc')
+    if df_raw.empty:
+        logging.error("No data found in un_votes_with_sc table. Exiting.")
         sys.exit(1)
     
-    df_raw = pd.read_csv(raw_csv_path, low_memory=False)
-    logging.info(f"Successfully loaded {os.path.basename(raw_csv_path)} with {len(df_raw)} rows.")
+    logging.info(f"Successfully loaded {len(df_raw)} rows from un_votes_with_sc table.")
     
     # Filter out Security Council resolutions
     df_filtered = df_raw[~df_raw['Resolution'].str.startswith('S/', na=False)].copy()
@@ -524,6 +681,10 @@ def main():
 
     # Load region mapping
     region_mapping_path = os.path.join(REFERENCE_DATA_DIR, 'UN_Country_Region_Mapping.csv')
+    # Fix path if running from different directory
+    if not os.path.exists(region_mapping_path):
+        # Try relative to current working directory
+        region_mapping_path = 'data/reference/UN_Country_Region_Mapping.csv'
     country_to_region_map = load_region_mapping(region_mapping_path)
     if not country_to_region_map:
         logging.warning("Continuing without region mapping. Pillar 2 will be affected.")
@@ -534,28 +695,40 @@ def main():
     df_topic_votes = generate_topic_votes(df_filtered.copy())
     df_similarity = generate_similarity_matrix(df_filtered.copy())
 
-    # --- 3. Save Outputs ---
-    if not os.path.exists(OUTPUT_DATA_DIR):
-        os.makedirs(OUTPUT_DATA_DIR)
-        logging.info(f"Created output directory: {OUTPUT_DATA_DIR}")
-
-    # Define output paths
-    annual_scores_path = os.path.join(OUTPUT_DATA_DIR, 'annual_scores.csv')
-    topic_votes_path = os.path.join(OUTPUT_DATA_DIR, 'topic_votes_yearly.csv')
-    similarity_path = os.path.join(OUTPUT_DATA_DIR, 'pairwise_similarity_yearly.csv')
-
-    # Save files
-    df_annual_scores.to_csv(annual_scores_path, index=False)
-    logging.info(f"Successfully saved annual scores to: {annual_scores_path}")
+    # --- 3. Save Outputs to Supabase ---
+    logging.info("Saving processed data to Supabase tables...")
     
-    df_topic_votes.to_csv(topic_votes_path, index=False)
-    logging.info(f"Successfully saved topic votes to: {topic_votes_path}")
-
-    df_similarity.to_csv(similarity_path, index=False)
-    logging.info(f"Successfully saved similarity matrix to: {similarity_path}")
+    # Save to Supabase tables
+    logging.info(f"About to save annual_scores: {df_annual_scores.shape}")
+    logging.info(f"Annual scores columns: {list(df_annual_scores.columns)}")
+    logging.info(f"Annual scores sample data:\n{df_annual_scores.head()}")
+    save_data_to_supabase(df_annual_scores, 'annual_scores')
+    save_data_to_supabase(df_topic_votes, 'topic_votes_yearly')
+    save_data_to_supabase(df_similarity, 'pairwise_similarity_yearly')
+    
+    # Optional: Save locally as backup (commented out to focus on Supabase)
+    # if not os.path.exists(OUTPUT_DATA_DIR):
+    #     os.makedirs(OUTPUT_DATA_DIR)
+    #     logging.info(f"Created output directory: {OUTPUT_DATA_DIR}")
+    # 
+    # # Define output paths
+    # annual_scores_path = os.path.join(OUTPUT_DATA_DIR, 'annual_scores.csv')
+    # topic_votes_path = os.path.join(OUTPUT_DATA_DIR, 'topic_votes_yearly.csv')
+    # similarity_path = os.path.join(OUTPUT_DATA_DIR, 'pairwise_similarity_yearly.csv')
+    # 
+    # # Save files locally as backup
+    # df_annual_scores.to_csv(annual_scores_path, index=False)
+    # logging.info(f"Successfully saved annual scores to: {annual_scores_path}")
+    # 
+    # df_topic_votes.to_csv(topic_votes_path, index=False)
+    # logging.info(f"Successfully saved topic votes to: {topic_votes_path}")
+    # 
+    # df_similarity.to_csv(similarity_path, index=False)
+    # logging.info(f"Successfully saved similarity matrix to: {similarity_path}")
     
     logging.info("==============================================================================")
     logging.info("Pipeline finished successfully!")
+    logging.info("Data saved to Supabase tables: annual_scores, topic_votes_yearly, pairwise_similarity_yearly")
     logging.info("==============================================================================")
 
 

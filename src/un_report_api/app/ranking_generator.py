@@ -5,6 +5,7 @@ import numpy as np
 import os
 import logging
 from typing import List, Dict, Tuple, Optional
+from supabase_client import supabase_loader
 
 # Configuration
 # Define paths relative to the project root, which is the current working directory.
@@ -41,10 +42,11 @@ def calculate_rankings_for_year(df_year: pd.DataFrame, pillar_col: str) -> pd.Da
     """
     # Sort by score descending (higher is better), NaNs are put last by default
     df_sorted = df_year.sort_values(by=pillar_col, ascending=False, na_position='last')
-    # Rank, 'min' method assigns the same rank to ties (e.g., 1, 2, 2, 4)
-    df_sorted[f'{pillar_col}_rank'] = df_sorted[pillar_col].rank(method='min', ascending=False)
+    # Rank, 'min' method assigns the same rank to ties (e.g., 1, 2, 2, 4) - provides stable ranking
+    rank_col_name = f'{pillar_col.lower().replace(" ", "_")}_rank'
+    df_sorted[rank_col_name] = df_sorted[pillar_col].rank(method='min', ascending=False)
     # Convert ranks to integer where possible (NaNs will remain float)
-    df_sorted[f'{pillar_col}_rank'] = df_sorted[f'{pillar_col}_rank'].astype('Int64') # Pandas nullable integer type
+    df_sorted[rank_col_name] = df_sorted[rank_col_name].astype('Int64') # Pandas nullable integer type
     return df_sorted
 
 def get_rankings_for_pillar(
@@ -64,28 +66,29 @@ def get_rankings_for_pillar(
 
     results = []
     for _, row in df_current_ranked.iterrows():
+        rank_col_name = f'{pillar_name.lower().replace(" ", "_")}_rank'
         entry = {
             "country_name": row['country_name'],
             "country_code": row['country_code'],
             "value": round(row[pillar_name], DECIMAL_PLACES) if pd.notna(row[pillar_name]) else None,
-            "rank": row[f'{pillar_name}_rank'] if pd.notna(row[f'{pillar_name}_rank']) else None,
+            "rank": row[rank_col_name] if pd.notna(row[rank_col_name]) else None,
             "rank_change": None,
             "value_change": None,
             "rank_change_10_year": None,
             "value_change_10_year": None,
-            "is_oecd": bool(row['is_oecd']) if pd.notna(row['is_oecd']) else False,
-            "is_g20": bool(row['is_g20']) if pd.notna(row['is_g20']) else False,
-            "is_top_50_gdp": bool(row['is_top_50_gdp']) if pd.notna(row['is_top_50_gdp']) else False,
-            "is_bottom_50_gdp": bool(row['is_bottom_50_gdp']) if pd.notna(row['is_bottom_50_gdp']) else False,
-            "is_top_50_population": bool(row['is_top_50_population']) if pd.notna(row['is_top_50_population']) else False,
-            "is_bottom_50_population": bool(row['is_bottom_50_population']) if pd.notna(row['is_bottom_50_population']) else False,
+            "is_oecd": bool(row['is_oecd']) if 'is_oecd' in row and pd.notna(row['is_oecd']) else False,
+            "is_g20": bool(row['is_g20']) if 'is_g20' in row and pd.notna(row['is_g20']) else False,
+            "is_top_50_gdp": bool(row['is_top_50_gdp']) if 'is_top_50_gdp' in row and pd.notna(row['is_top_50_gdp']) else False,
+            "is_bottom_50_gdp": bool(row['is_bottom_50_gdp']) if 'is_bottom_50_gdp' in row and pd.notna(row['is_bottom_50_gdp']) else False,
+            "is_top_50_population": bool(row['is_top_50_population']) if 'is_top_50_population' in row and pd.notna(row['is_top_50_population']) else False,
+            "is_bottom_50_population": bool(row['is_bottom_50_population']) if 'is_bottom_50_population' in row and pd.notna(row['is_bottom_50_population']) else False,
         }
 
         if df_previous_year is not None and not df_previous_year.empty:
             country_previous_data = df_previous_year[df_previous_year[country_col] == row[country_col]]
             if not country_previous_data.empty:
                 prev_value = country_previous_data.iloc[0][pillar_name]
-                prev_rank = country_previous_data.iloc[0].get(f'{pillar_name}_rank') 
+                prev_rank = country_previous_data.iloc[0].get(rank_col_name) 
 
                 if pd.notna(prev_value) and pd.notna(entry["value"]):
                     entry["value_change"] = round(entry["value"] - prev_value, DECIMAL_PLACES)
@@ -101,7 +104,7 @@ def get_rankings_for_pillar(
             country_10_year_data = df_10_year_ago[df_10_year_ago[country_col] == row[country_col]]
             if not country_10_year_data.empty:
                 val_10_ago = country_10_year_data.iloc[0][pillar_name]
-                rank_10_ago = country_10_year_data.iloc[0].get(f'{pillar_name}_rank')
+                rank_10_ago = country_10_year_data.iloc[0].get(rank_col_name)
 
                 if pd.notna(val_10_ago) and pd.notna(entry["value"]):
                     entry["value_change_10_year"] = round(entry["value"] - val_10_ago, DECIMAL_PLACES)
@@ -131,51 +134,72 @@ def generate_yearly_rankings(year: int) -> Tuple[Dict, Optional[str]]:
     message = None
 
     try:
-        # Load scores and standardize.
-        df_all_scores_raw = pd.read_csv(annual_scores_path)
+        # Load scores from Supabase and standardize.
+        df_all_scores_raw = supabase_loader.load_annual_scores()
         df_scores = standardize_col_names(df_all_scores_raw.copy())
-        # The 'country_name' column in this file actually contains the 3-letter codes.
+        # The 'Country name' column in this file actually contains the 3-letter codes.
         # We rename it to 'country_code' to use as a reliable key for our merge.
-        df_scores.rename(columns={'country_name': 'country_code'}, inplace=True)
+        df_scores.rename(columns={'Country name': 'country_code'}, inplace=True)
         # Drop any leftover index columns from previous CSV saves to avoid confusion.
         if 'unnamed:_0' in df_scores.columns:
             df_scores = df_scores.drop(columns=['unnamed:_0'])
-        logger.debug(f"Successfully loaded and standardized {ANNUAL_SCORES_FILE}")
-    except FileNotFoundError:
-        logger.error(f"Required data file not found: {annual_scores_path}")
-        raise FileNotFoundError(f"The data file '{ANNUAL_SCORES_FILE}' was not found in '{PROCESSED_DATA_DIR}'.")
+        logger.debug(f"Successfully loaded and standardized annual_scores from Supabase")
     except Exception as e:
-        logger.error(f"Error loading or processing {ANNUAL_SCORES_FILE}: {e}")
-        raise ValueError(f"Error processing data file: {e}")
+        logger.error(f"Error loading or processing annual_scores from Supabase: {e}")
+        raise ValueError(f"Error processing data from Supabase: {e}")
 
     try:
-        df_classifications_raw = pd.read_csv(classifications_path)
+        df_classifications_raw = supabase_loader.load_country_classifications()
         df_classifications = standardize_col_names(df_classifications_raw.copy())
-        logger.debug(f"Successfully loaded and standardized {CLASSIFICATIONS_FILE}")
-    except FileNotFoundError:
-        logger.error(f"Required classification file not found: {classifications_path}")
-        raise FileNotFoundError(f"The classification file '{CLASSIFICATIONS_FILE}' was not found in '{REFERENCE_DATA_DIR}'.")
+        logger.debug(f"Successfully loaded and standardized country_classifications from Supabase")
+    except Exception as e:
+        logger.error(f"Error loading country_classifications from Supabase: {e}")
+        # Continue without classifications if not available
+        df_classifications = pd.DataFrame()
     
-    # Select only the columns we need from the classification file to avoid merge conflicts.
-    class_cols_to_merge = [
-        'country_code', 'country_name', 'is_oecd', 'is_g20', 'is_top_50_gdp', 
-        'is_bottom_50_gdp', 'is_top_50_population', 'is_bottom_50_population'
-    ]
-    df_class_subset = df_classifications[class_cols_to_merge]
+    # Create country_code from country_name if it doesn't exist (needed for merge operations)
+    if 'country_code' not in df_scores.columns:
+        df_scores['country_code'] = df_scores['country_name']
+    
+    # Handle classifications if available
+    if not df_classifications.empty:
+        # Select only the columns we need from the classification file to avoid merge conflicts.
+        class_cols_to_merge = [
+            'country_code', 'country_name', 'is_oecd', 'is_g20', 'is_top_50_gdp', 
+            'is_bottom_50_gdp', 'is_top_50_population', 'is_bottom_50_population'
+        ]
+        available_class_cols = [col for col in class_cols_to_merge if col in df_classifications.columns]
+        if available_class_cols:
+            df_class_subset = df_classifications[available_class_cols]
+            # Merge the scores data with the classification data.
+            df_all_scores = pd.merge(df_scores, df_class_subset, on='country_name', how='left')
+        else:
+            df_all_scores = df_scores.copy()
+    else:
+        df_all_scores = df_scores.copy()
 
-    # Merge the scores data with the classification data.
-    df_all_scores = pd.merge(df_scores, df_class_subset, on='country_code', how='left')
-
+    # Ensure country_code column exists in the merged dataframe
+    if 'country_code' not in df_all_scores.columns:
+        df_all_scores['country_code'] = df_all_scores['country_name']
+    
     # If a country from the scores file was not in the classification file,
     # its name will be missing (NaN). We fill it with the country code as a fallback.
-    df_all_scores['country_name'].fillna(df_all_scores['country_code'], inplace=True)
+    if 'country_name' in df_all_scores.columns:
+        df_all_scores['country_name'].fillna(df_all_scores['country_code'], inplace=True)
+    else:
+        # If no country_name column, create one from country_code
+        df_all_scores['country_name'] = df_all_scores['country_code']
 
-    # Validate required columns after the merge
-    required_cols = ['year', 'country_name', 'country_code', 'pillar_1_score', 'pillar_2_score', 'pillar_3_score', 'total_index_average']
+    # Validate required columns after the merge (using standardized names)
+    required_cols = ['year', 'country_name', 'pillar_1_score', 'pillar_2_score', 'pillar_3_score', 'total_index_average']
     missing_cols = [col for col in required_cols if col not in df_all_scores.columns]
     if missing_cols:
-        logger.error(f"Missing required columns in {ANNUAL_SCORES_FILE}: {missing_cols}")
-        raise ValueError(f"Data file is missing required columns: {', '.join(missing_cols)}")
+        logger.error(f"Missing required columns in annual_scores: {missing_cols}")
+        raise ValueError(f"Data is missing required columns: {', '.join(missing_cols)}")
+    
+    # Create country_code from country_name if it doesn't exist
+    if 'country_code' not in df_all_scores.columns:
+        df_all_scores['country_code'] = df_all_scores['country_name']
 
     # Ensure year column is integer
     df_all_scores['year'] = df_all_scores['year'].astype(int)
@@ -183,7 +207,7 @@ def generate_yearly_rankings(year: int) -> Tuple[Dict, Optional[str]]:
     # Filter data for the current year
     df_current_year = df_all_scores[df_all_scores['year'] == year].copy()
     if df_current_year.empty:
-        logger.warning(f"No data found for the year {year} in {ANNUAL_SCORES_FILE}.")
+        logger.warning(f"No data found for the year {year} in annual_scores.")
         empty_rankings = {"year": year, "pillar_1_rankings": [], "pillar_2_rankings": [], "pillar_3_rankings": [], "average_pillar_rankings": []}
         return empty_rankings, f"No data available for the year {year}."
 
@@ -202,8 +226,7 @@ def generate_yearly_rankings(year: int) -> Tuple[Dict, Optional[str]]:
         df_prev_p3_ranked = calculate_rankings_for_year(df_previous_year_raw.copy(), 'pillar_3_score')
         df_prev_avg_ranked = calculate_rankings_for_year(df_previous_year_raw.copy(), 'total_index_average')
         
-        # Combine them by merging back on country_name and year (or just index if unique per year)
-        # Assuming 'country_name' is unique per year
+        # Combine them by merging back on country_code
         df_previous_year_ranked = df_prev_p1_ranked.merge(
             df_prev_p2_ranked[['country_code', 'pillar_2_score_rank']], on='country_code', how='left'
         ).merge(
@@ -228,8 +251,7 @@ def generate_yearly_rankings(year: int) -> Tuple[Dict, Optional[str]]:
         df_10_p3_ranked = calculate_rankings_for_year(df_10_year_ago_raw.copy(), 'pillar_3_score')
         df_10_avg_ranked = calculate_rankings_for_year(df_10_year_ago_raw.copy(), 'total_index_average')
         
-        # Combine them by merging back on country_name and year (or just index if unique per year)
-        # Assuming 'country_name' is unique per year
+        # Combine them by merging back on country_code
         df_10_year_ago_ranked = df_10_p1_ranked.merge(
             df_10_p2_ranked[['country_code', 'pillar_2_score_rank']], on='country_code', how='left'
         ).merge(
@@ -239,7 +261,7 @@ def generate_yearly_rankings(year: int) -> Tuple[Dict, Optional[str]]:
         )
         logger.debug(f"Successfully processed data for 10-year-ago {year_10_ago}.")
 
-    # Pillar columns to iterate over
+    # Pillar columns to iterate over (using standardized names)
     pillar_mapping = {
         "pillar_1_rankings": "pillar_1_score",
         "pillar_2_rankings": "pillar_2_score",

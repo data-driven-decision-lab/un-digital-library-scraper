@@ -17,7 +17,8 @@ from typing import Optional, Tuple, Dict, List # Added Optional, Tuple, Dict, Li
 
 # --- Local Imports (relative for package structure) ---
 # Absolute imports assuming 'app' directory is the root for these modules
-from .country_iso_map import COUNTRY_TO_ISO3
+from country_iso_map import COUNTRY_TO_ISO3
+from supabase_client import supabase_loader
 
 # --- Configuration ---
 P5_ISO_CODES = ["CHN", "FRA", "RUS", "GBR", "USA"] # UN Security Council P5 Members
@@ -99,7 +100,49 @@ def scale_similarity(score):
     except (ValueError, TypeError):
         return None
 
-# --- New Helper Function for Region Mapping ---
+# --- New Helper Function for Region Mapping from Supabase ---
+def load_un_region_mapping_from_supabase() -> Tuple[Optional[Dict], Optional[Dict]]:
+    """
+    Loads UN country to region mapping from Supabase.
+
+    Returns:
+        tuple[dict, dict]: A tuple containing:
+            - iso_to_region_map (dict): Maps ISO3 code to UN Region name.
+            - region_to_iso_list_map (dict): Maps UN Region name to a list of ISO3 codes.
+        Returns (None, None) if loading fails.
+    """
+    try:
+        df_regions = supabase_loader.load_un_region_mapping()
+        
+        if df_regions.empty:
+            logging.error("No region mapping data found in Supabase.")
+            return None, None
+            
+        # Standardize column names for robustness
+        df_regions.columns = [col.strip() for col in df_regions.columns]
+        
+        # Ensure required columns exist
+        if 'ISO-alpha3 code' not in df_regions.columns or 'UN Region' not in df_regions.columns:
+            logging.error("Region mapping data is missing required columns: 'ISO-alpha3 code' or 'UN Region'.")
+            return None, None
+            
+        df_regions.dropna(subset=['ISO-alpha3 code', 'UN Region'], inplace=True)
+        
+        iso_to_region_map = pd.Series(
+            df_regions['UN Region'].values, 
+            index=df_regions['ISO-alpha3 code']
+        ).to_dict()
+        
+        region_to_iso_list_map = df_regions.groupby('UN Region')['ISO-alpha3 code'].apply(list).to_dict()
+        
+        logging.info(f"Successfully loaded UN region mapping from Supabase.")
+        return iso_to_region_map, region_to_iso_list_map
+        
+    except Exception as e:
+        logging.error(f"Error loading UN region mapping from Supabase: {e}")
+        return None, None
+
+# --- Legacy Helper Function for Region Mapping (kept for compatibility) ---
 def load_un_region_mapping(mapping_dir: str, filename: str) -> Tuple[Optional[Dict], Optional[Dict]]:
     """
     Loads UN country to region mapping from a CSV file.
@@ -153,58 +196,46 @@ def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:
     """
     logging.info(f"Report generation started for {country_iso}, period: {start_year}-{end_year}.")
 
-    # --- Define File Paths ---
-    annual_scores_path = os.path.join(PROCESSED_DATA_DIR, "annual_scores.csv")
-    similarity_path = os.path.join(PROCESSED_DATA_DIR, "pairwise_similarity_yearly.csv")
-    topic_votes_path = os.path.join(PROCESSED_DATA_DIR, "topic_votes_yearly.csv")
-    region_mapping_path = os.path.join(REFERENCE_DATA_DIR, REGION_MAPPING_FILENAME)
-
-    # --- Load Region Mapping ---
-    iso_to_region_map, region_to_iso_list_map = load_un_region_mapping(REFERENCE_DATA_DIR, REGION_MAPPING_FILENAME)
+    # --- Load Region Mapping from Supabase ---
+    iso_to_region_map, region_to_iso_list_map = load_un_region_mapping_from_supabase()
     if iso_to_region_map is None or region_to_iso_list_map is None:
         # Logged in helper, allow report generation to proceed without regional context if mapping fails
         logging.warning("UN Region mapping failed to load. Regional context will be unavailable.")
     
-    # --- Load Data ---
+    # --- Load Data from Supabase ---
     try:
-        logging.debug(f"Loading data from {annual_scores_path}")
-        df_scores_raw = pd.read_csv(annual_scores_path)
+        logging.debug("Loading annual scores from Supabase")
+        df_scores_raw = supabase_loader.load_annual_scores()
         df_scores = standardize_col_names(df_scores_raw.copy())
         
-        logging.debug(f"Loading data from {similarity_path}")
-        df_similarity_raw = pd.read_csv(similarity_path)
+        logging.debug("Loading pairwise similarity from Supabase")
+        df_similarity_raw = supabase_loader.load_pairwise_similarity()
         df_similarity = standardize_col_names(df_similarity_raw.copy())
 
-        logging.debug(f"Loading data from {topic_votes_path}")
-        df_topics_raw = pd.read_csv(topic_votes_path)
+        logging.debug("Loading topic votes from Supabase")
+        df_topics_raw = supabase_loader.load_topic_votes()
         df_topics = standardize_col_names(df_topics_raw.copy())
 
-    except FileNotFoundError as e:
-        logging.error(f"Input data file not found: {e.filename}. Ensure CSV files are in the 'data/processed' or 'data/reference' directories.")
-        raise # Re-raise for the API to catch and return a proper HTTP error
     except Exception as e:
-        logging.error(f"Failed to load or standardize input CSV files: {e}")
-        raise ValueError(f"Error processing input data files: {e}")
+        logging.error(f"Failed to load data from Supabase: {e}")
+        raise ValueError(f"Error loading data from Supabase: {e}")
 
-    # Determine country column names (assuming standardized names from CSVs)
-    country_col_scores = 'country_name' # Expects 'country_name' to be the ISO3 code in annual_scores.csv
+    # Determine country column names (after standardization)
+    country_col_scores = 'country_name' # After standardization, 'Country name' becomes 'country_name'
     if country_col_scores not in df_scores.columns:
-        # Fallback or error if 'country_name' (as ISO3) isn't there.
-        # This depends on the actual content of your annual_scores.csv
-        # If 'country' is the ISO3 column and 'country_name' is the full name, adjust accordingly.
-        # For now, assuming 'country_name' IS the ISO3 code column in this file after standardization.
+        # Fallback or error if 'country_name' isn't there.
         alt_country_col = 'country'
         if alt_country_col in df_scores.columns:
             country_col_scores = alt_country_col
             logging.warning(f"Using '{alt_country_col}' as country ISO column in scores data.")
         else:
-             raise ValueError(f"Cannot find a suitable country ISO identifier column (expected '{country_col_scores}' or '{alt_country_col}') in {annual_scores_path}")
+             raise ValueError(f"Cannot find a suitable country ISO identifier column (expected '{country_col_scores}' or '{alt_country_col}') in Supabase data. Available columns: {list(df_scores.columns)}")
 
-    country_col_topics = 'country' # Expected ISO3 column in topic_votes_yearly.csv
-    country_col_sim = 'country1_iso3' # Expected one of the ISO3 columns in pairwise_similarity_yearly.csv
+    country_col_topics = 'country' # After standardization, 'Country' becomes 'country'
+    country_col_sim = 'country1_iso3' # After standardization, 'Country1_ISO3' becomes 'country1_iso3'
 
     if country_iso not in df_scores[country_col_scores].unique():
-        raise ValueError(f"Country ISO '{country_iso}' not found in the scores data ({annual_scores_path}).")
+        raise ValueError(f"Country ISO '{country_iso}' not found in the scores data from Supabase.")
         
     # --- Filter Data For Country & Period ---
     df_scores['year'] = pd.to_numeric(df_scores['year'], errors='coerce')
@@ -521,10 +552,10 @@ def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:
         "note": None
     }
 
-    if not df_similarity_country.empty and 'cosinesimilarity' in df_similarity_country.columns:
+    if not df_similarity_country.empty and 'CosineSimilarity' in df_similarity_country.columns:
         # Determine the 'partner' country in each row (the one that is not country_iso)
         df_similarity_country['partner_iso3'] = df_similarity_country.apply(
-            lambda row: row['country2_iso3'] if row[country_col_sim].upper() == country_iso.upper() else row[country_col_sim],
+            lambda row: row['Country2_ISO3'] if row[country_col_sim].upper() == country_iso.upper() else row[country_col_sim],
             axis=1
         )
         
@@ -543,8 +574,8 @@ def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:
         df_p5_partners = df_similarity_country[df_similarity_country['partner_iso3'].str.upper().isin(target_p5_list)]
 
         if not df_p5_partners.empty:
-            avg_similarity_with_p5 = df_p5_partners.groupby('partner_iso3')['cosinesimilarity'].mean().reset_index()
-            avg_similarity_with_p5 = avg_similarity_with_p5.rename(columns={'cosinesimilarity': 'average_similarity_score'})
+            avg_similarity_with_p5 = df_p5_partners.groupby('partner_iso3')['CosineSimilarity'].mean().reset_index()
+            avg_similarity_with_p5 = avg_similarity_with_p5.rename(columns={'CosineSimilarity': 'average_similarity_score'})
             
             if not avg_similarity_with_p5.empty:
                 # Most Aligned

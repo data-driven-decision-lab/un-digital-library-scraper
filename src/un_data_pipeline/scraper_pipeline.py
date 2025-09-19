@@ -31,6 +31,7 @@ import random
 import logging
 import platform
 import json
+import uuid
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -121,48 +122,97 @@ DEFAULT_MAX_TOKENS = 1000
 DEFAULT_MAX_WORKERS = 2  # For parallel scraping
 
 # Create directories
-os.makedirs("data/raw", exist_ok=True)
-os.makedirs("data/processed", exist_ok=True)
+os.makedirs("../data/raw", exist_ok=True)
+os.makedirs("../data/processed", exist_ok=True)
 
-# Find the most recent CSV file in the raw data folder
-def get_latest_master_csv():
-    # Look for all CSV files with the pattern UN_VOTING_DATA_RAW_WITH_TAGS_*.csv
-    pattern = "data/raw/UN_VOTING_DATA_RAW_WITH_TAGS_*.csv"
-    csv_files = glob.glob(pattern)
-    
-    if not csv_files:
-        # No existing files, create a default filename with today's date
-        today = datetime.now().strftime("%Y-%m-%d")
-        return f"data/raw/UN_VOTING_DATA_RAW_WITH_TAGS_{today}.csv"
-    
-    # Option 2: Sort by date in the filename (more reliable)
-    date_pattern = re.compile(r'UN_VOTING_DATA_RAW_WITH_TAGS_(\d{4}-\d{2}-\d{2})\.csv')
-    
-    # Extract dates from filenames and sort
-    dated_files = []
-    for file in csv_files:
-        match = date_pattern.search(file)
-        if match:
-            date_str = match.group(1)
-            try:
-                file_date = datetime.strptime(date_str, "%Y-%m-%d")
-                dated_files.append((file, file_date))
-            except ValueError:
-                # Skip files with invalid dates
-                continue
-    
-    # If we found files with valid dates, get the most recent one
-    if dated_files:
-        latest_file = max(dated_files, key=lambda x: x[1])[0]
-        return latest_file
-    
-    # Fallback: if date parsing fails, use modification time
-    latest_file = max(csv_files, key=os.path.getmtime)
-    return latest_file
+# ---------------- Scraper Logging Functions ----------------
+current_run_id: Optional[str] = None
+scraper_log_data: Dict[str, Any] = {}
 
-# Set the master CSV file
-MASTER_CSV = get_latest_master_csv()
-print(f"Using master CSV: {MASTER_CSV}")
+def start_scraper_log():
+    """Initialize a new scraper run log entry."""
+    global current_run_id, scraper_log_data
+    
+    current_run_id = str(uuid.uuid4())
+    scraper_log_data = {
+        'run_id': current_run_id,
+        'start_time': datetime.now().isoformat(),
+        'status': 'running',
+        'total_records_found': 0,
+        'new_records_processed': 0,
+        'records_uploaded_to_with_sc': 0,
+        'records_uploaded_to_raw': 0,
+        'years_processed': [],
+        'error_message': None,
+        'execution_time_seconds': None
+    }
+    
+    try:
+        supabase_client = get_supabase_client()
+        if supabase_client:
+            result = supabase_client.table('scraper_logs').insert(scraper_log_data).execute()
+            logger.info(f"Started scraper run log: {current_run_id}")
+        else:
+            logger.warning("Supabase client not initialized, cannot log scraper run")
+    except Exception as e:
+        logger.error(f"Failed to create scraper log entry: {e}")
+
+def update_scraper_log(updates: Dict[str, Any]):
+    """Update the current scraper run log with new data."""
+    global scraper_log_data
+    
+    if not current_run_id:
+        logger.warning("No active scraper run to update")
+        return
+    
+    scraper_log_data.update(updates)
+    
+    try:
+        supabase_client = get_supabase_client()
+        if supabase_client:
+            result = supabase_client.table('scraper_logs').update(updates).eq('run_id', current_run_id).execute()
+            logger.debug(f"Updated scraper log: {updates}")
+        else:
+            logger.warning("Supabase client not initialized, cannot update scraper log")
+    except Exception as e:
+        logger.error(f"Failed to update scraper log: {e}")
+
+def finish_scraper_log(status: str, error_message: Optional[str] = None):
+    """Finalize the scraper run log with final status and metrics."""
+    global current_run_id, scraper_log_data
+    
+    if not current_run_id:
+        logger.warning("No active scraper run to finish")
+        return
+    
+    end_time = datetime.now()
+    start_time = datetime.fromisoformat(scraper_log_data['start_time'])
+    execution_time = int((end_time - start_time).total_seconds())
+    
+    final_updates = {
+        'end_time': end_time.isoformat(),
+        'status': status,
+        'execution_time_seconds': execution_time,
+        'error_message': error_message
+    }
+    
+    scraper_log_data.update(final_updates)
+    
+    try:
+        supabase_client = get_supabase_client()
+        if supabase_client:
+            result = supabase_client.table('scraper_logs').update(final_updates).eq('run_id', current_run_id).execute()
+            logger.info(f"Finished scraper run log: {current_run_id} - Status: {status}, Duration: {execution_time}s")
+        else:
+            logger.warning("Supabase client not initialized, cannot finish scraper log")
+    except Exception as e:
+        logger.error(f"Failed to finish scraper log: {e}")
+    
+    # Reset global variables
+    current_run_id = None
+    scraper_log_data = {}
+
+# Supabase-native configuration - no more CSV dependencies
 
 FIXED_COLUMNS = [
     "Council", "Date", "Title", "Resolution", "TOTAL VOTES", "NO-VOTE COUNT",
@@ -720,7 +770,9 @@ def standardize_country_columns(df):
             logger.warning(f"No valid columns found to combine for ISO3 code {iso3_code} from list: {cols_to_combine}")
             continue
 
-        logger.info(f"Combining columns for {iso3_code}: {valid_original_cols}")
+        # Handle Unicode characters safely for logging
+        safe_cols = [col.encode('ascii', 'replace').decode('ascii') for col in valid_original_cols]
+        logger.info(f"Combining columns for {iso3_code}: {safe_cols}")
 
         # Combine values using combine_first, starting with the first column in the list
         combined_series = df[valid_original_cols[0]].copy()
@@ -1189,27 +1241,7 @@ def normalize_link(href):
     logger.debug(f"normalize_link: Fallback normalization {href} -> {base_url}")
     return base_url
 
-def get_links_from_csv_regex(csv_file):
-    """
-    Extract UN record links from the master CSV using a regex.
-    Returns a list of unique normalized links.
-    """
-    links = set()
-    pattern = re.compile(r'https://digitallibrary\.un\.org/record/\d+')
-    if not os.path.exists(csv_file):
-        return []
-    try:
-        with open(csv_file, 'r', encoding='utf-8') as f:
-            for line in f:
-                found = pattern.findall(line)
-                for link in found:
-                    norm = normalize_link(link)
-                    if norm:
-                        links.add(norm)
-        logger.info(f"Extracted {len(links)} unique links from CSV for deduplication.")
-    except Exception as e:
-        logger.error(f"Error reading CSV: {e}")
-    return list(links)
+# CSV functions removed - now using Supabase-native approach
 
 def extract_vote_data_from_html(html_content):
     """Extract vote data and metadata from the page HTML."""
@@ -1334,7 +1366,9 @@ def process_resolution(link, driver, year):
                 row_data['Resolution'] = extracted['Resolution']
                 logger.debug(f"Record {record_id} - Resolution: '{extracted['Resolution']}'")
             else:
-                logger.debug(f"Record {record_id} - No resolution found")
+                # Set a default resolution value to avoid NOT NULL constraint violation
+                row_data['Resolution'] = f"UN-{record_id}"
+                logger.debug(f"Record {record_id} - No resolution found, using default: '{row_data['Resolution']}'")
             
             # Process vote date
             if extracted.get('Vote date'):
@@ -1870,179 +1904,340 @@ def retry_failed_links(failed_links, year):
 
 # -------------------- Supabase Functions --------------------
 
+def get_supabase_client():
+    """Get Supabase client with error handling."""
+    supabase_url = os.getenv("SUPABASE_URL", "https://gjakiqtayqltssvbzasd.supabase.co")
+    supabase_key = os.getenv("SUPABASE_KEY")
+    
+    if not supabase_key:
+        raise ValueError("SUPABASE_KEY environment variable not set.")
+    
+    return create_client(supabase_url, supabase_key)
+
 def get_links_from_supabase() -> set:
     """
-    Fetches all existing record links from the 'scraped_links' table in Supabase.
+    Fetches all existing record links from the 'un_votes_with_sc' table in Supabase.
+    This ensures we don't re-scrape data that's already been processed for the dashboard.
 
     Returns:
         set: A set of unique, normalized links from Supabase.
     """
-    logger.info("Fetching existing links from Supabase table 'scraped_links' to guide scraping...")
+    logger.info("Fetching existing links from Supabase table 'un_votes_with_sc' to guide scraping...")
 
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_KEY")
-
-    if not supabase_url or not supabase_key:
-        logger.warning("SUPABASE_URL or SUPABASE_KEY not set. Cannot fetch links from Supabase.")
-        return set()
-
-    links = set()
     try:
-        supabase: Client = create_client(supabase_url, supabase_key)
-        response = supabase.table('scraped_links').select('link').execute()
+        supabase = get_supabase_client()
         
+        # Test connection first
+        logger.debug("Testing Supabase connection...")
+        response = supabase.table('un_votes_with_sc').select('Link').limit(1).execute()
+        
+        # If test successful, fetch all links
+        response = supabase.table('un_votes_with_sc').select('Link').execute()
+        
+        links = set()
         if response.data:
             for item in response.data:
-                if 'link' in item and item['link']:
-                    norm_link = normalize_link(item['link'])
+                if 'Link' in item and item['Link']:
+                    norm_link = normalize_link(item['Link'])
                     if norm_link:
                         links.add(norm_link)
         
-        logger.info(f"Found {len(links)} unique links in Supabase table 'scraped_links'.")
+        logger.info(f"Found {len(links)} unique links in Supabase table 'un_votes_with_sc'.")
+        return links
 
     except Exception as e:
         logger.error(f"Could not fetch links from Supabase: {e}")
+        logger.info("Continuing without deduplication...")
+        return set()
     
-    return links
-
-def upload_to_supabase(df: pd.DataFrame):
+def upload_to_supabase_raw(df: pd.DataFrame):
     """
     Uploads new rows to the 'un_votes_raw' table in Supabase.
-    It performs a final check for existing rows and de-duplicates the upload batch
-    to prevent errors from race conditions or upstream duplicate collection.
+    This is the raw data table with all scraped data.
 
     Args:
-        df (pd.DataFrame): The DataFrame containing new rows to potentially upload.
+        df (pd.DataFrame): The DataFrame containing new rows to upload.
     """
     if df.empty:
-        logger.info("No new rows to upload to Supabase.")
+        logger.info("No new rows to upload to un_votes_raw.")
         return
 
-    logger.info("Starting Supabase upload process...")
-
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_KEY")
-
-    if not supabase_url or not supabase_key:
-        logger.warning("SUPABASE_URL or SUPABASE_KEY environment variables not set. Skipping Supabase upload.")
-        return
+    logger.info("Starting upload to un_votes_raw table...")
 
     try:
-        supabase: Client = create_client(supabase_url, supabase_key)
+        supabase = get_supabase_client()
         
-        # This check is largely redundant since the main scraper is guided by this data,
-        # but it serves as a final safeguard against race conditions.
-        logger.info("Fetching existing row Links from Supabase for final check...")
-        response = supabase.table('un_votes_raw').select('Link').execute()
-        
-        existing_links = set()
-        if response.data:
-            # Normalize links to ensure accurate comparison
-            existing_links = {normalize_link(item['Link']) for item in response.data if item.get('Link')}
-        logger.info(f"Found {len(existing_links)} existing links in Supabase for final check.")
-
-        # Filter out rows that might already exist in the database
-        df['normalized_link'] = df['Link'].apply(normalize_link)
-        df_to_upload = df[~df['normalized_link'].isin(existing_links)].copy()
-        df_to_upload.drop(columns=['normalized_link'], inplace=True)
-
-        # CRITICAL FIX: Prevent "cannot affect row a second time" error by ensuring
-        # the batch itself has no duplicates on the conflict column ('Link').
-        original_row_count = len(df_to_upload)
-        df_to_upload.drop_duplicates(subset=['Link'], keep='first', inplace=True)
-        new_row_count = len(df_to_upload)
-
-        if new_row_count < original_row_count:
-            logger.warning(f"Removed {original_row_count - new_row_count} duplicate rows from the upload batch.")
-
-        if df_to_upload.empty:
-            logger.info("All new rows are already present in Supabase or were duplicates. Nothing to upload.")
-            return
-
-        logger.info(f"Attempting to upload {len(df_to_upload)} new unique rows to Supabase.")
-
+        # Prepare data for upload
+        df_to_upload = df.copy()
         df_to_upload.replace({np.nan: None}, inplace=True)
         
-        if 'Date' in df_to_upload.columns and pd.api.types.is_datetime64_any_dtype(df_to_upload['Date']):
-            df_to_upload['Date'] = df_to_upload['Date'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        # Note: id column has been removed from the table schema
+        
+        # Also remove created_at and updated_at as they should be auto-generated
+        if 'created_at' in df_to_upload.columns:
+            df_to_upload = df_to_upload.drop('created_at', axis=1)
+        if 'updated_at' in df_to_upload.columns:
+            df_to_upload = df_to_upload.drop('updated_at', axis=1)
+        
+        # Handle numeric columns properly
+        for col in df_to_upload.columns:
+            if col in ['TOTAL VOTES', 'NO-VOTE COUNT', 'ABSTAIN COUNT', 'NO COUNT', 'YES COUNT', 'Scrape_Year']:
+                # Convert to integer, handling NaN values
+                df_to_upload[col] = pd.to_numeric(df_to_upload[col], errors='coerce').astype('Int64')
+            elif pd.api.types.is_datetime64_any_dtype(df_to_upload[col]):
+                df_to_upload[col] = df_to_upload[col].dt.strftime('%Y-%m-%d %H:%M:%S')
+            elif df_to_upload[col].dtype == 'object':
+                # Check if column contains Timestamp objects
+                if df_to_upload[col].apply(lambda x: isinstance(x, pd.Timestamp)).any():
+                    df_to_upload[col] = df_to_upload[col].apply(
+                        lambda x: x.strftime('%Y-%m-%d %H:%M:%S') if isinstance(x, pd.Timestamp) else x
+                    )
+        
+        # Remove duplicates on Link column
+        original_count = len(df_to_upload)
+        df_to_upload.drop_duplicates(subset=['Link'], keep='first', inplace=True)
+        if len(df_to_upload) < original_count:
+            logger.warning(f"Removed {original_count - len(df_to_upload)} duplicate rows from upload batch.")
+
+        # Debug: Check for any remaining Timestamp objects
+        for i, row in df_to_upload.iterrows():
+            for col, value in row.items():
+                if isinstance(value, pd.Timestamp):
+                    logger.warning(f"Found Timestamp object in row {i}, column {col}: {value}")
+                    df_to_upload.at[i, col] = value.strftime('%Y-%m-%d %H:%M:%S')
         
         rows_to_insert = df_to_upload.to_dict(orient='records')
         
-        # Use upsert to avoid race conditions and duplicate entries
-        supabase.table('un_votes_raw').upsert(rows_to_insert, on_conflict='Link').execute()
+        # Use insert for new records (IDs will be auto-generated)
+        supabase.table('un_votes_raw').insert(rows_to_insert).execute()
         
-        logger.info(f"Successfully upserted {len(df_to_upload)} rows to Supabase.")
+        logger.info(f"Successfully inserted {len(df_to_upload)} rows to un_votes_raw table.")
 
     except Exception as e:
-        logger.error(f"An error occurred during Supabase upload: {e}")
+        logger.error(f"An error occurred during un_votes_raw upload: {e}")
 
-def upload_links_log_to_supabase(df: pd.DataFrame):
+def upload_to_supabase_with_sc(df: pd.DataFrame):
     """
-    Uploads a log of newly scraped links and their resolution dates
-    to the 'scraped_links' table in Supabase.
+    Uploads processed rows to the 'un_votes_with_sc' table in Supabase.
+    This table contains data processed for the dashboard with Security Council data.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing processed rows to upload.
     """
     if df.empty:
-        logger.info("No new links to log to Supabase 'scraped_links'.")
-        return
-
-    logger.info(f"Logging {len(df)} new links to the 'scraped_links' table...")
-
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_KEY")
-
-    if not supabase_url or not supabase_key:
-        logger.warning("SUPABASE_URL or SUPABASE_KEY not set. Skipping scraped links log upload.")
-        return
-
-    try:
-        supabase: Client = create_client(supabase_url, supabase_key)
-
-        # Prepare the DataFrame for upload
-        links_df = df[['Link', 'Date']].copy()
-        links_df.rename(columns={'Link': 'link', 'Date': 'resolution_date'}, inplace=True)
-        
-        # Ensure date is in the correct format and handle NaT
-        links_df['resolution_date'] = pd.to_datetime(links_df['resolution_date'], errors='coerce')
-        links_df.dropna(subset=['resolution_date'], inplace=True)
-        links_df['resolution_date'] = links_df['resolution_date'].dt.strftime('%Y-%m-%d')
-        
-        # Remove duplicates from the batch itself to be safe
-        links_df.drop_duplicates(subset=['link'], keep='first', inplace=True)
-
-        if links_df.empty:
-            logger.info("No valid links with dates to log after cleaning.")
+        logger.info("No new rows to upload to un_votes_with_sc.")
             return
 
-        rows_to_insert = links_df.to_dict(orient='records')
+    logger.info("Starting upload to un_votes_with_sc table...")
+
+    try:
+        supabase = get_supabase_client()
         
-        # Upsert to avoid race conditions or errors on duplicate links
-        supabase.table('scraped_links').upsert(rows_to_insert, on_conflict='link').execute()
+        # Prepare data for upload
+        df_to_upload = df.copy()
+        df_to_upload.replace({np.nan: None}, inplace=True)
         
-        logger.info(f"Successfully logged {len(rows_to_insert)} links to 'scraped_links'.")
+        # Note: id column has been removed from the table schema
+        
+        # Also remove created_at and updated_at as they should be auto-generated
+        if 'created_at' in df_to_upload.columns:
+            df_to_upload = df_to_upload.drop('created_at', axis=1)
+        if 'updated_at' in df_to_upload.columns:
+            df_to_upload = df_to_upload.drop('updated_at', axis=1)
+        
+        # Handle numeric columns properly
+        for col in df_to_upload.columns:
+            if col in ['TOTAL VOTES', 'NO-VOTE COUNT', 'ABSTAIN COUNT', 'NO COUNT', 'YES COUNT', 'Scrape_Year']:
+                # Convert to integer, handling NaN values
+                df_to_upload[col] = pd.to_numeric(df_to_upload[col], errors='coerce').astype('Int64')
+            elif pd.api.types.is_datetime64_any_dtype(df_to_upload[col]):
+                df_to_upload[col] = df_to_upload[col].dt.strftime('%Y-%m-%d %H:%M:%S')
+            elif df_to_upload[col].dtype == 'object':
+                # Check if column contains Timestamp objects
+                if df_to_upload[col].apply(lambda x: isinstance(x, pd.Timestamp)).any():
+                    df_to_upload[col] = df_to_upload[col].apply(
+                        lambda x: x.strftime('%Y-%m-%d %H:%M:%S') if isinstance(x, pd.Timestamp) else x
+                    )
+        
+        # Remove duplicates on Link column
+        original_count = len(df_to_upload)
+        df_to_upload.drop_duplicates(subset=['Link'], keep='first', inplace=True)
+        if len(df_to_upload) < original_count:
+            logger.warning(f"Removed {original_count - len(df_to_upload)} duplicate rows from upload batch.")
+
+        # Debug: Check for any remaining Timestamp objects
+        for i, row in df_to_upload.iterrows():
+            for col, value in row.items():
+                if isinstance(value, pd.Timestamp):
+                    logger.warning(f"Found Timestamp object in row {i}, column {col}: {value}")
+                    df_to_upload.at[i, col] = value.strftime('%Y-%m-%d %H:%M:%S')
+        
+        rows_to_insert = df_to_upload.to_dict(orient='records')
+        
+        # Use insert for new records (IDs will be auto-generated)
+        supabase.table('un_votes_with_sc').insert(rows_to_insert).execute()
+        
+        logger.info(f"Successfully inserted {len(df_to_upload)} rows to un_votes_with_sc table.")
 
     except Exception as e:
-        logger.error(f"An error occurred during scraped links log upload: {e}", exc_info=True)
+        logger.error(f"An error occurred during un_votes_with_sc upload: {e}")
+
+def get_all_data_from_supabase():
+    """
+    Fetches all data from the un_votes_raw table in Supabase.
+    Returns a pandas DataFrame with all existing data.
+    """
+    logger.info("Fetching all data from un_votes_raw table...")
+    
+    try:
+        supabase = get_supabase_client()
+        
+        # Fetch all data from the table
+        response = supabase.table('un_votes_raw').select('*').execute()
+        
+        if response.data:
+            df = pd.DataFrame(response.data)
+            logger.info(f"Fetched {len(df)} rows from un_votes_raw table.")
+            return df
+        else:
+            logger.info("No data found in un_votes_raw table.")
+            return pd.DataFrame()
+            
+    except Exception as e:
+        logger.error(f"Error fetching data from Supabase: {e}")
+        return pd.DataFrame()
+
+def process_and_upload_data(new_df, existing_df=None):
+    """
+    Process new data and upload to both Supabase tables.
+    
+    Args:
+        new_df: DataFrame with new scraped data
+        existing_df: DataFrame with existing data (optional)
+    """
+    if new_df.empty:
+        logger.info("No new data to process.")
+        return
+
+    logger.info(f"Processing {len(new_df)} new rows...")
+        
+    # Apply tagging to new rows
+    logger.info("Applying tagging to new rows...")
+    tagged_new_df = tag_new_rows(
+        new_df, 
+        geo_hierarchy=geo_hierarchy,
+        iso2_country_code=iso2_country_code,
+        model=DEFAULT_MODEL,
+        max_workers=1
+    )
+    
+    # Combine with existing data if provided
+    if existing_df is not None and not existing_df.empty:
+        logger.info("Combining with existing data...")
+        combined_df = pd.concat([existing_df, tagged_new_df], ignore_index=True)
+    else:
+        combined_df = tagged_new_df
+    
+    # Standardize country columns
+    logger.info("Standardizing country columns...")
+    combined_df = standardize_country_columns(combined_df)
+    
+    # Sort and reindex
+    combined_df['Date'] = pd.to_datetime(combined_df['Date'], errors='coerce')
+    combined_df.sort_values('Date', ascending=True, inplace=True)
+    combined_df.reset_index(drop=True, inplace=True)
+    # Don't add id column - let Supabase auto-generate it
+    
+    # Reorder columns
+    cols = list(combined_df.columns)
+    fixed_start = ['Council', 'Date', 'Title', 'Resolution']
+    fixed_geo = ['country', 'subregion', 'continent', 'tags']
+    
+    existing_start = [c for c in fixed_start if c in cols]
+    existing_geo = [c for c in fixed_geo if c in cols]
+    
+    country_cols = sorted([c for c in cols if len(c) == 3 and c.isupper() and c not in existing_start and c not in existing_geo])
+    other_cols = [c for c in cols if c not in existing_start and c not in existing_geo and c not in country_cols]
+    
+    final_order = existing_start + existing_geo + country_cols + other_cols
+    final_cols = [col for col in final_order if col in combined_df.columns]
+    combined_df = combined_df[final_cols]
+    
+    # Upload ALL processed data to un_votes_with_sc first
+    logger.info("Uploading processed data to un_votes_with_sc table...")
+    upload_to_supabase_with_sc(combined_df)
+    
+    # Filter for non-SC records and upload to un_votes_raw
+    logger.info("Filtering for non-SC records to upload to un_votes_raw table...")
+    non_sc_df = combined_df[combined_df['Council'] != 'Security Council'].copy()
+    
+    if not non_sc_df.empty:
+        logger.info(f"Uploading {len(non_sc_df)} non-SC records to un_votes_raw table...")
+        upload_to_supabase_raw(non_sc_df)
+    else:
+        logger.info("No non-SC records to upload to un_votes_raw table.")
+    
+    logger.info("Data processing and upload completed successfully.")
+    return combined_df
+
+def checkpoint_progress(new_rows_all, current_year):
+    """
+    Checkpoint progress by uploading new data to Supabase.
+    This allows recovery if the scraper is interrupted.
+    
+    Args:
+        new_rows_all: List of all new row dictionaries collected so far
+        current_year: The year that was just completed
+    """
+    if not new_rows_all:
+        logger.info(f"Year {current_year}: No new rows to checkpoint")
+            return
+
+    try:
+        logger.info(f"Year {current_year}: Starting checkpoint process...")
+        
+        # Filter for only the current year's records
+        current_year_rows = [row for row in new_rows_all if row.get('Scrape_Year') == current_year]
+        
+        if not current_year_rows:
+            logger.info(f"Year {current_year}: No new rows for current year to checkpoint")
+            return
+        
+        # Create DataFrame from current year's new rows only
+        new_df = pd.DataFrame(current_year_rows)
+        
+        # Process and upload new data (don't combine with existing data)
+        logger.info(f"Year {current_year}: Processing and uploading {len(new_df)} new rows for current year...")
+        process_and_upload_data(new_df, None)
+        
+        logger.info(f"Year {current_year}: Checkpoint process completed successfully")
+
+    except Exception as e:
+        logger.error(f"Year {current_year}: Error during checkpoint: {e}", exc_info=True)
+        # Don't raise the exception - continue with scraping even if checkpoint fails
 
 def main():
     """
     Main function that integrates scraping, tagging, and geo-tagging:
-      - Loads the master CSV (for reference) but does NOT modify it
+      - Fetches existing data from Supabase for deduplication
       - Scrapes new rows to add to the dataset
       - Tags only the new rows with both regular tagging and geo-tagging
       - Standardizes country columns to ISO3 codes
-      - Saves the full dataset (new + old rows) into a new CSV file
+      - Uploads all data to both Supabase tables (un_votes_raw and un_votes_with_sc)
     """
-    # Create master CSV directory if needed
-    if os.path.dirname(MASTER_CSV):
-        os.makedirs(os.path.dirname(MASTER_CSV), exist_ok=True)
-    
-    # Get existing links from Supabase to guide the scraper, or from CSV as fallback
-    existing_links = get_links_from_supabase()
-    if not existing_links:
-        logger.info("No links from Supabase, falling back to CSV.")
-        existing_links = set(get_links_from_csv_regex(MASTER_CSV))
-
+    try:
+        logger.info("Starting Supabase-native UN voting data scraper...")
+        
+        # Start scraper logging
+        start_scraper_log()
+        
+        # Get existing links from Supabase for deduplication
+        logger.info("Loading existing links from Supabase for deduplication...")
+        existing_links = get_links_from_supabase()
     logger.info(f"Loaded {len(existing_links)} unique links for deduplication.")
+        
+        # Update log with total records found
+        update_scraper_log({'total_records_found': len(existing_links)})
 
     # Initialize Selenium driver and load the base search page
     driver = get_driver()
@@ -2059,14 +2254,14 @@ def main():
     new_rows_all = []
     session_request_count = 0
     SESSION_RESET_THRESHOLD = 150
-    stop_processing = False
-    check_one_more_year = False
 
-    try:
         for i, year_data in enumerate(years_data):
             year = year_data['year']
             logger.info(f"\n{'='*60}\nProcessing year {year} ({year_data['count']} records) - Year {i+1}/{len(years_data)}\n{'='*60}")
             logger.debug(f"Year {year} data: {year_data}")
+            
+            # Update log with current year being processed
+            update_scraper_log({'years_processed': [str(year)]})
             
             if session_request_count > SESSION_RESET_THRESHOLD:
                 logger.info(f"Session request count ({session_request_count}) exceeded threshold ({SESSION_RESET_THRESHOLD}), resetting browser")
@@ -2091,16 +2286,24 @@ def main():
             except DuplicateLinkFound as e:
                 new_links = e.new_links
                 logger.info(f"Year {year}: Duplicate link rule triggered; found {len(new_links)} new links.")
-                if not check_one_more_year:
-                    logger.info(f"Year {year}: First consecutive year with duplicates, will check one more year")
-                    check_one_more_year = True
-                else:
-                    logger.info(f"Year {year}: Second consecutive year with duplicates, stopping processing")
-                    stop_processing = True
+            except (ConnectionResetError, ConnectionRefusedError, KeyboardInterrupt) as e:
+                logger.error(f"Year {year}: Connection error during link collection: {e}")
+                logger.info("Attempting to restart browser...")
+                try:
+                    driver.quit()
+                except:
+                    pass
+                driver = get_driver()
+                driver.get(BASE_SEARCH_URL)
+                time.sleep(3)
+                session_request_count = 0
+                continue
+            except Exception as e:
+                logger.error(f"Year {year}: Unexpected error during link collection: {e}")
+                continue
 
             if new_links:
                 logger.info(f"Year {year}: Collected {len(new_links)} new links, proceeding to scrape")
-                check_one_more_year = False  # Reset the flag since we found new links
                 
                 # Log some sample links
                 sample_links = new_links[:3] if len(new_links) >= 3 else new_links
@@ -2130,23 +2333,17 @@ def main():
                 # Update existing_links to prevent re-processing
                 existing_links.update(new_links)
                 logger.debug(f"Year {year}: Updated existing_links set, now contains {len(existing_links)} links")
+                
+                # CHECKPOINT: Upload progress after each year
+                logger.info(f"Year {year}: Checkpointing progress - uploading {len(new_rows_all)} total new records so far")
+                checkpoint_progress(new_rows_all, year)
             else:
-                logger.info(f"Year {year}: No new links found")
-                if not check_one_more_year:
-                    logger.info(f"Year {year}: First consecutive year with no new links, will check one more year")
-                    check_one_more_year = True
-                else:
-                    logger.info(f"Year {year}: Second consecutive year with no new links, stopping")
-                    stop_processing = True
+                logger.info(f"Year {year}: No new links found, continuing to next year")
             
             # Clear filters and prepare for next year
             logger.debug(f"Year {year}: Clearing filters")
             clear_filters(driver)
             time.sleep(1)
-
-            if stop_processing:
-                logger.info(f"Year {year}: Stopping criteria met, ending year processing loop")
-                break
                 
         logger.info(f"Year processing completed. Total new rows collected: {len(new_rows_all)}")
     
@@ -2161,70 +2358,43 @@ def main():
         logger.info("No new rows to process. Exiting.")
         return
     
+    # Final processing and upload
+    logger.info("Processing final data and uploading to Supabase...")
     new_df = pd.DataFrame(new_rows_all)
     
-    # Log the newly scraped links to their own table
-    upload_links_log_to_supabase(new_df)
+    # Get existing data from Supabase to check for already uploaded records
+    logger.info("Fetching existing data from Supabase...")
+    existing_df = get_all_data_from_supabase()
     
-    # Tagging happens on new rows
-    tagged_new_df = tag_new_rows(
-        new_df, 
-        geo_hierarchy=geo_hierarchy,
-        iso2_country_code=iso2_country_code,
-        model=DEFAULT_MODEL,
-        max_workers=1
-    )
-
-    # Get tokens from new rows to identify them later for Supabase upload
-    new_row_tokens = list(tagged_new_df['token'].unique()) if not tagged_new_df.empty else []
-    
-    # Load master df to combine
-    if os.path.exists(MASTER_CSV):
-        master_df = pd.read_csv(MASTER_CSV, dtype=str)
-        combined_df = pd.concat([master_df, tagged_new_df], ignore_index=True)
-    else:
-        combined_df = tagged_new_df
-
-    # Standardize and save
-    logger.info("Standardizing all country columns to ISO3 codes...")
-    combined_df = standardize_country_columns(combined_df)
-    
-    combined_df['Date'] = pd.to_datetime(combined_df['Date'], errors='coerce')
-    combined_df.sort_values('Date', ascending=True, inplace=True)
-    combined_df.reset_index(drop=True, inplace=True)
-    combined_df['id'] = combined_df.index + 1 # Make the ID 1-based
-    
-    # Reorder columns
-    cols = list(combined_df.columns)
-    fixed_start = ['id', 'Council', 'Date', 'Title', 'Resolution']
-    fixed_geo = ['country', 'subregion', 'continent', 'tags']
-    
-    existing_start = [c for c in fixed_start if c in cols]
-    existing_geo = [c for c in fixed_geo if c in cols]
-    
-    country_cols = sorted([c for c in cols if len(c) == 3 and c.isupper() and c not in existing_start and c not in existing_geo])
-    
-    other_cols = [c for c in cols if c not in existing_start and c not in existing_geo and c not in country_cols]
-
-    final_order = existing_start + existing_geo + country_cols + other_cols
-    combined_df = combined_df[final_order]
-    
-    # Reorder the columns
-    final_cols = [col for col in final_order if col in combined_df.columns]
-    combined_df = combined_df[final_cols]
-    
-    # Write final CSV with the current scrape date appended
-    scrape_date = datetime.now().strftime("%Y-%m-%d")
-    output_csv = f"data/raw/UN_VOTING_DATA_RAW_WITH_TAGS_{scrape_date}.csv"
-    combined_df.to_csv(output_csv, index=False)
-    logger.info(f"Final CSV written with {len(combined_df)} rows to {output_csv}")
-    
-    # Upload new rows to Supabase
-    if new_row_tokens:
-        rows_to_upload_df = combined_df[combined_df['token'].isin(new_row_tokens)].copy()
-        upload_to_supabase(rows_to_upload_df)
-    else:
-        logger.info("No new rows with tokens to upload to Supabase.")
+    # Filter out records that were already uploaded during checkpoints
+    if not existing_df.empty:
+        existing_links = set(existing_df['Link'].tolist())
+        new_links = set(new_df['Link'].tolist())
+        already_uploaded = new_links.intersection(existing_links)
+        
+        if already_uploaded:
+            logger.info(f"Filtering out {len(already_uploaded)} records that were already uploaded during checkpoints...")
+            new_df = new_df[~new_df['Link'].isin(already_uploaded)]
+            logger.info(f"Remaining records to upload: {len(new_df)}")
+        
+        if new_df.empty:
+            logger.info("No new records to upload in final processing. All records were already uploaded during checkpoints.")
+            return
+        
+        # Process and upload final data
+        logger.info("Processing and uploading final data...")
+        final_df = process_and_upload_data(new_df, None)
+        
+        logger.info(f"Pipeline completed successfully. Final dataset contains {len(final_df)} rows.")
+        logger.info("Data uploaded to both un_votes_raw and un_votes_with_sc tables in Supabase.")
+        
+        # Update final metrics and finish logging
+        update_scraper_log({
+            'new_records_processed': len(new_df),
+            'records_uploaded_to_with_sc': len(final_df),
+            'records_uploaded_to_raw': len(final_df[final_df['Council'] != 'Security Council']) if not final_df.empty else 0
+        })
+        finish_scraper_log('success')
 
 
 if __name__ == "__main__":

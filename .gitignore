@@ -1,6 +1,5 @@
 #hides openai api key
 .env
-.secrets
 
 #hide pycache
 __pycache__/
@@ -55,3 +54,16 @@ data/UN_VOTING_DATA_RAW_with_tags_final_checkpoint.csv
 data/Oceans_Output_UN_VOTING_DATA_GEO_TAGGED copy.csv
 data/improved_gpt4o-mini_UN_VOTING_DATA_RAW_with_tags.csv
 data/Working_UN_VOTING_DATA_RAW_WITH_TAGS_2025-03-19 copy.csv
+
+#hide deprecated folder
+depricated/
+
+#hide nested scraper folder
+un-digital-library-scraper-main/
+
+#hide CSV data files (now using Supabase)
+*.csv
+**/data/
+**/required_csvs/
+**/processed/
+**/reference/

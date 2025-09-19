@@ -5,10 +5,10 @@ from fastapi import FastAPI, Path, Query, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict
 
-# Use relative imports for local modules within the same package
-from .report_generator import generate_report
-from .models import ReportResponse, MIN_YEAR_CONSTRAINT, MAX_YEAR_CONSTRAINT, YearlyRankingsResponse, YearlyPillarRankings
-from .ranking_generator import generate_yearly_rankings
+# Use absolute imports to avoid relative import issues
+from report_generator import generate_report
+from models import ReportResponse, MIN_YEAR_CONSTRAINT, MAX_YEAR_CONSTRAINT, YearlyRankingsResponse, YearlyPillarRankings
+from ranking_generator import generate_yearly_rankings
 
 # --- FastAPI App Initialization ---
 app = FastAPI(
