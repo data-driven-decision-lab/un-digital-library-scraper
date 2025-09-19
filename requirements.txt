@@ -13,15 +13,8 @@ dataclasses>=0.6
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 
-# Web scraping
-selenium>=4.10.0
-beautifulsoup4>=4.11.0
-webdriver-manager>=3.8.0
+# HTTP requests
 requests>=2.28.0
-
-# Parsing and text processing
-argparse>=1.4.0
-regex>=2022.10.0
 
 # Date handling
 pytz>=2022.7
