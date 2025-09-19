@@ -47,14 +47,6 @@ from .data_modules.un_classification import un_classification
 from .data_modules.un_geo_hierarchy import geo_hierarchy
 from .data_modules.iso2_country import iso2_country_code
 import pycountry
-
-import random
-import logging
-import os
-import time
-import glob
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import argparse
 from supabase import create_client, Client
 
 
@@ -2026,7 +2018,7 @@ def upload_to_supabase_with_sc(df: pd.DataFrame):
     """
     if df.empty:
         logger.info("No new rows to upload to un_votes_with_sc.")
-            return
+        return
 
     logger.info("Starting upload to un_votes_with_sc table...")
 
@@ -2191,7 +2183,7 @@ def checkpoint_progress(new_rows_all, current_year):
     """
     if not new_rows_all:
         logger.info(f"Year {current_year}: No new rows to checkpoint")
-            return
+        return
 
     try:
         logger.info(f"Year {current_year}: Starting checkpoint process...")
@@ -2225,6 +2217,7 @@ def main():
       - Standardizes country columns to ISO3 codes
       - Uploads all data to both Supabase tables (un_votes_raw and un_votes_with_sc)
     """
+    driver = None
     try:
         logger.info("Starting Supabase-native UN voting data scraper...")
         
@@ -2234,26 +2227,25 @@ def main():
         # Get existing links from Supabase for deduplication
         logger.info("Loading existing links from Supabase for deduplication...")
         existing_links = get_links_from_supabase()
-    logger.info(f"Loaded {len(existing_links)} unique links for deduplication.")
+        logger.info(f"Loaded {len(existing_links)} unique links for deduplication.")
         
         # Update log with total records found
         update_scraper_log({'total_records_found': len(existing_links)})
 
-    # Initialize Selenium driver and load the base search page
-    driver = get_driver()
-    driver.get(BASE_SEARCH_URL)
-    time.sleep(2)
-    
-    years_data = get_available_years(driver)
-    if not years_data:
-        logger.error("No years found on the page. Check the website structure.")
-        driver.quit()
-        return
-    logger.info(f"Found {len(years_data)} years to process")
-    
-    new_rows_all = []
-    session_request_count = 0
-    SESSION_RESET_THRESHOLD = 150
+        # Initialize Selenium driver and load the base search page
+        driver = get_driver()
+        driver.get(BASE_SEARCH_URL)
+        time.sleep(2)
+        
+        years_data = get_available_years(driver)
+        if not years_data:
+            logger.error("No years found on the page. Check the website structure.")
+            return
+        logger.info(f"Found {len(years_data)} years to process")
+        
+        new_rows_all = []
+        session_request_count = 0
+        SESSION_RESET_THRESHOLD = 150
 
         for i, year_data in enumerate(years_data):
             year = year_data['year']
@@ -2344,13 +2336,14 @@ def main():
             logger.debug(f"Year {year}: Clearing filters")
             clear_filters(driver)
             time.sleep(1)
-                
+        
         logger.info(f"Year processing completed. Total new rows collected: {len(new_rows_all)}")
-    
+        
     except Exception as general_e:
         logger.error(f"An error occurred during scraping: {general_e}", exc_info=True)
     finally:
-        driver.quit()
+        if driver:
+            driver.quit()
     
     logger.info(f"Scraping complete. {len(new_rows_all)} new rows collected.")
     
