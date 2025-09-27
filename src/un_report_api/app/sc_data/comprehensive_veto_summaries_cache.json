@@ -1,0 +1,982 @@
+{
+  "The Middle East problem including the Palestinian question_2025": {
+    "resolution_title": "The Middle East problem including the Palestinian question",
+    "description": "Resolution addresses ongoing conflicts regarding Palestinian statehood and regional tensions in the Middle East.",
+    "applicant_country": null,
+    "historical_context": "In 2025, tensions escalate over Palestinian statehood amid broader Middle Eastern conflicts.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Maintenance of peace and security of Ukraine_2025": {
+    "resolution_title": "Maintenance of peace and security of Ukraine",
+    "description": "Resolution addresses Ukraine's territorial integrity and security amid ongoing conflict with Russia.",
+    "applicant_country": null,
+    "historical_context": "In 2025, Ukraine faces significant challenges to its sovereignty due to Russian military actions.",
+    "resolution_type": "territorial_dispute",
+    "confidence_score": 90,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Reports of the Secretary-General on the Sudan and South Sudan_2024": {
+    "resolution_title": "Reports of the Secretary-General on the Sudan and South Sudan",
+    "description": "Resolution addresses peace and security concerns in Sudan and South Sudan amid ongoing conflicts.",
+    "applicant_country": null,
+    "historical_context": "In 2024, tensions in Sudan and South Sudan escalate, impacting regional stability.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Non-proliferation_2024": {
+    "resolution_title": "Non-proliferation",
+    "description": "Resolution addresses global nuclear disarmament and non-proliferation efforts amid rising tensions.",
+    "applicant_country": null,
+    "historical_context": "In 2024, geopolitical tensions heighten concerns over nuclear proliferation and security.",
+    "resolution_type": "arms_control",
+    "confidence_score": 85,
+    "contains_country_name": false,
+    "is_descriptive_only": true
+  },
+  "Application for Membership (Transjordan)_2024": {
+    "resolution_title": "Application for Membership (Transjordan)",
+    "description": "Resolution addresses Transjordan's application for UN membership amid regional tensions.",
+    "applicant_country": "Transjordan",
+    "historical_context": "In 2024, regional conflicts and geopolitical tensions influence discussions on statehood.",
+    "resolution_type": "membership_application",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Non-proliferation/Democratic People's Republic of Korea_2024": {
+    "resolution_title": "Non-proliferation/Democratic People's Republic of Korea",
+    "description": "Resolution addresses concerns over nuclear proliferation in North Korea amid rising regional tensions.",
+    "applicant_country": null,
+    "historical_context": "In 2024, global tensions rise due to North Korea's nuclear ambitions and regional security threats.",
+    "resolution_type": "arms_control",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The situation in Mali_2023": {
+    "resolution_title": "The situation in Mali",
+    "description": "Resolution addresses security challenges and peacekeeping efforts in Mali amid ongoing conflict.",
+    "applicant_country": null,
+    "historical_context": "In 2023, Mali faces significant instability due to terrorism and political unrest, impacting regional security.",
+    "resolution_type": "peacekeeping_operation",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The situation in the Middle East_2023": {
+    "resolution_title": "The situation in the Middle East",
+    "description": "Resolution addresses ongoing conflicts regarding Palestinian statehood and regional tensions in 2023.",
+    "applicant_country": null,
+    "historical_context": "In 2023, the Middle East faces significant challenges related to Palestinian rights and regional stability.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 28 February 2014 from the Permanent Representative of Ukraine to the United Nations addressed to the President of the Security Council (S/2014/136)_2022": {
+    "resolution_title": "Letter dated 28 February 2014 from the Permanent Representative of Ukraine to the United Nations addressed to the President of the Security Council (S/2014/136)",
+    "description": "Resolution addresses Ukraine's territorial integrity amid ongoing conflict with Russia in 2022.",
+    "applicant_country": null,
+    "historical_context": "In 2022, Ukraine faces significant territorial challenges due to Russian military actions.",
+    "resolution_type": "territorial_dispute",
+    "confidence_score": 90,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Maintenance of international peace and security_2021": {
+    "resolution_title": "Maintenance of international peace and security",
+    "description": "Resolution addresses global security challenges amid rising geopolitical tensions in 2021.",
+    "applicant_country": null,
+    "historical_context": "In 2021, tensions escalated due to conflicts in Ukraine, Syria, and the South China Sea.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": false,
+    "is_descriptive_only": true
+  },
+  "Threats to international peace and security caused by terrorist acts_2020": {
+    "resolution_title": "Threats to international peace and security caused by terrorist acts",
+    "description": "Resolution addresses global concerns over terrorism and its impact on international peace and security.",
+    "applicant_country": null,
+    "historical_context": "In 2020, terrorism remains a significant threat amid geopolitical tensions and conflicts worldwide.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": false,
+    "is_descriptive_only": true
+  },
+  "The situation in the Bolivarian Republic of Venezuela_2019": {
+    "resolution_title": "The situation in the Bolivarian Republic of Venezuela",
+    "description": "Resolution addresses the political and humanitarian crisis in Venezuela amid international security concerns.",
+    "applicant_country": null,
+    "historical_context": "In 2019, Venezuela faces severe political unrest and economic collapse, drawing global attention.",
+    "resolution_type": "humanitarian_intervention",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The situation in the Republic of Bosnia and Herzegovina_2015": {
+    "resolution_title": "The situation in the Republic of Bosnia and Herzegovina",
+    "description": "Resolution addresses peace and security concerns in Bosnia and Herzegovina amid ongoing geopolitical tensions.",
+    "applicant_country": null,
+    "historical_context": "In 2015, Bosnia faced challenges related to ethnic divisions and regional stability, impacting international relations.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The situation in Georgia_2009": {
+    "resolution_title": "The situation in Georgia",
+    "description": "Resolution addresses the conflict and security situation in Georgia following the 2008 war with Russia.",
+    "applicant_country": null,
+    "historical_context": "In 2009, tensions remain high post-2008 Russo-Georgian War, impacting regional stability.",
+    "resolution_type": "territorial_dispute",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Peace and security in Africa_2008": {
+    "resolution_title": "Peace and security in Africa",
+    "description": "Resolution addresses regional conflicts and stability issues affecting African nations in 2008.",
+    "applicant_country": null,
+    "historical_context": "In 2008, Africa faces various conflicts, including in Sudan, Somalia, and the Democratic Republic of Congo.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The situation in Myanmar_2007": {
+    "resolution_title": "The situation in Myanmar",
+    "description": "Resolution addresses human rights violations and political repression in Myanmar.",
+    "applicant_country": null,
+    "historical_context": "In 2007, Myanmar faces international scrutiny over its military junta's actions and humanitarian crises.",
+    "resolution_type": "human_rights",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The situation in Cyprus_2004": {
+    "resolution_title": "The situation in Cyprus",
+    "description": "Resolution addresses peace and security concerns regarding the Cyprus conflict in 2004.",
+    "applicant_country": null,
+    "historical_context": "In 2004, tensions in Cyprus escalate amid ongoing division and peace negotiations.",
+    "resolution_type": "territorial_dispute",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The situation in the former Yugoslav Republic of Macedonia_1999": {
+    "resolution_title": "The situation in the former Yugoslav Republic of Macedonia",
+    "description": "Resolution addresses peace and security concerns in the former Yugoslav Republic of Macedonia.",
+    "applicant_country": null,
+    "historical_context": "In 1999, regional tensions arise from the Kosovo conflict and ethnic disputes in the Balkans.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Request by the Libyan Arab Republic and Pakistan for consideration of the serious situation arising from recent developments in the occupied Arab territories:_1997": {
+    "resolution_title": "Request by the Libyan Arab Republic and Pakistan for consideration of the serious situation arising from recent developments in the occupied Arab territories:",
+    "description": "Resolution addresses the situation in occupied Arab territories and calls for international attention.",
+    "applicant_country": null,
+    "historical_context": "In 1997, tensions in the Middle East escalate due to ongoing Israeli-Palestinian conflicts and regional disputes.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Central America: efforts towards peace_1997": {
+    "resolution_title": "Central America: efforts towards peace",
+    "description": "Resolution addresses peace initiatives and conflict resolution in Central America during the 1990s.",
+    "applicant_country": null,
+    "historical_context": "In 1997, Central America faces post-civil war challenges and regional stability concerns.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Appointment of Secretary-General_1996": {
+    "resolution_title": "Appointment of Secretary-General",
+    "description": "Resolution addresses the appointment of a new Secretary-General amid global security concerns.",
+    "applicant_country": null,
+    "historical_context": "In 1996, geopolitical tensions influence discussions on leadership within the UN, impacting peace efforts.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": false,
+    "is_descriptive_only": true
+  },
+  "Letter dated 3 January 1990 from the Charge d'Affairs ad interim of the permanent mission of Nicaragua to the United Nations adressed to the President of the Security Council (S/21066)_1990": {
+    "resolution_title": "Letter dated 3 January 1990 from the Charge d'Affairs ad interim of the permanent mission of Nicaragua to the United Nations adressed to the President of the Security Council (S/21066)",
+    "description": "Resolution addresses concerns regarding the situation in Nicaragua amidst regional conflicts.",
+    "applicant_country": null,
+    "historical_context": "In 1990, Nicaragua faces political turmoil post-Sandinista government, impacting regional stability.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The situation in Panama_1989": {
+    "resolution_title": "The situation in Panama",
+    "description": "Resolution addresses concerns over political instability and violence in Panama during 1989.",
+    "applicant_country": null,
+    "historical_context": "In 1989, Panama faces significant unrest and tensions related to U.S. involvement and regional stability.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 4 January 1989 from the Chargé d'affaires a.i. of the Permanent Mission of the Libyan Arab Jamahiriya to the United Nations addressed to the President of the Security Council (S/20364)--Letter dated 4 January 1989 from the Chargé d'affaires a.i. of the Permanent Mission of Bahrain to the United Nations addressed to the President of the Security Council (S/20367)_1989": {
+    "resolution_title": "Letter dated 4 January 1989 from the Chargé d'affaires a.i. of the Permanent Mission of the Libyan Arab Jamahiriya to the United Nations addressed to the President of the Security Council (S/20364)--Letter dated 4 January 1989 from the Chargé d'affaires a.i. of Bahrain to the United Nations addressed to the President of the Security Council (S/20367)",
+    "description": "Resolution addresses international peace and security concerns in the context of Middle Eastern tensions.",
+    "applicant_country": null,
+    "historical_context": "In 1989, geopolitical tensions in the Middle East heightened, impacting international relations.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The situation in the Middle East _1988": {
+    "resolution_title": "The situation in the Middle East",
+    "description": "Resolution addresses ongoing Arab-Israeli conflicts and Palestinian territorial disputes in 1988.",
+    "applicant_country": null,
+    "historical_context": "In 1988, tensions escalate in the Middle East due to the First Intifada and unresolved territorial issues.",
+    "resolution_type": "territorial_dispute",
+    "confidence_score": 90,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The question of South Africa_1988": {
+    "resolution_title": "The question of South Africa",
+    "description": "Resolution addresses South African apartheid policies and international sanctions.",
+    "applicant_country": null,
+    "historical_context": "In 1988, apartheid in South Africa draws significant global condemnation and calls for sanctions.",
+    "resolution_type": "human_rights",
+    "confidence_score": 90,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The situation in Namibia_1987": {
+    "resolution_title": "The situation in Namibia",
+    "description": "Resolution addresses the need for international support for Namibia's independence from South African rule.",
+    "applicant_country": null,
+    "historical_context": "In 1987, Namibia's struggle for independence was a focal point in Cold War geopolitics and anti-apartheid movements.",
+    "resolution_type": "human_rights",
+    "confidence_score": 90,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 22 July 1986 from the Permanent Representative of Nicaragua to the United Nations addressed to the President of the Security Council (S/18230)_1986": {
+    "resolution_title": "Letter dated 22 July 1986 from the Permanent Representative of Nicaragua to the United Nations addressed to the President of the Security Council (S/18230)",
+    "description": "Resolution addresses Nicaragua's concerns regarding U.S. actions and regional stability in Central America.",
+    "applicant_country": null,
+    "historical_context": "In 1986, Nicaragua faces U.S. support for Contra rebels, heightening regional tensions during the Cold War.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Complaint by Angola against South Africa_1986": {
+    "resolution_title": "Complaint by Angola against South Africa",
+    "description": "Resolution addresses Angola's complaint regarding South African military actions during the apartheid era.",
+    "applicant_country": null,
+    "historical_context": "In 1986, South Africa's apartheid system faced global condemnation and calls for sanctions, influencing international relations.",
+    "resolution_type": "human_rights",
+    "confidence_score": 90,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The situation in southern Africa_1986": {
+    "resolution_title": "The situation in southern Africa",
+    "description": "Resolution addresses apartheid in South Africa and calls for international sanctions.",
+    "applicant_country": null,
+    "historical_context": "In 1986, apartheid policies in South Africa provoke global condemnation and calls for sanctions.",
+    "resolution_type": "human_rights",
+    "confidence_score": 90,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 4 February 1986 from the Permanent Representative of the Syrian Arab Republic to the United Nations addressed to the President of the Security Council (S/17787)_1986": {
+    "resolution_title": "Letter dated 4 February 1986 from the Permanent Representative of the Syrian Arab Republic to the United Nations addressed to the President of the Security Council (S/17787)",
+    "description": "Resolution addresses concerns regarding regional stability and peace in the Middle East, focusing on Syria's role.",
+    "applicant_country": null,
+    "historical_context": "In 1986, tensions in the Middle East, including the Iran-Iraq War and Israeli-Syrian conflicts, heighten security concerns.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 6 May 1985 from the Permanent Representative of Nicaragua to the United Nations addressed to the President of the Security-Council (S/17156)_1985": {
+    "resolution_title": "Letter dated 6 May 1985 from the Permanent Representative of Nicaragua to the United Nations addressed to the President of the Security-Council (S/17156)",
+    "description": "Resolution addresses concerns over U.S. actions in Nicaragua amid regional conflicts.",
+    "applicant_country": null,
+    "historical_context": "In 1985, Nicaragua faces U.S. support for Contra rebels, escalating Cold War tensions in Central America.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 29 March 1984 from the Permanent Representative of Nicaragua to the United Nations addressed to the President of the Security Council (S/16449)_1984": {
+    "resolution_title": "Letter dated 29 March 1984 from the Permanent Representative of Nicaragua to the United Nations addressed to the President of the Security Council (S/16449)",
+    "description": "Resolution addresses concerns over U.S. actions in Nicaragua and regional stability in Central America.",
+    "applicant_country": null,
+    "historical_context": "In 1984, Nicaragua faces U.S. support for Contra rebels, raising international tensions and security concerns.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The situation in Grenada_1983": {
+    "resolution_title": "The situation in Grenada",
+    "description": "Resolution addresses concerns over the political situation and security in Grenada amid Cold War tensions.",
+    "applicant_country": null,
+    "historical_context": "In 1983, Grenada's political instability raised international security concerns during the Cold War.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Question concerning the situation in the region of the Falkland Islands (Islas Malvinas)_1982": {
+    "resolution_title": "Question concerning the situation in the region of the Falkland Islands (Islas Malvinas)",
+    "description": "Resolution addresses the territorial dispute over the Falkland Islands between Argentina and the UK.",
+    "applicant_country": null,
+    "historical_context": "In 1982, the Falklands War heightened tensions over sovereignty claims between Argentina and the UK.",
+    "resolution_type": "territorial_dispute",
+    "confidence_score": 90,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 19 March 1982 from the Permanent Representative of Nicaragua to the United Nations addressed to the Secretary-General (S/14913)_1982": {
+    "resolution_title": "Letter dated 19 March 1982 from the Permanent Representative of Nicaragua to the United Nations addressed to the Secretary-General (S/14913)",
+    "description": "Resolution addresses Nicaragua's concerns regarding U.S. actions affecting its sovereignty and regional stability.",
+    "applicant_country": null,
+    "historical_context": "In 1982, Nicaragua faces U.S. support for Contra rebels, raising tensions in Central America.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The question of the exercise by Palestinians of inalienable rights _1980": {
+    "resolution_title": "The question of the exercise by Palestinians of inalienable rights",
+    "description": "Resolution addresses the recognition of Palestinians' inalienable rights amid ongoing conflicts.",
+    "applicant_country": null,
+    "historical_context": "In 1980, the Middle East faces escalating Arab-Israeli tensions and Palestinian territorial disputes.",
+    "resolution_type": "human_rights",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 22 December 1979 from the Permanent Representative of the\nUnited States of America to the United Nations addressed to the President\nof the Security Council (S/13705)_1980": {
+    "resolution_title": "Letter dated 22 December 1979 from the Permanent Representative of the United States of America to the United Nations addressed to the President of the Security Council (S/13705)",
+    "description": "Resolution addresses concerns over Soviet military actions in Afghanistan and implications for international peace.",
+    "applicant_country": null,
+    "historical_context": "In 1980, the Soviet invasion of Afghanistan heightened global tensions and led to calls for international response.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 3 January 1980 addressed to the President of the Security Council by the representatives of Australia, the Bahamas, Bahrain, Bangladesh, Belgium, Canada, Chile, China, Colombia, Costa Rica, Denmark, the Dominican Republic, Ecuador, Egypt, El Salvador, Fiji, Germany, Federal Republic of, Greece, Haiti, Honduras, Iceland, Indonesia, Italy, Japan, Liberia, Luxembourg, Malaysia, the Netherlands, New Zealand, Norway,\nOman, Pakistan, Panama, Papua New Guinea, the Philippines, Portugal,\nSaint Lucia, Samoa, Saudi Arabia, Senegal, Singapore, Somalia, Spain,\nSuriname, Sweden, Thailand, Turkey, Uganda, the United Kingdom of\nGreat Britain and Northern Ireland, the United States of America, Uruguay\nand Venezuela (S/13724 and Add.1 and 2)_1980": {
+    "resolution_title": "Letter dated 3 January 1980 addressed to the President of the Security Council by the representatives of various countries",
+    "description": "Resolution addresses the Greek civil war and its international implications during the 1980 conflict.",
+    "applicant_country": null,
+    "historical_context": "In 1980, Greece faced a civil war with significant international interest and intervention.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The situation in South-East Asia and its implications for international peace and security_1979": {
+    "resolution_title": "The situation in South-East Asia and its implications for international peace and security",
+    "description": "Resolution addresses geopolitical tensions and conflicts in South-East Asia affecting global peace.",
+    "applicant_country": null,
+    "historical_context": "In 1979, the region faces conflicts influenced by the Vietnam War and Cold War dynamics.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Telegram dated 3 January 1979 from the Deputy Prime Minister in charge of Foreign Affairs of Democratic Kampuchea to the President of the Security Council (S/13003)_1979": {
+    "resolution_title": "Telegram dated 3 January 1979 from the Deputy Prime Minister in charge of Foreign Affairs of Democratic Kampuchea to the President of the Security Council (S/13003)",
+    "description": "Resolution addresses concerns regarding the political situation in Democratic Kampuchea amid regional tensions.",
+    "applicant_country": null,
+    "historical_context": "In 1979, Cambodia faces internal conflict and external pressures, impacting regional stability.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The situation in the Comoros_1976": {
+    "resolution_title": "The situation in the Comoros",
+    "description": "Resolution addresses the political instability and calls for peace in the Comoros during decolonization.",
+    "applicant_country": null,
+    "historical_context": "In 1976, the Comoros faced significant political turmoil amid decolonization efforts, raising international concerns.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Relationship between the United Nations and South Africa_1974": {
+    "resolution_title": "Relationship between the United Nations and South Africa",
+    "description": "Resolution addresses South African apartheid policies and international sanctions.",
+    "applicant_country": null,
+    "historical_context": "In 1974, apartheid in South Africa raises significant global human rights concerns.",
+    "resolution_type": "human_rights",
+    "confidence_score": 90,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Question concerning the situation in Southern Rhodesia_1973": {
+    "resolution_title": "Question concerning the situation in Southern Rhodesia",
+    "description": "Resolution addresses the political situation and independence struggles in Southern Rhodesia.",
+    "applicant_country": null,
+    "historical_context": "In 1973, Southern Rhodesia faces significant independence struggles and issues of minority rule.",
+    "resolution_type": "human_rights",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Consideration of measures for the maintenance and strengthening of international peace and security in Latin America in conformity with the provisions and principles of the Charter_1973": {
+    "resolution_title": "Consideration of measures for the maintenance and strengthening of international peace and security in Latin America in conformity with the provisions and principles of the Charter",
+    "description": "Resolution addresses international peace and security measures in Latin America amid Cold War tensions.",
+    "applicant_country": null,
+    "historical_context": "In 1973, Latin America faces geopolitical tensions, including U.S. involvement in regional conflicts.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 26 December 1963 from the Permanent Representative of Cyprus addressed to the President of the Security Council (S/5488)--Letter dated 12 December 1971 from the Permanent Representative of the United States to the United Nations addressed to the President of the Security Council (S/10444)_1971": {
+    "resolution_title": "Letter dated 26 December 1963 from the Permanent Representative of Cyprus addressed to the President of the Security Council (S/5488)--Letter dated 12 December 1971 from the Permanent Representative of the United States to the United Nations addressed to the President of the Security Council (S/10444)",
+    "description": "Resolution addresses peace and security concerns regarding Cyprus amid Cold War tensions.",
+    "applicant_country": null,
+    "historical_context": "In 1971, Cyprus faced ongoing ethnic tensions and geopolitical interests from superpowers.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 4 December 1971 from the Permanent Representatives of Argentina, Belgium, Burundi, Italy, Japan, Nicaragua, Somalia, United Kingdom of Great Britain and Northern Ireland and United States addressed to the President of the Security Council (S/10411)--Report of the Secretary-General (S/10410)_1971": {
+    "resolution_title": "Letter dated 4 December 1971 from the Permanent Representatives of Argentina, Belgium, Burundi, Italy, Japan, Nicaragua, Somalia, United Kingdom of Great Britain and Northern Ireland and United States addressed to the President of the Security Council (S/10411)--Report of the Secretary-General (S/10410)",
+    "description": "Resolution addresses Mali's security challenges and the need for international intervention in 1971.",
+    "applicant_country": null,
+    "historical_context": "In 1971, Mali faces significant security issues amid regional instability and calls for international support.",
+    "resolution_type": "humanitarian_intervention",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 21 August 1968 from the representatives of Canada, Denmark, France, Paraguay, the United Kingdom and the United States addressed to the President of the Security Council (S/8758)_1968": {
+    "resolution_title": "Letter dated 21 August 1968 from the representatives of Canada, Denmark, France, Paraguay, the United Kingdom and the United States addressed to the President of the Security Council (S/8758)",
+    "description": "Resolution addresses international peace and security concerns amid Cold War tensions in 1968.",
+    "applicant_country": null,
+    "historical_context": "In 1968, geopolitical tensions rise due to the Vietnam War and Soviet actions in Czechoslovakia.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": false,
+    "is_descriptive_only": true
+  },
+  "The Palestine Question_1966": {
+    "resolution_title": "The Palestine Question",
+    "description": "Resolution addresses the ongoing conflict and territorial disputes in Palestine amid regional tensions.",
+    "applicant_country": null,
+    "historical_context": "In 1966, the Palestine issue is central to Middle Eastern geopolitics, reflecting broader Arab-Israeli tensions.",
+    "resolution_type": "territorial_dispute",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 3 September 1964 from the Permanent Representative of Malaysia addressed to the President of thesecurity Council (S/5930)_1964": {
+    "resolution_title": "Letter dated 3 September 1964 from the Permanent Representative of Malaysia addressed to the President of the Security Council (S/5930)",
+    "description": "Resolution addresses Malaysia's concerns regarding regional security and international peace in Southeast Asia.",
+    "applicant_country": null,
+    "historical_context": "In 1964, tensions in Southeast Asia rise amid decolonization and Cold War dynamics, impacting regional stability.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The India-Pakistan question_1962": {
+    "resolution_title": "The India-Pakistan question",
+    "description": "Resolution addresses the ongoing territorial dispute between India and Pakistan over Kashmir.",
+    "applicant_country": null,
+    "historical_context": "In 1962, tensions escalate between India and Pakistan over Kashmir, impacting regional stability.",
+    "resolution_type": "territorial_dispute",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 18 December 1961 from the Permanent Representative of Portugal addressed to the President of the Security Council (S/5030)_1961": {
+    "resolution_title": "Letter dated 18 December 1961 from the Permanent Representative of Portugal addressed to the President of the Security Council (S/5030)",
+    "description": "Resolution addresses Portugal's position on the conflict in Angola and international peace concerns.",
+    "applicant_country": null,
+    "historical_context": "In 1961, decolonization movements in Africa, particularly in Angola, create tensions in international relations.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Complaint by Kuwait in respect of a situation arising from the threat by Iraq to the territorial independence of Kuwait, which is likely to endanger the maintenance of international peace and security (S/4845 and S/4844)--Complaint by the Government of the Republic of Iraq in respect of the situation arising out of the armed threat by the United Kingdom to the independence and security of Iraq, which is likely to endanger the maintenance of international peace and security (S/4847)_1961": {
+    "resolution_title": "Complaint by Kuwait in respect of a situation arising from the threat by Iraq to the territorial independence of Kuwait, which is likely to endanger the maintenance of international peace and security (S/4845 and S/4844)--Complaint by the Government of the Republic of Iraq in respect of the situation arising out of the armed threat by the United Kingdom to the independence and security of Iraq, which is likely to endanger the maintenance of international peace and security (S/4847)",
+    "description": "Resolution addresses threats to Kuwait's territorial independence from Iraq amid Cold War tensions.",
+    "applicant_country": null,
+    "historical_context": "In 1961, tensions rise in the Middle East as Iraq threatens Kuwait's sovereignty, impacting regional stability.",
+    "resolution_type": "territorial_dispute",
+    "confidence_score": 90,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Statement dated 6 December 1960 by the Government of the Union of Soviet Socialist Republics concerning the situation in the Congo (S/4573)_1960": {
+    "resolution_title": "Statement dated 6 December 1960 by the Government of the Union of Soviet Socialist Republics concerning the situation in the Congo (S/4573)",
+    "description": "Resolution addresses the political situation and international concerns in the Congo during its independence.",
+    "applicant_country": null,
+    "historical_context": "In 1960, the Congo faces political instability post-independence, raising global security concerns amid Cold War tensions.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 13 July 1960 from the Secretary-General addressed to the President of the Security Council (S/4381): fourth report of the Secretary-General on the implementation of Security Council resolutions S/4387 of 14 July 1960, S/4405 of 22 July 1960 and S/4426 of 9 August 1960 (S/4482 and Add.1-3)--Letter dated 8 September 1960 from the Permanent Representative of Yugoslavia addressed to the President of the Security Council (S/4485)--Letter dated 12 September 1960 from the representative of the Union of Soviet Socialist Republics addressed to the President of the Security Council (S/4506)_1960": {
+    "resolution_title": "Letter dated 13 July 1960 from the Secretary-General addressed to the President of the Security Council (S/4381)",
+    "description": "Resolution addresses international peace and security concerns amid Cold War tensions in 1960.",
+    "applicant_country": null,
+    "historical_context": "In 1960, geopolitical tensions from decolonization and superpower rivalry heighten security concerns.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": false,
+    "is_descriptive_only": true
+  },
+  "The Middle East problem including the Palestinian question_2024": {
+    "resolution_title": "The Middle East problem including the Palestinian question",
+    "description": "Resolution addresses ongoing conflicts related to Palestinian statehood and regional tensions in the Middle East.",
+    "applicant_country": null,
+    "historical_context": "In 2024, tensions escalate over Palestinian statehood amid ongoing regional conflicts and international diplomacy.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Maintenance of peace and security of Ukraine_2022": {
+    "resolution_title": "Maintenance of peace and security of Ukraine",
+    "description": "Resolution addresses Ukraine's territorial integrity and security amidst Russian military actions.",
+    "applicant_country": null,
+    "historical_context": "In 2022, Ukraine faces significant territorial integrity challenges due to ongoing Russian aggression.",
+    "resolution_type": "territorial_dispute",
+    "confidence_score": 90,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The situation in the Middle East_2022": {
+    "resolution_title": "The situation in the Middle East",
+    "description": "Resolution addresses ongoing conflicts related to Palestinian statehood and regional tensions in the Middle East.",
+    "applicant_country": null,
+    "historical_context": "In 2022, tensions rise over Palestinian statehood and broader regional conflicts, impacting peace efforts.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Non-proliferation/Democratic People's Republic of Korea_2022": {
+    "resolution_title": "Non-proliferation/Democratic People's Republic of Korea",
+    "description": "Resolution addresses concerns over North Korea's nuclear weapons program and international non-proliferation efforts.",
+    "applicant_country": null,
+    "historical_context": "In 2022, tensions rise over North Korea's missile tests and nuclear ambitions, impacting regional security.",
+    "resolution_type": "arms_control",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 28 February 2014 from the Permanent Representative of Ukraine to the United Nations addressed to the President of the Security Council (S/2014/136)_2015": {
+    "resolution_title": "Letter dated 28 February 2014 from the Permanent Representative of Ukraine to the United Nations addressed to the President of the Security Council (S/2014/136)",
+    "description": "Resolution addresses Ukraine's territorial integrity amid Russian aggression in 2015.",
+    "applicant_country": null,
+    "historical_context": "In 2015, Ukraine faces significant territorial challenges due to Russian actions in Crimea and Eastern Ukraine.",
+    "resolution_type": "territorial_dispute",
+    "confidence_score": 90,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The situation in the Republic of Bosnia and Herzegovina_2002": {
+    "resolution_title": "The situation in the Republic of Bosnia and Herzegovina",
+    "description": "Resolution addresses peace and security issues in Bosnia and Herzegovina post-conflict.",
+    "applicant_country": null,
+    "historical_context": "In 2002, Bosnia faced ongoing challenges in post-war recovery and ethnic tensions.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Request by the Libyan Arab Republic and Pakistan for consideration of the serious situation arising from recent developments in the occupied Arab territories:_1995": {
+    "resolution_title": "Request by the Libyan Arab Republic and Pakistan for consideration of the serious situation arising from recent developments in the occupied Arab territories:",
+    "description": "Resolution addresses the situation in occupied Arab territories and calls for international attention.",
+    "applicant_country": null,
+    "historical_context": "In 1995, tensions in the Middle East escalated due to ongoing conflicts and peace process challenges.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The situation in Cyprus_1993": {
+    "resolution_title": "The situation in Cyprus",
+    "description": "Resolution addresses the ongoing conflict and peace efforts in Cyprus amidst geopolitical tensions.",
+    "applicant_country": null,
+    "historical_context": "In 1993, Cyprus remains divided since the 1974 Turkish invasion, complicating peace negotiations.",
+    "resolution_type": "territorial_dispute",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The question of South Africa_1987": {
+    "resolution_title": "The question of South Africa",
+    "description": "Resolution addresses South African apartheid policies and international sanctions.",
+    "applicant_country": null,
+    "historical_context": "In 1987, apartheid in South Africa raised global concerns, prompting calls for sanctions and intervention.",
+    "resolution_type": "human_rights",
+    "confidence_score": 90,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 15 April 1986 from the Chargé d'affaires a.i. of the Permanent Mission of the Libyan Arab Jamahiriya to the United Nations addressed to the President of the Security Council (S/17991)--Letter dated 15 April 1986 from the Chargé d'affaires a.i. of the Permanent Mission of Burkina Faso to the United Nations addressed to the President of the Security Council (S/17992)--Letter dated 15 April 1986 from the Chargé d'affaires a.i. of the Permanent Mission of the Syrian Arab Republic to the United Nations addressed to the President of the Security Council (S/17993)--Letter dated 15 April 1986 from the Permanent Representative of Oman to the United Nations addressed to the President of the Security Council (S/17994)_1986": {
+    "resolution_title": "Letter dated 15 April 1986 from the Chargé d'affaires a.i. of the Permanent Mission of the Libyan Arab Jamahiriya to the United Nations addressed to the President of the Security Council (S/17991)--Letter dated 15 April 1986 from the Chargé d'affaires a.i. of Burkina Faso to the United Nations addressed to the President of the Security Council (S/17992)--Letter dated 15 April 1986 from the Chargé d'affaires a.i. of the Syrian Arab Republic to the United Nations addressed to the President of the Security Council (S/17993)--Letter dated 15 April 1986 from the Permanent Representative of Oman to the United Nations addressed to the President of the Security Council (S/17994)",
+    "description": "Resolution addresses concerns over international peace and security amid Cold War tensions.",
+    "applicant_country": null,
+    "historical_context": "In 1986, geopolitical tensions, particularly involving Libya and Syria, heighten international security concerns.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The situation in the Middle East _1986": {
+    "resolution_title": "The situation in the Middle East",
+    "description": "Resolution addresses ongoing Arab-Israeli conflicts and Palestinian territorial disputes in 1986.",
+    "applicant_country": null,
+    "historical_context": "In 1986, tensions rise due to territorial disputes and violence in the Arab-Israeli conflict.",
+    "resolution_type": "territorial_dispute",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The situation in Namibia_1985": {
+    "resolution_title": "The situation in Namibia",
+    "description": "Resolution addresses the ongoing conflict and quest for independence in Namibia from South African rule.",
+    "applicant_country": null,
+    "historical_context": "In 1985, Namibia's struggle for independence was central to anti-apartheid movements and Cold War dynamics.",
+    "resolution_type": "human_rights",
+    "confidence_score": 90,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 1 September 1983 from the Acting Permanent Representative of the United States to the United Nations addressed to the President of the Security Council (S/15947)--Letter dated 1 September 1983 from the Permanent Observer for the Republic of Korea to the United Nations addressed to the President of the Security Council (S/15948)--Letter dated 1 September 1983 from the Chargé d'affaires a.i. of the Permanent Mission of Canada to the United Nations addressed to the President of the Security Council (S/15949)--Letter dated 1 September 1983 from the Permanent Representative of Japan to the United Nations addressed to the President of the Security Council (S/15950)--Letter dated 2 September 1983 from the Acting Permanent Representative of Australia to the United Nations addressed to the President of the Security Council (S/15951)_1983": {
+    "resolution_title": "Letter dated 1 September 1983 from the Acting Permanent Representative of the United States to the United Nations addressed to the President of the Security Council (S/15947)--Letter dated 1 September 1983 from the Permanent Observer for the Republic of Korea to the United Nations addressed to the President of the Security Council (S/15948)--Letter dated 1 September 1983 from the Chargé d'affaires a.i. of the Permanent Mission of Canada to the United Nations addressed to the President of the Security Council (S/15949)--Letter dated 1 September 1983 from the Permanent Representative of Japan to the United Nations addressed to the President of the Security Council (S/15950)--Letter dated 2 September 1983 from the Acting Permanent Representative of Australia to the United Nations addressed to the President of the Security Council (S/15951)",
+    "description": "Resolution addresses tensions on the Korean Peninsula and nuclear concerns in 1983.",
+    "applicant_country": null,
+    "historical_context": "In 1983, Korea remains divided, with heightened military tensions and nuclear proliferation fears.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Complaint by Angola against South Africa_1981": {
+    "resolution_title": "Complaint by Angola against South Africa",
+    "description": "Resolution addresses Angola's complaint regarding South African military actions.",
+    "applicant_country": null,
+    "historical_context": "In 1981, South Africa's apartheid system faced global scrutiny and calls for sanctions.",
+    "resolution_type": "human_rights",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Application for Membership (Transjordan)_1976": {
+    "resolution_title": "Application for Membership (Transjordan)",
+    "description": "Resolution addresses Transjordan's application for UN membership amid Cold War dynamics.",
+    "applicant_country": "Transjordan",
+    "historical_context": "In 1976, UN membership applications face challenges due to Cold War tensions and decolonization.",
+    "resolution_type": "membership_application",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The question of the exercise by Palestinians of inalienable rights _1976": {
+    "resolution_title": "The question of the exercise by Palestinians of inalienable rights ",
+    "description": "Resolution addresses the recognition of Palestinians' inalienable rights amid ongoing conflicts.",
+    "applicant_country": null,
+    "historical_context": "In 1976, the Middle East faced intense Arab-Israeli conflicts and Palestinian territorial disputes.",
+    "resolution_type": "human_rights",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Question concerning the situation in Southern Rhodesia_1972": {
+    "resolution_title": "Question concerning the situation in Southern Rhodesia",
+    "description": "Resolution addresses the political situation and independence struggles in Southern Rhodesia.",
+    "applicant_country": null,
+    "historical_context": "In 1972, Southern Rhodesia faces significant independence struggles under minority rule, leading to international concern.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The Palestine Question_1964": {
+    "resolution_title": "The Palestine Question",
+    "description": "Resolution addresses the ongoing conflict and aspirations for statehood in Palestine.",
+    "applicant_country": null,
+    "historical_context": "In 1964, tensions rise over Palestinian nationalism and regional stability amid Cold War dynamics.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 2 August 1963 from the representatives of Ghana, Guinea, Morocco and the United Arab Republic addressed to the President of the Security Council (S/5382) and letter dated 30 August 1963 from the Chargé d'affaires of the Permanent Mission of the Congo (Brazzaville) addressed to the President of the Security Council on behalf of the representatives of Algeria, Burundi, Cameroon, Central African Republic, Chad, Congo (Brazzaville), Congo (Leopoldville), Dahomey, Ethiopia, Gabon, Ivory Coast, Liberia, Libya, Madagascar, Mali, Mauritania, Niger, Nigeria, Rwanda, Senegal, Sierra Leone, Somalia, Sudan, Tanganyika, Togo, Tunisia, Uganda and Upper Volta (S/5409) [regarding Southern Rhodesia]_1963": {
+    "resolution_title": "Letter dated 2 August 1963 from the representatives of Ghana, Guinea, Morocco and the United Arab Republic addressed to the President of the Security Council (S/5382) and letter dated 30 August 1963 from the Chargé d'affaires of the Permanent Mission of the Congo (Brazzaville) addressed to the President of the Security Council on behalf of the representatives of Algeria, Burundi, Cameroon, Central African Republic, Chad, Congo (Brazzaville), Congo (Leopoldville), Dahomey, Ethiopia, Gabon, Ivory Coast, Liberia, Libya, Madagascar, Mali, Mauritania, Niger, Nigeria, Rwanda, Senegal, Sierra Leone, Somalia, Sudan, Tanganyika, Togo, Tunisia, Uganda and Upper Volta (S/5409) [regarding Southern Rhodesia]",
+    "description": "Resolution addresses the situation in Southern Rhodesia amid independence struggles and minority rule.",
+    "applicant_country": null,
+    "historical_context": "In 1963, Southern Rhodesia faces significant independence movements and issues of minority governance.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 13 July 1960 from the Secretary-General addressed to the President of the Security Council (S/4381): fourth report of the Secretary-General on the implementation of Security Council resolutions S/4387 of 14 July 1960, S/4405 of 22 July 1960 and S/4426 of 9 August 1960 (S/4482 and Add.1-3)--Letter dated 8 September 1960 from the Permanent Representative of Yugoslavia addressed to the President of the Security Council (S/4485)--Letter dated 12 September 1960 from the representative of the Union of Soviet Socialist Republics addressed to the President of the Security Council (S/4506)_1961": {
+    "resolution_title": "Letter dated 13 July 1960 from the Secretary-General addressed to the President of the Security Council (S/4381): fourth report of the Secretary-General on the implementation of Security Council resolutions S/4387 of 14 July 1960, S/4405 of 22 July 1960 and S/4426 of 9 August 1960 (S/4482 and Add.1-3)--Letter dated 8 September 1960 from the Permanent Representative of Yugoslavia addressed to the President of the Security Council (S/4485)--Letter dated 12 September 1960 from the representative of the Union of Soviet Socialist Republics addressed to the President of the Security Council (S/4506)",
+    "description": "Resolution addresses international peace and security concerns amid Cold War tensions in 1961.",
+    "applicant_country": null,
+    "historical_context": "In 1961, geopolitical tensions rise as Cold War conflicts escalate, impacting international peace efforts.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": false,
+    "is_descriptive_only": true
+  },
+  "Telegrams dated 13 July 1960 from the Minister for Foreign\nAffairs of the Union of Soviet Socialist Republics addressed\nto the Secretary-General (S/4384, 8/4385, S/4406, S/4409 and\nRev.l, 8/4411)_1960": {
+    "resolution_title": "Telegrams dated 13 July 1960 from the Minister for Foreign Affairs of the Union of Soviet Socialist Republics addressed to the Secretary-General (S/4384, 8/4385, S/4406, S/4409 and Rev.l, 8/4411)",
+    "description": "Resolution addresses international peace and security concerns amid Cold War tensions in 1960.",
+    "applicant_country": null,
+    "historical_context": "In 1960, geopolitical tensions escalate as decolonization and Cold War conflicts shape global politics.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 22 May 1958 from the representative of Lebanon to the President of the Security Council concerning \"Complaint by Lebanon in respect of a situation arising from the intervention of the United Arab Republic in the internal affairs of Lebanon, the continuance of which is likely to endanger the maintenance of international peace and security\" (S/4007, S/4047/Rev.1, S/4050/Rev.1, S/4054); Letter dated 17 July 1958 from the representative of Jordan to the President of the Security Council concerning \" Complaint by the Hashemite Kingdom of Jordan of interference in its domestic aflairs of the United Arab Republic\" (S/4053, S/4047/Rev.1) _1958": {
+    "resolution_title": "Letter dated 22 May 1958 from the representative of Lebanon to the President of the Security Council concerning \"Complaint by Lebanon in respect of a situation arising from the intervention of the United Arab Republic in the internal affairs of Lebanon, the continuance of which is likely to endanger the maintenance of international peace and security\" (S/4007, S/4047/Rev.1, S/4050/Rev.1, S/4054); Letter dated 17 July 1958 from the representative of Jordan to the President of the Security Council concerning \" Complaint by the Hashemite Kingdom of Jordan of interference in its domestic aflairs of the United Arab Republic\" (S/4053, S/4047/Rev.1)",
+    "description": "Resolution addresses Lebanon and Jordan's complaints about the United Arab Republic's interference in their internal affairs.",
+    "applicant_country": null,
+    "historical_context": "In 1958, regional tensions rise due to UAR's influence in Lebanon and Jordan amid Cold War dynamics.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Complaint of rep. of USSR to Pre SC re United States military aircraft armed with atomic and hydrogen bombs flying in direction of frontiers of Soviet Union_1958": {
+    "resolution_title": "Complaint of rep. of USSR to Pre SC re United States military aircraft armed with atomic and hydrogen bombs flying in direction of frontiers of Soviet Union",
+    "description": "Resolution addresses concerns over US military aircraft carrying nuclear weapons near Soviet borders.",
+    "applicant_country": null,
+    "historical_context": "In 1958, Cold War tensions escalate with nuclear arms proliferation and military posturing between superpowers.",
+    "resolution_type": "arms_control",
+    "confidence_score": 90,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The India-Pakistan question_1957": {
+    "resolution_title": "The India-Pakistan question",
+    "description": "Resolution addresses the ongoing territorial dispute and tensions between India and Pakistan.",
+    "applicant_country": null,
+    "historical_context": "In 1957, tensions from the 1947 partition and Kashmir conflict escalate, impacting regional stability.",
+    "resolution_type": "territorial_dispute",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The situation in Hungary_1956": {
+    "resolution_title": "The situation in Hungary",
+    "description": "Resolution addresses the unrest in Hungary during the 1956 revolution against Soviet control.",
+    "applicant_country": null,
+    "historical_context": "In 1956, Hungary experiences a nationwide uprising against Soviet-imposed policies, raising global security concerns.",
+    "resolution_type": "other",
+    "confidence_score": 90,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 29 October 1956 from the representative of the United States of America adressed to the President of the Security Council, concerning \"The Palestine Question: Steps for the immediate cessation  of the militry action of Israel in Egypt._1956": {
+    "resolution_title": "Letter dated 29 October 1956 from the representative of the United States of America adressed to the President of the Security Council, concerning \"The Palestine Question: Steps for the immediate cessation  of the militry action of Israel in Egypt.\"",
+    "description": "Resolution addresses the need for an immediate halt to Israeli military actions in Egypt during the Suez Crisis.",
+    "applicant_country": null,
+    "historical_context": "In 1956, the Suez Crisis escalates tensions in the Middle East, involving Israel, Egypt, and colonial powers.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Situation created by the unilateral action of the Egyptian Government in bringing to an end the system of international operation of the Suez Canal, which was confirmed and completed by the Suez Canal Convention of 1888_1956": {
+    "resolution_title": "Situation created by the unilateral action of the Egyptian Government in bringing to an end the system of international operation of the Suez Canal, which was confirmed and completed by the Suez Canal Convention of 1888",
+    "description": "Resolution addresses the international implications of Egypt's unilateral control over the Suez Canal.",
+    "applicant_country": null,
+    "historical_context": "In 1956, the Suez Crisis escalates tensions between Western powers and Egypt, impacting global trade.",
+    "resolution_type": "other",
+    "confidence_score": 90,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Cablegram dated 19 June 1954 from the Minister for External Relations of Guatemala addressed to the President of the Security Council (S/3232)_1954": {
+    "resolution_title": "Cablegram dated 19 June 1954 from the Minister for External Relations of Guatemala addressed to the President of the Security Council (S/3232)",
+    "description": "Resolution addresses Guatemala's concerns regarding international peace and security amid Cold War tensions.",
+    "applicant_country": null,
+    "historical_context": "In 1954, Guatemala experiences political turmoil, influenced by U.S. interventions and Cold War dynamics.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter dated 29 May 1954 from the acting permanent representative of\nThailand to the United Nations addressed to the President of the\nSecurity Council (S/3220)_1954": {
+    "resolution_title": "Letter dated 29 May 1954 from the acting permanent representative of Thailand to the United Nations addressed to the President of the Security Council (S/3220)",
+    "description": "Resolution addresses Thailand's concerns regarding regional security and international peace in Southeast Asia.",
+    "applicant_country": null,
+    "historical_context": "In 1954, Southeast Asia faces rising tensions from colonial legacies and Cold War dynamics, impacting regional stability.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Appointment of Secretary-General_1953": {
+    "resolution_title": "Appointment of Secretary-General",
+    "description": "Resolution addresses the selection process for the UN Secretary-General amid Cold War tensions.",
+    "applicant_country": null,
+    "historical_context": "In 1953, the geopolitical climate is marked by Cold War rivalries, influencing UN operations.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": false,
+    "is_descriptive_only": true
+  },
+  "Question of Request for Investigation of Alleged Bacterial Warfare_1952": {
+    "resolution_title": "Question of Request for Investigation of Alleged Bacterial Warfare",
+    "description": "Resolution addresses concerns over alleged use of bacterial warfare during conflicts.",
+    "applicant_country": null,
+    "historical_context": "In 1952, allegations of biological warfare heightened Cold War tensions and international security concerns.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": false,
+    "is_descriptive_only": true
+  },
+  "Complaint of aggression upon the Republic of Korea_1950": {
+    "resolution_title": "Complaint of aggression upon the Republic of Korea",
+    "description": "Resolution addresses the conflict initiated by North Korea's invasion of South Korea in 1950.",
+    "applicant_country": null,
+    "historical_context": "In 1950, Korea is divided, with rising tensions and fears of broader conflict during the Cold War.",
+    "resolution_type": "territorial_dispute",
+    "confidence_score": 90,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Complaint of bombing by air forces of the territory of China_1950": {
+    "resolution_title": "Complaint of bombing by air forces of the territory of China",
+    "description": "Resolution addresses bombing incidents involving air forces in Chinese territory.",
+    "applicant_country": null,
+    "historical_context": "In 1950, tensions rise in the Korean War, impacting China's security and international relations.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The Indonesian question_1949": {
+    "resolution_title": "The Indonesian question",
+    "description": "Resolution addresses the political situation in Indonesia post-colonial rule and international recognition.",
+    "applicant_country": null,
+    "historical_context": "In 1949, Indonesia seeks independence from Dutch colonial rule amid Cold War tensions.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Regulation and reduction of armaments and armed forces (a)  Letter dated 4 August 1949 from the Chairman of the Commission for Conventional Armaments addressed to the President of the Security Council transmitting the second progress report of the Commission (S/1372)( b) Letter dated 4 August 1949 from the Chairman of the Commission for Conventional Armaments addressed to the President of the Security Council transmitting a working paper and other documents (S/1372)_1949": {
+    "resolution_title": "Regulation and reduction of armaments and armed forces (a)  Letter dated 4 August 1949 from the Chairman of the Commission for Conventional Armaments addressed to the President of the Security Council transmitting the second progress report of the Commission (S/1372)( b) Letter dated 4 August 1949 from the Chairman of the Commission for Conventional Armaments addressed to the President of the Security Council transmitting a working paper and other documents (S/1372)",
+    "description": "Resolution addresses international efforts for the regulation and reduction of armaments post-World War II.",
+    "applicant_country": null,
+    "historical_context": "In 1949, tensions from the Cold War and arms races prompted calls for disarmament and regulation of military forces.",
+    "resolution_type": "arms_control",
+    "confidence_score": 85,
+    "contains_country_name": false,
+    "is_descriptive_only": true
+  },
+  "\"Continuation of the discussion on\nthe identic notifications, dated\n29 September 1948, from 'the Governments of the French Republic,\nthe United States of America and\nthe United Kmgdom to the Secretary-General (S/102O and S/1fJ20/\nAdd.1)\" _1948": {
+    "resolution_title": "Continuation of the discussion on the identic notifications, dated 29 September 1948, from 'the Governments of the French Republic, the United States of America and the United Kmgdom to the Secretary-General (S/102O and S/1fJ20/Add.1)'",
+    "description": "Resolution addresses international peace and security concerns in the context of post-World War II geopolitical tensions.",
+    "applicant_country": null,
+    "historical_context": "In 1948, tensions rise between Western powers and the Soviet Union, impacting global security discussions.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Atomic Energy: International Control_1948": {
+    "resolution_title": "Atomic Energy: International Control",
+    "description": "Resolution addresses international control of atomic energy to prevent nuclear proliferation.",
+    "applicant_country": null,
+    "historical_context": "In 1948, post-WWII tensions heighten concerns over nuclear weapons and global security.",
+    "resolution_type": "arms_control",
+    "confidence_score": 85,
+    "contains_country_name": false,
+    "is_descriptive_only": true
+  },
+  "The Czechoslovak Question_1948": {
+    "resolution_title": "The Czechoslovak Question",
+    "description": "Resolution addresses the political situation and security concerns in Czechoslovakia post-World War II.",
+    "applicant_country": null,
+    "historical_context": "In 1948, Czechoslovakia faced internal political strife and external pressures during the early Cold War.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The Greek frontier incidents question_1947": {
+    "resolution_title": "The Greek frontier incidents question",
+    "description": "Resolution addresses incidents along the Greek frontier amid the civil war in Greece.",
+    "applicant_country": null,
+    "historical_context": "In 1947, Greece faces a civil war with significant international implications and foreign involvement.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The Corfu Channel Question_1947": {
+    "resolution_title": "The Corfu Channel Question",
+    "description": "Resolution addresses the dispute over the Corfu Channel incident involving British warships.",
+    "applicant_country": null,
+    "historical_context": "In 1947, tensions between Greece and Albania escalate, impacting maritime security in the region.",
+    "resolution_type": "territorial_dispute",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Telegram from the Minister of Foreign Affairs of the Ukrainian Socialist Soviet Republic to the Secretary-General, dated 24 August 1946 (document S/137)_1946": {
+    "resolution_title": "Telegram from the Minister of Foreign Affairs of the Ukrainian Socialist Soviet Republic to the Secretary-General, dated 24 August 1946 (document S/137)",
+    "description": "Resolution addresses Greek civil war situation following Ukrainian SSR telegram in 1946.",
+    "applicant_country": null,
+    "historical_context": "In 1946, the Greek civil war intensifies, drawing international attention amid Cold War tensions.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "The Spanish question_1946": {
+    "resolution_title": "The Spanish question",
+    "description": "Resolution addresses Spain's international status under Franco's dictatorship post-WWII.",
+    "applicant_country": null,
+    "historical_context": "In 1946, Spain's regime faced scrutiny as the UN debated its legitimacy after WWII.",
+    "resolution_type": "other",
+    "confidence_score": 90,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  },
+  "Letter from the Heads of the Lebanese and Syrian delegations--Report by the Committee of Experts on alterations in the provisional rules of procedure_1946": {
+    "resolution_title": "Letter from the Heads of the Lebanese and Syrian delegations--Report by the Committee of Experts on alterations in the provisional rules of procedure",
+    "description": "Resolution addresses procedural alterations proposed by Lebanese and Syrian delegations in 1946.",
+    "applicant_country": null,
+    "historical_context": "In 1946, post-WWII geopolitical tensions influence discussions on international governance and regional conflicts.",
+    "resolution_type": "other",
+    "confidence_score": 85,
+    "contains_country_name": true,
+    "is_descriptive_only": true
+  }
+}
