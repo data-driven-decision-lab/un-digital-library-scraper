@@ -61,6 +61,7 @@ Generates a comprehensive report for the specified country over a period.
 **Query Parameters:**
 -   `start_year` (integer): The start year for the report period. Must be between 1946 and 2024.
 -   `end_year` (integer): The end year for the report period. Must be between 1946 and 2024. Must be greater than or equal to `start_year`. The period must span at least 3 years (`end_year` - `start_year` >= 2).
+-   `recent_year_only` (boolean, optional): If true, calculates stats for only the most recent year period (2023-2024). When enabled, `start_year` and `end_year` are ignored and automatically set to 2023-2024. Defaults to false.
 
 **Response Highlights (includes, but not limited to):**
 -   `report_metadata`: Basic information about the report query.
@@ -76,8 +77,9 @@ Generates a comprehensive report for the specified country over a period.
 -   `top_supported_topics` / `top_opposed_topics`: Topics most supported and opposed by the country.
 -   `all_topic_voting`: Detailed voting record across all topics for the country vs. the world.
 
-**Example Request:**
-`http://127.0.0.1:8000/report/USA?start_year=2009&end_year=2013`
+**Example Requests:**
+- Standard period: `http://127.0.0.1:8000/report/USA?start_year=2009&end_year=2013`
+- Recent year only: `http://127.0.0.1:8000/report/USA?recent_year_only=true`
 
 ### Endpoint: `GET /rankings/{year}`
 

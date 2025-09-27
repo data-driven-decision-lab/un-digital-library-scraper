@@ -176,5 +176,141 @@ class YearlyRankingsResponse(BaseModel):
     message: Optional[str] = Field(default=None, description="Contextual message, e.g., about data availability for change calculations.")
 
     class Config:
-        # Example for the entire response, adjust as needed 
-        pass # Added pass to fix indentation 
+        # Example for the entire response, adjust as needed
+        pass # Added pass to fix indentation
+
+# --- Models for Security Council Analysis Endpoints ---
+
+class SecurityCouncilTopicItem(BaseModel):
+    topic_name: str = Field(..., description="Canonical topic name after LLM entity resolution and normalization")
+    total_veto_occurrences: Optional[int] = Field(
+        default=None,
+        description="Total number of unique veto events for this canonical topic"
+    )
+    us_vetoes: Optional[int] = Field(
+        default=None,
+        description="Number of times US vetoed events in this topic (can exceed total_veto_occurrences due to multi-P5 vetoes)"
+    )
+    ru_vetoes: Optional[int] = Field(
+        default=None,
+        description="Number of times Russia vetoed events in this topic (can exceed total_veto_occurrences due to multi-P5 vetoes)"
+    )
+    cn_vetoes: Optional[int] = Field(
+        default=None,
+        description="Number of times China vetoed events in this topic (can exceed total_veto_occurrences due to multi-P5 vetoes)"
+    )
+    fr_vetoes: Optional[int] = Field(
+        default=None,
+        description="Number of times France vetoed events in this topic (can exceed total_veto_occurrences due to multi-P5 vetoes)"
+    )
+    uk_vetoes: Optional[int] = Field(
+        default=None,
+        description="Number of times UK vetoed events in this topic (can exceed total_veto_occurrences due to multi-P5 vetoes)"
+    )
+    regular_opposition_total: Optional[int] = Field(
+        default=None,
+        description="Total number of regular opposition votes (NO/ABSTAIN) across all P5 members"
+    )
+    total_opposition_events: Optional[int] = Field(
+        default=None,
+        description="Total number of events with any P5 opposition (NO or ABSTAIN), ≥ total_veto_occurrences"
+    )
+    countries_involved: Optional[int] = Field(
+        default=None,
+        description="Number of distinct countries involved in events for this topic"
+    )
+    primary_opposer: Optional[str] = Field(
+        default=None,
+        description="P5 member with highest veto count for this topic (e.g., 'Russia', 'United States')"
+    )
+    overton_window_position: Optional[str] = Field(
+        default=None,
+        description="Position on Overton window: 'unthinkable', 'radical', 'acceptable', 'sensible', 'popular', 'policy'. Derived from controversy_score percentile: unthinkable (0-20th), radical (20-40th), acceptable (40-60th), sensible (60-80th), popular (80-95th), policy (95-100th)"
+    )
+    first_year: Optional[int] = Field(
+        default=None,
+        description="Earliest year of activity for this topic"
+    )
+    last_year: Optional[int] = Field(
+        default=None,
+        description="Latest year of activity for this topic"
+    )
+    primary_category: Optional[str] = Field(
+        default=None,
+        description="Primary UN classification category from LLM tagging (e.g., 'MIDDLE_EAST', 'NUCLEAR_PROLIFERATION')"
+    )
+    all_categories: Optional[str] = Field(
+        default=None,
+        description="All applicable UN classification categories, comma-separated"
+    )
+    primary_region: Optional[str] = Field(
+        default=None,
+        description="Primary geographic region. Must be one of: 'Africa', 'Americas', 'Asia', 'Europe', 'Oceania', 'Middle East', 'Global'"
+    )
+    controversy_score: Optional[float] = Field(
+        default=None,
+        description="Controversy score from 0.0 to 1.0, measuring voting dispersion. Higher values indicate more controversial topics"
+    )
+    temporal_span_years: Optional[int] = Field(
+        default=None,
+        description="Number of years from first_year to last_year (last_year - first_year)"
+    )
+    power_dynamic: Optional[str] = Field(
+        default=None,
+        description="Power dynamic classification. Derived from P5 veto patterns: 'US_LED_DOMINANCE' (US ≥ 70% of total P5 vetoes), 'RUSSIA_CHINA_BLOCK' (RU+CN ≥ 70%), 'BIPOLAR_CONFLICT' (US+UK+FR ≥ 70% vs RU+CN ≥ 70%), 'MULTILATERAL' (no bloc ≥ 70%)"
+    )
+    dominant_bloc: Optional[str] = Field(
+        default=None,
+        description="Dominant power bloc. Derived from veto patterns: 'US_LED' (US-led dominance), 'RUSSIA_CHINA' (Russia-China alliance), 'WESTERN_GROUP' (US+UK+FR dominance), 'MIXED' (no clear dominance)"
+    )
+    analysis_timestamp: Optional[str] = Field(
+        default=None,
+        description="ISO timestamp when this topic analysis was performed"
+    )
+
+class SecurityCouncilTopicResponse(BaseModel):
+    topics: List[SecurityCouncilTopicItem] = Field(..., description="List of Security Council topics")
+    total_count: int = Field(..., description="Total number of topics")
+    analysis_summary: Optional[Dict] = Field(default=None, description="Summary statistics")
+
+class SecurityCouncilPolicyReport(BaseModel):
+    """Policy-focused Security Council analysis for decision-makers"""
+
+    # Executive summary with key findings
+    executive_summary: Dict = Field(..., description="Key findings and policy implications")
+
+    # Current crisis analysis
+    current_crises: List[Dict] = Field(..., description="Major ongoing conflicts and their status")
+
+    # Power dynamics and influence patterns
+    power_dynamics: Dict = Field(..., description="P5 member influence and voting patterns")
+
+    # Regional conflict patterns
+    regional_analysis: Dict = Field(..., description="Geographic distribution of conflicts")
+
+    # Temporal trends and predictions
+    trends_and_predictions: Dict = Field(..., description="Historical patterns and future outlook")
+
+    # Policy recommendations
+    policy_recommendations: List[Dict] = Field(..., description="Actionable recommendations for policymakers")
+
+    # Supporting data for reference
+    supporting_data: Dict = Field(..., description="Additional data for detailed analysis")
+
+class AnnualScoresItem(BaseModel):
+    country_name: str = Field(..., description="Country name")
+    year: int = Field(..., description="Year")
+    pillar_1_score: Optional[float] = Field(default=None, description="Pillar 1 score")
+    pillar_2_score: Optional[float] = Field(default=None, description="Pillar 2 score")
+    pillar_3_score: Optional[float] = Field(default=None, description="Pillar 3 score")
+    total_index_average: Optional[float] = Field(default=None, description="Total index average")
+    pillar_1_rank: Optional[int] = Field(default=None, description="Pillar 1 rank")
+    pillar_2_rank: Optional[int] = Field(default=None, description="Pillar 2 rank")
+    pillar_3_rank: Optional[int] = Field(default=None, description="Pillar 3 rank")
+    overall_rank: Optional[int] = Field(default=None, description="Overall rank")
+
+class AnnualScoresResponse(BaseModel):
+    scores: List[AnnualScoresItem] = Field(..., description="List of annual scores")
+    total_count: int = Field(..., description="Total number of records")
+    years_available: List[int] = Field(..., description="Available years")
+    countries_available: List[str] = Field(..., description="Available countries")

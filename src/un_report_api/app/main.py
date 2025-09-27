@@ -1,14 +1,58 @@
 """FastAPI application for UN Country Voting Report API with CORS enabled."""
 
 import logging
+import os
+import json
+import pandas as pd
+from datetime import datetime
 from fastapi import FastAPI, Path, Query, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Dict
+from typing import Dict, List, Optional, Tuple
+import re
 #test
-# Use absolute imports to avoid relative import issues
+# Use absolute imports with proper path handling
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# Note: Removed old security_council path references - now using sc_analysis folder
+
 from report_generator import generate_report
-from models import ReportResponse, MIN_YEAR_CONSTRAINT, MAX_YEAR_CONSTRAINT, YearlyRankingsResponse, YearlyPillarRankings
+from models import (
+    ReportResponse,
+    MIN_YEAR_CONSTRAINT,
+    MAX_YEAR_CONSTRAINT,
+    YearlyRankingsResponse,
+    YearlyPillarRankings,
+    SecurityCouncilTopicResponse,
+    SecurityCouncilPolicyReport,
+    AnnualScoresResponse,
+    SecurityCouncilTopicItem,
+    AnnualScoresItem
+)
+
+# Import Security Council services from new location
+from services.analysis_service import SecurityCouncilAnalysisService
+from services.vote_analysis_service import SecurityCouncilVoteAnalysisService
+from services.data_loader import SecurityCouncilDataLoader
 from ranking_generator import generate_yearly_rankings
+from simple_veto_endpoint import get_enhanced_veto_analysis
+
+# Note: Removed unused LLM comparison imports (TopicEntityResolver, PowerDynamicsAnalyzer)
+# These were never used in any endpoints and are part of the research thesis, not the production API
+
+# Security Council analysis imports
+try:
+    from supabase import create_client
+    from un_classification_mapper import UNClassificationMapper, classify_title_with_un_mapper
+except ImportError:
+    # Fallback for development
+    create_client = None
+    UNClassificationMapper = None
+
+import json
+import pandas as pd
+from typing import List, Optional
 
 # --- FastAPI App Initialization ---
 app = FastAPI(
@@ -53,24 +97,39 @@ async def validate_year_params(
     end_year: int = Query(
         ..., ge=MIN_YEAR_CONSTRAINT, le=MAX_YEAR_CONSTRAINT,
         description=f"End year of the period (inclusive, {MIN_YEAR_CONSTRAINT}-{MAX_YEAR_CONSTRAINT})."
+    ),
+    recent_year_only: bool = Query(
+        False,
+        description="If true, calculates stats for only the most recent year period (2023-2024). When enabled, start_year and end_year are ignored and automatically set to 2023-2024."
     )
 ) -> Dict[str, int]:
+    # If recent_year_only is enabled, override the year parameters
+    if recent_year_only:
+        return {"start_year": 2023, "end_year": 2024}
+    
     if end_year < start_year:
         raise HTTPException(status_code=400, detail="End year cannot be before start year.")
-    if (end_year - start_year) < 2:
-        raise HTTPException(
-            status_code=400,
-            detail="The period must span at least 3 years (e.g., 2000-2002 means end_year - start_year >= 2)."
-        )
     return {"start_year": start_year, "end_year": end_year}
 
-# --- API Endpoint ---
+@app.get("/", include_in_schema=False)
+async def root():
+    return {"message": "UN Country Voting Report API. Access /docs for API documentation."}
+
+# --- Health Check Endpoint ---
+@app.get("/health", tags=["Health"])
+async def health_check():
+    """Check the health of the API."""
+    api_logger.info("Health check endpoint called.")
+    return {"status": "ok"}
+
+# --- Classic UN Voting Analysis Endpoints ---
+
 @app.get(
     "/report/{country_iso}",
     response_model=ReportResponse,
     tags=["Country Reports"],
     summary="Generate a country voting report",
-    description="Provides a detailed report on a country's UN voting patterns for a specified period."
+    description="Provides a detailed report on a country's UN voting patterns for a specified period. Use recent_year_only=true to get stats for just the most recent year (2023-2024)."
 )
 async def get_country_report_api(
     country_iso: str = Path(
@@ -83,7 +142,11 @@ async def get_country_report_api(
     start_year = year_params["start_year"]
     end_year = year_params["end_year"]
 
-    api_logger.info(f"Processing report generation for ISO: {country_iso}, Start: {start_year}, End: {end_year}")
+    # Check if this was a recent year request by seeing if it's 2023-2024
+    is_recent_year_request = start_year == 2023 and end_year == 2024
+    recent_year_suffix = " (recent year only)" if is_recent_year_request else ""
+    
+    api_logger.info(f"Processing report generation for ISO: {country_iso}, Start: {start_year}, End: {end_year}{recent_year_suffix}")
 
     try:
         report_data = generate_report(
@@ -114,17 +177,6 @@ async def get_country_report_api(
             status_code=500,
             detail=f"An internal server error occurred. Please contact support. Error type: {type(e).__name__}"
         )
-
-@app.get("/", include_in_schema=False)
-async def root():
-    return {"message": "UN Country Voting Report API. Access /docs for API documentation."}
-
-# --- Health Check Endpoint (New) ---
-@app.get("/health", tags=["Health"])
-async def health_check():
-    """Check the health of the API."""
-    api_logger.info("Health check endpoint called.")
-    return {"status": "ok"}
 
 # --- Yearly Rankings Endpoint ---
 @app.get(
@@ -178,6 +230,93 @@ async def get_yearly_rankings_api(
         raise HTTPException(
             status_code=500, 
             detail=f"An internal server error occurred while generating yearly rankings. Error type: {type(e).__name__}"
+        )
+
+# --- Security Council Analysis Endpoints ---
+
+
+
+
+
+
+# --- Security Council Analysis Endpoints ---
+
+
+@app.get(
+    "/sc/veto_analysis",
+    tags=["Security Council Analysis"],
+    summary="Get Security Council veto analysis",
+    description="Returns comprehensive analysis of Security Council veto patterns, power dynamics, and behavioral trends. Focuses on veto occurrences and P5 behavior patterns."
+)
+async def get_security_council_veto_analysis():
+    """Get Security Council veto analysis with canonical labels and deterministic statistics."""
+    api_logger.info("Processing Security Council veto analysis request")
+
+    try:
+        # Initialize data loader and analysis service
+        data_loader = SecurityCouncilDataLoader()
+        
+        # Try to get the fully enhanced data first, then fallback to available data
+        fully_enhanced_data_path = os.path.join(data_loader.base_path, 'fully_enhanced_veto_data.csv')
+        if data_loader.file_exists(fully_enhanced_data_path):
+            data_file = fully_enhanced_data_path
+        else:
+            data_file = data_loader.get_available_data_file()
+        
+        if not data_file:
+            raise HTTPException(
+                status_code=503,
+                detail="Security Council analysis data is not available."
+            )
+        
+        # Generate enhanced analysis using the simple endpoint helper
+        result = get_enhanced_veto_analysis()
+        
+        api_logger.info("Successfully generated Security Council analysis")
+        return result
+
+    except Exception as e:
+        api_logger.error(f"Error in Security Council analysis: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Security Council analysis not available: {str(e)}"
+        )
+
+@app.get(
+    "/sc/vote_analysis",
+    tags=["Security Council Analysis"],
+    summary="Get Security Council vote analysis",
+    description="Provides comprehensive analysis of Security Council voting patterns, consensus metrics, and behavioral trends. Focuses on complete voting behavior rather than just vetoes."
+)
+async def get_security_council_vote_analysis():
+    """Get comprehensive Security Council vote analysis covering all voting patterns."""
+    api_logger.info("Processing Security Council vote analysis request")
+
+    try:
+        # Initialize data loader and vote analysis service
+        data_loader = SecurityCouncilDataLoader()
+        vote_data_file = data_loader.get_vote_analysis_data_path()
+        
+        if not data_loader.file_exists(vote_data_file):
+            raise HTTPException(
+                status_code=503,
+                detail="Security Council vote analysis data is not available."
+            )
+        
+        # Initialize vote analysis service with the data file
+        vote_analysis_service = SecurityCouncilVoteAnalysisService(vote_data_file)
+        
+        # Generate comprehensive vote analysis
+        result = vote_analysis_service.get_comprehensive_vote_analysis()
+        
+        api_logger.info("Successfully generated Security Council vote analysis")
+        return result
+
+    except Exception as e:
+        api_logger.error(f"Error in Security Council vote analysis: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Security Council vote analysis not available: {str(e)}"
         )
 
 # Run with Uvicorn example (CLI):

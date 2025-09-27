@@ -23,13 +23,19 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install Google Chrome
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          # Install Chrome for Selenium
+          # Utilities for DNS check (dig)
           sudo apt-get update
-          sudo apt-get install google-chrome-stable -y
+          sudo apt-get install -y dnsutils
 
       - name: Check secrets are not empty and show lengths
         env:

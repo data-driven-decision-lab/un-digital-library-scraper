@@ -172,7 +172,8 @@ def generate_yearly_rankings(year: int) -> Tuple[Dict, Optional[str]]:
         if available_class_cols:
             df_class_subset = df_classifications[available_class_cols]
             # Merge the scores data with the classification data.
-            df_all_scores = pd.merge(df_scores, df_class_subset, on='country_name', how='left')
+            # Use 'country_code' as the merge key since both DataFrames have this column
+            df_all_scores = pd.merge(df_scores, df_class_subset, on='country_code', how='left')
         else:
             df_all_scores = df_scores.copy()
     else:
