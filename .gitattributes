@@ -1,0 +1,16 @@
+# Enforce LF endings in repo; Git will convert on checkout only if configured
+* text eol=lf
+
+# Common binary files (never touch line endings)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.xz binary
+*.7z binary
+*.csv text eol=lf
+*.tsv text eol=lf
+
