@@ -34,7 +34,7 @@ REGION_MAPPING_FILENAME = "UN_Country_Region_Mapping.csv" # Added
 # Year constraints for data consistency if used internally by this script
 # Primary validation for API parameters will be in the FastAPI layer.
 MIN_DATA_YEAR = 1946
-MAX_DATA_YEAR = 2024 # Updated to fixed max year as per user request
+MAX_DATA_YEAR = datetime.now().year - 1  # Dynamic: current year - 1
 DECIMAL_PLACES = 2
 
 # --- Helper Functions (copied from original, unchanged) ---
