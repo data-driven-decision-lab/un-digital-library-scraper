@@ -200,7 +200,7 @@ Contributions are welcome! Here's how you can help:
 2. Suggest features - Have ideas for improvements? Let us know
 3. Feel free to submit pull requests too!
 
-Reach out to the team at "hello@datadrivendecisionlab.com"
+Reach out to the team at "datadrivendecisionlab@gmail.com"
 
 ## Use Cases
 
