@@ -28,23 +28,24 @@ pip install -r requirements.txt
 
 # Set up environment variables
 cp .env.example .env
-# Edit .env to add your OpenAI API key
+# Edit .env to add: API_KEY, SUPABASE_URL, SUPABASE_KEY
 ```
 
 ## Quick Start
 
 ```bash
-# Run the complete pipeline
-python pipeline_complete.py
+# Run scraper (updates Supabase source tables)
+python -c "import sys; sys.path.insert(0, 'src'); from un_data_pipeline.scraper_pipeline import main; main()"
 
-## Project Structure
-
+# Run dashboard scoring pipeline (reads latest data from Supabase and writes website CSVs)
+python -m src.un_data_pipeline.dashboard_data_pipeline
 ```
 
 ## Project Structure
 
 
-* pipeline_complete.py                            # Main script integrating all functionality
+* src/un_data_pipeline/scraper_pipeline.py        # Scraper + tagging pipeline (writes to Supabase)
+* src/un_data_pipeline/dashboard_data_pipeline.py # Scoring pipeline (reads Supabase, writes website CSVs)
 * README.md                                       # This documentation
 * requirements.txt                                # Python dependencies
 * .env.example                                    # Template for environment variables

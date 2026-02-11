@@ -3,6 +3,7 @@ import numpy as np
 import os
 import sys
 import logging
+import time
 from collections import Counter
 import warnings
 from sklearn.metrics.pairwise import cosine_similarity
@@ -20,6 +21,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - [%(levelname)s] - 
 # --- Path Constants ---
 # Set paths relative to the project root.
 REFERENCE_DATA_DIR = '../../data/reference'
+EXPECTED_LATEST_YEAR = 2025
 
 # --- Dictionary Import ---
 # Add the 'src' directory to sys.path to allow for package imports
@@ -50,35 +52,125 @@ def get_supabase_client():
     
     return create_client(supabase_url, supabase_key)
 
-def load_data_from_supabase(table_name='un_votes_with_sc'):
+def load_data_from_supabase(table_name='un_votes_with_sc', page_size=1000, max_retries=3):
     """
-    Loads data from Supabase table.
+    Loads all data from a Supabase table using pagination.
     
     Args:
         table_name: Name of the Supabase table to load from
+        page_size: Number of rows to fetch per page
+        max_retries: Max retry attempts per page for transient errors
         
     Returns:
         pandas.DataFrame: Loaded data
     """
-    logging.info(f"Loading data from Supabase table: {table_name}")
+    logging.info(f"Loading data from Supabase table: {table_name} (page_size={page_size})")
     
     try:
         supabase = get_supabase_client()
-        
-        # Fetch all data from the table
-        response = supabase.table(table_name).select('*').execute()
-        
-        if response.data:
-            df = pd.DataFrame(response.data)
-            logging.info(f"Successfully loaded {len(df)} rows from {table_name}")
-            return df
-        else:
+
+        all_rows = []
+        page = 0
+
+        while True:
+            start_idx = page * page_size
+            end_idx = start_idx + page_size - 1
+            page_rows = None
+            last_error = None
+
+            for attempt in range(1, max_retries + 1):
+                try:
+                    response = (
+                        supabase.table(table_name)
+                        .select('*')
+                        .order('Date', desc=False, nullsfirst=False)
+                        .order('Resolution', desc=False, nullsfirst=False)
+                        .range(start_idx, end_idx)
+                        .execute()
+                    )
+                    page_rows = response.data or []
+                    break
+                except Exception as retry_error:
+                    last_error = retry_error
+                    logging.warning(
+                        f"Supabase page fetch failed for {table_name} "
+                        f"(page={page+1}, attempt={attempt}/{max_retries}): {retry_error}"
+                    )
+                    if attempt < max_retries:
+                        time.sleep(min(2 ** attempt, 8))
+
+            if page_rows is None:
+                raise RuntimeError(
+                    f"Failed to fetch page {page+1} from {table_name} after {max_retries} attempts: {last_error}"
+                )
+
+            if not page_rows:
+                break
+
+            all_rows.extend(page_rows)
+            logging.info(
+                f"Loaded page {page+1} from {table_name}: {len(page_rows)} rows "
+                f"(running total: {len(all_rows)})"
+            )
+            page += 1
+
+            if len(page_rows) < page_size:
+                break
+
+        if not all_rows:
             logging.warning(f"No data found in {table_name} table")
             return pd.DataFrame()
+
+        df = pd.DataFrame(all_rows)
+        logging.info(f"Successfully loaded {len(df)} rows from {table_name} across {page + 1} page(s)")
+        return df
             
     except Exception as e:
         logging.error(f"Error loading data from Supabase table {table_name}: {e}")
         return pd.DataFrame()
+
+def validate_source_year_coverage(df_raw, expected_year=EXPECTED_LATEST_YEAR):
+    """Validates source data includes at least the expected latest year."""
+    if df_raw.empty:
+        raise ValueError("Source data is empty; cannot validate year coverage.")
+    if 'Date' not in df_raw.columns:
+        raise ValueError("Source data missing required 'Date' column for year validation.")
+
+    dates = pd.to_datetime(df_raw['Date'], errors='coerce')
+    years = dates.dt.year.dropna()
+    if years.empty:
+        raise ValueError("Source data has no parseable dates; cannot validate year coverage.")
+
+    max_year = int(years.max())
+    logging.info(f"Source data year coverage: min={int(years.min())}, max={max_year}")
+    if max_year < expected_year:
+        raise ValueError(
+            f"Source data max year is {max_year}, expected at least {expected_year}. "
+            "Refusing to generate outputs from incomplete source data."
+        )
+
+def validate_output_contains_year(df, output_name, expected_year=EXPECTED_LATEST_YEAR):
+    """Ensures an output dataframe contains the expected year in its Year/year column."""
+    if df is None or df.empty:
+        raise ValueError(f"{output_name} is empty; expected output including year {expected_year}.")
+
+    year_col = None
+    if 'Year' in df.columns:
+        year_col = 'Year'
+    elif 'year' in df.columns:
+        year_col = 'year'
+
+    if not year_col:
+        raise ValueError(f"{output_name} has no Year/year column; cannot validate {expected_year} coverage.")
+
+    years = pd.to_numeric(df[year_col], errors='coerce').dropna().astype(int)
+    if years.empty:
+        raise ValueError(f"{output_name} has no parseable year values; expected year {expected_year}.")
+    if expected_year not in set(years.tolist()):
+        raise ValueError(
+            f"{output_name} is missing required year {expected_year}. "
+            f"Available year range: {int(years.min())}-{int(years.max())}."
+        )
 
 def save_data_to_supabase(df, table_name):
     """
@@ -662,12 +754,15 @@ def main():
     logging.info("==============================================================================")
 
     # --- 1. Load Data from Supabase ---
-    df_raw = load_data_from_supabase('un_votes_with_sc')
+    source_table = os.getenv('PIPELINE_SOURCE_TABLE', 'un_votes_with_sc')
+    logging.info(f"Using Supabase source table: {source_table}")
+    df_raw = load_data_from_supabase(source_table)
     if df_raw.empty:
-        logging.error("No data found in un_votes_with_sc table. Exiting.")
+        logging.error(f"No data found in {source_table} table. Exiting.")
         sys.exit(1)
     
-    logging.info(f"Successfully loaded {len(df_raw)} rows from un_votes_with_sc table.")
+    logging.info(f"Successfully loaded {len(df_raw)} rows from {source_table} table.")
+    validate_source_year_coverage(df_raw, expected_year=EXPECTED_LATEST_YEAR)
     
     # Filter out Security Council resolutions
     df_filtered = df_raw[~df_raw['Resolution'].str.startswith('S/', na=False)].copy()
@@ -695,36 +790,43 @@ def main():
     df_topic_votes = generate_topic_votes(df_filtered.copy())
     df_similarity = generate_similarity_matrix(df_filtered.copy())
 
-    # --- 3. Save Outputs to Supabase ---
-    logging.info("Saving processed data to Supabase tables...")
+    # --- 3. Save Outputs ---
+    logging.info("Saving processed data...")
     
     # Save to Supabase tables
     logging.info(f"About to save annual_scores: {df_annual_scores.shape}")
     logging.info(f"Annual scores columns: {list(df_annual_scores.columns)}")
     logging.info(f"Annual scores sample data:\n{df_annual_scores.head()}")
     save_data_to_supabase(df_annual_scores, 'annual_scores')
-    save_data_to_supabase(df_topic_votes, 'topic_votes_yearly')
-    save_data_to_supabase(df_similarity, 'pairwise_similarity_yearly')
     
-    # Optional: Save locally as backup (commented out to focus on Supabase)
-    # if not os.path.exists(OUTPUT_DATA_DIR):
-    #     os.makedirs(OUTPUT_DATA_DIR)
-    #     logging.info(f"Created output directory: {OUTPUT_DATA_DIR}")
-    # 
-    # # Define output paths
-    # annual_scores_path = os.path.join(OUTPUT_DATA_DIR, 'annual_scores.csv')
-    # topic_votes_path = os.path.join(OUTPUT_DATA_DIR, 'topic_votes_yearly.csv')
-    # similarity_path = os.path.join(OUTPUT_DATA_DIR, 'pairwise_similarity_yearly.csv')
-    # 
-    # # Save files locally as backup
-    # df_annual_scores.to_csv(annual_scores_path, index=False)
-    # logging.info(f"Successfully saved annual scores to: {annual_scores_path}")
-    # 
-    # df_topic_votes.to_csv(topic_votes_path, index=False)
-    # logging.info(f"Successfully saved topic votes to: {topic_votes_path}")
-    # 
-    # df_similarity.to_csv(similarity_path, index=False)
-    # logging.info(f"Successfully saved similarity matrix to: {similarity_path}")
+    # Save locally as CSV files (avoids Supabase timeout issues with large tables)
+    OUTPUT_DATA_DIR = os.path.join(PROJECT_ROOT, 'src', 'un_report_api', 'app', 'required_csvs')
+    
+    if not os.path.exists(OUTPUT_DATA_DIR):
+        os.makedirs(OUTPUT_DATA_DIR)
+        logging.info(f"Created output directory: {OUTPUT_DATA_DIR}")
+    
+    # Define output paths
+    annual_scores_path = os.path.join(OUTPUT_DATA_DIR, 'annual_scores.csv')
+    topic_votes_path = os.path.join(OUTPUT_DATA_DIR, 'topic_votes_yearly.csv')
+    similarity_path = os.path.join(OUTPUT_DATA_DIR, 'pairwise_similarity_yearly.csv')
+    
+    # Save files locally
+    logging.info("Saving CSV files locally...")
+    df_annual_scores.to_csv(annual_scores_path, index=False)
+    logging.info(f"Successfully saved annual scores to: {annual_scores_path}")
+    
+    df_topic_votes.to_csv(topic_votes_path, index=False)
+    logging.info(f"Successfully saved topic votes to: {topic_votes_path}")
+    
+    df_similarity.to_csv(similarity_path, index=False)
+    logging.info(f"Successfully saved similarity matrix to: {similarity_path}")
+
+    # --- 4. Validate required year coverage in outputs ---
+    validate_output_contains_year(df_annual_scores, 'annual_scores.csv', expected_year=EXPECTED_LATEST_YEAR)
+    validate_output_contains_year(df_topic_votes, 'topic_votes_yearly.csv', expected_year=EXPECTED_LATEST_YEAR)
+    validate_output_contains_year(df_similarity, 'pairwise_similarity_yearly.csv', expected_year=EXPECTED_LATEST_YEAR)
+    logging.info(f"Validated required year coverage ({EXPECTED_LATEST_YEAR}) in all output CSV datasets.")
     
     logging.info("==============================================================================")
     logging.info("Pipeline finished successfully!")
@@ -733,4 +835,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main() 
+    main()
