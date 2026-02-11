@@ -57,7 +57,7 @@ from typing import List, Optional
 # --- FastAPI App Initialization ---
 app = FastAPI(
     title="UN Country Voting Report API",
-    description="Generates a JSON report for UN voting patterns of a specific country over a time period (Years: 1946-2024).",
+    description=f"Generates a JSON report for UN voting patterns of a specific country over a time period (Years: 1946-{MAX_YEAR_CONSTRAINT}).",
     version="1.2.0" # Incremented version due to new endpoint and CORS update
 )
 
@@ -100,12 +100,12 @@ async def validate_year_params(
     ),
     recent_year_only: bool = Query(
         False,
-        description="If true, calculates stats for only the most recent year period (2023-2024). When enabled, start_year and end_year are ignored and automatically set to 2023-2024."
+        description=f"If true, calculates stats for only the most recent year period ({MAX_YEAR_CONSTRAINT-1}-{MAX_YEAR_CONSTRAINT}). When enabled, start_year and end_year are ignored and automatically set to the most recent 2-year period."
     )
 ) -> Dict[str, int]:
     # If recent_year_only is enabled, override the year parameters
     if recent_year_only:
-        return {"start_year": 2023, "end_year": 2024}
+        return {"start_year": MAX_YEAR_CONSTRAINT - 1, "end_year": MAX_YEAR_CONSTRAINT}
     
     if end_year < start_year:
         raise HTTPException(status_code=400, detail="End year cannot be before start year.")
@@ -129,7 +129,7 @@ async def health_check():
     response_model=ReportResponse,
     tags=["Country Reports"],
     summary="Generate a country voting report",
-    description="Provides a detailed report on a country's UN voting patterns for a specified period. Use recent_year_only=true to get stats for just the most recent year (2023-2024)."
+    description=f"Provides a detailed report on a country's UN voting patterns for a specified period. Use recent_year_only=true to get stats for just the most recent year ({MAX_YEAR_CONSTRAINT-1}-{MAX_YEAR_CONSTRAINT})."
 )
 async def get_country_report_api(
     country_iso: str = Path(
@@ -142,8 +142,8 @@ async def get_country_report_api(
     start_year = year_params["start_year"]
     end_year = year_params["end_year"]
 
-    # Check if this was a recent year request by seeing if it's 2023-2024
-    is_recent_year_request = start_year == 2023 and end_year == 2024
+    # Check if this was a recent year request by seeing if it's the last 2 years
+    is_recent_year_request = start_year == MAX_YEAR_CONSTRAINT - 1 and end_year == MAX_YEAR_CONSTRAINT
     recent_year_suffix = " (recent year only)" if is_recent_year_request else ""
     
     api_logger.info(f"Processing report generation for ISO: {country_iso}, Start: {start_year}, End: {end_year}{recent_year_suffix}")

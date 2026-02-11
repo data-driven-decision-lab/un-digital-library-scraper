@@ -2,10 +2,11 @@
 
 from pydantic import BaseModel, Field, validator
 from typing import List, Optional, Dict
+from datetime import datetime
 
 # --- Constants for Validation (as per user request) ---
 MIN_YEAR_CONSTRAINT = 1946
-MAX_YEAR_CONSTRAINT = 2024 # Fixed max year
+MAX_YEAR_CONSTRAINT = datetime.now().year - 1  # Dynamic: current year - 1
 
 # --- Nested Models for the Report Structure ---
 class ReportMetadata(BaseModel):
