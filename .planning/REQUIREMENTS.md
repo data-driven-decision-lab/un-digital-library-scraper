@@ -7,10 +7,10 @@
 
 ### Repo Cleanup
 
-- [ ] **CLEAN-01**: Remove `src/un_report_apiold/` directory and all dead code
-- [ ] **CLEAN-02**: Remove junk test resolution `A/RES/79/125` from raw data references
-- [ ] **CLEAN-03**: Clean junk tags (`test`, `data-type-fix`, empty strings) from pipeline logic
-- [ ] **CLEAN-04**: Remove or archive unused files, scripts, and stale CSV artifacts
+- [x] **CLEAN-01**: Remove `src/un_report_apiold/` directory and all dead code
+- [x] **CLEAN-02**: Remove junk test resolution `A/RES/79/125` from raw data references
+- [x] **CLEAN-03**: Clean junk tags (`test`, `data-type-fix`, empty strings) from pipeline logic
+- [x] **CLEAN-04**: Remove or archive unused files, scripts, and stale CSV artifacts
 
 ### Database Migration
 
@@ -71,10 +71,10 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CLEAN-01 | Phase 1 | Pending |
-| CLEAN-02 | Phase 1 | Pending |
-| CLEAN-03 | Phase 1 | Pending |
-| CLEAN-04 | Phase 1 | Pending |
+| CLEAN-01 | Phase 1 | Complete |
+| CLEAN-02 | Phase 1 | Complete |
+| CLEAN-03 | Phase 1 | Complete |
+| CLEAN-04 | Phase 1 | Complete |
 | DB-01 | Phase 2 | Pending |
 | DB-02 | Phase 2 | Pending |
 | DB-03 | Phase 2 | Pending |
