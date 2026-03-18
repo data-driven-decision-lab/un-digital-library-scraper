@@ -4,12 +4,15 @@ import os
 import sys
 import logging
 import time
+import json
+import uuid
 from collections import Counter
+from datetime import datetime
 import warnings
 from sklearn.metrics.pairwise import cosine_similarity
 from tqdm.auto import tqdm
 import ast
-from supabase import create_client, Client
+import libsql_experimental as libsql
 
 # ==============================================================================
 # INITIAL SETUP
@@ -39,95 +42,186 @@ except ImportError:
     main_category_keys = set()
 
 # ==============================================================================
-# SUPABASE FUNCTIONS
+# TURSO FUNCTIONS
 # ==============================================================================
 
-def get_supabase_client():
-    """Get Supabase client with error handling."""
-    supabase_url = os.getenv("SUPABASE_URL", "https://gjakiqtayqltssvbzasd.supabase.co")
-    supabase_key = os.getenv("SUPABASE_KEY")
-    
-    if not supabase_key:
-        raise ValueError("SUPABASE_KEY environment variable not set.")
-    
-    return create_client(supabase_url, supabase_key)
+def get_turso_connection():
+    """Get libsql connection to Turso."""
+    url = os.getenv("TURSO_DATABASE_URL")
+    auth_token = os.getenv("TURSO_AUTH_TOKEN")
+    if not url:
+        raise ValueError("TURSO_DATABASE_URL environment variable not set.")
+    if not auth_token:
+        raise ValueError("TURSO_AUTH_TOKEN environment variable not set.")
+    return libsql.connect(url, auth_token=auth_token)
 
-def load_data_from_supabase(table_name='un_votes_with_sc', page_size=1000, max_retries=3):
+
+def _expand_vote_data(df):
     """
-    Loads all data from a Supabase table using pagination.
-    
+    Expand the vote_data JSON column into per-country columns.
+    Called after loading from Turso when vote_data column is present.
+    """
+    if 'vote_data' not in df.columns:
+        return df
+    try:
+        vote_df = df['vote_data'].apply(json.loads).apply(pd.Series)
+        df = pd.concat([df.drop('vote_data', axis=1), vote_df], axis=1)
+    except Exception as e:
+        logging.warning(f"Could not expand vote_data column: {e}")
+    return df
+
+
+def load_data_from_turso(table_name='un_votes_with_sc', page_size=1000):
+    """
+    Loads all data from a Turso (LibSQL) table.
+
     Args:
-        table_name: Name of the Supabase table to load from
-        page_size: Number of rows to fetch per page
-        max_retries: Max retry attempts per page for transient errors
-        
+        table_name: Name of the table to load from
+        page_size: Unused — kept for API compatibility; LibSQL fetches all rows at once
+
     Returns:
         pandas.DataFrame: Loaded data
     """
-    logging.info(f"Loading data from Supabase table: {table_name} (page_size={page_size})")
-    
+    logging.info(f"Loading data from Turso table: {table_name}")
+
     try:
-        supabase = get_supabase_client()
+        conn = get_turso_connection()
 
-        all_rows = []
-        page = 0
+        # Get column names first
+        cursor = conn.execute(f"SELECT * FROM {table_name} LIMIT 1")
+        cols = [d[0] for d in cursor.description]
 
-        while True:
-            start_idx = page * page_size
-            end_idx = start_idx + page_size - 1
-            page_rows = None
-            last_error = None
+        # Fetch all rows
+        rows = conn.execute(f"SELECT * FROM {table_name}").fetchall()
 
-            for attempt in range(1, max_retries + 1):
-                try:
-                    response = (
-                        supabase.table(table_name)
-                        .select('*')
-                        .order('Date', desc=False, nullsfirst=False)
-                        .order('Resolution', desc=False, nullsfirst=False)
-                        .range(start_idx, end_idx)
-                        .execute()
-                    )
-                    page_rows = response.data or []
-                    break
-                except Exception as retry_error:
-                    last_error = retry_error
-                    logging.warning(
-                        f"Supabase page fetch failed for {table_name} "
-                        f"(page={page+1}, attempt={attempt}/{max_retries}): {retry_error}"
-                    )
-                    if attempt < max_retries:
-                        time.sleep(min(2 ** attempt, 8))
-
-            if page_rows is None:
-                raise RuntimeError(
-                    f"Failed to fetch page {page+1} from {table_name} after {max_retries} attempts: {last_error}"
-                )
-
-            if not page_rows:
-                break
-
-            all_rows.extend(page_rows)
-            logging.info(
-                f"Loaded page {page+1} from {table_name}: {len(page_rows)} rows "
-                f"(running total: {len(all_rows)})"
-            )
-            page += 1
-
-            if len(page_rows) < page_size:
-                break
-
-        if not all_rows:
+        if not rows:
             logging.warning(f"No data found in {table_name} table")
             return pd.DataFrame()
 
-        df = pd.DataFrame(all_rows)
-        logging.info(f"Successfully loaded {len(df)} rows from {table_name} across {page + 1} page(s)")
+        df = pd.DataFrame(rows, columns=cols)
+        logging.info(f"Successfully loaded {len(df)} rows from {table_name}")
+
+        # Expand vote_data JSON column if present
+        df = _expand_vote_data(df)
+
         return df
-            
+
     except Exception as e:
-        logging.error(f"Error loading data from Supabase table {table_name}: {e}")
+        logging.error(f"Error loading data from Turso table {table_name}: {e}")
         return pd.DataFrame()
+
+
+def save_data_to_turso(df: pd.DataFrame, table_name: str) -> int:
+    """
+    Saves processed data to a Turso (LibSQL) table using upsert (INSERT OR REPLACE).
+
+    Args:
+        df: DataFrame to save
+        table_name: Name of the Turso table to save to
+
+    Returns:
+        int: Number of rows saved
+    """
+    if df.empty:
+        logging.info(f"No data to save to {table_name}")
+        return 0
+
+    logging.info(f"Saving {len(df)} rows to Turso table: {table_name}")
+
+    try:
+        conn = get_turso_connection()
+
+        # Replace NaN with None for SQL compatibility
+        df_to_upload = df.where(pd.notna(df), None)
+
+        # Handle datetime columns — convert to ISO string
+        for col in df_to_upload.columns:
+            if pd.api.types.is_datetime64_any_dtype(df_to_upload[col]):
+                df_to_upload[col] = df_to_upload[col].dt.strftime('%Y-%m-%d %H:%M:%S')
+
+        # Handle numeric columns: keep floats as floats (LibSQL handles them natively).
+        # Keep the abs(x) > 1e3 guard for safety (Phase 3 will address this per PIPE-05).
+        # Remove the old string-conversion step that was only needed for JSON/Supabase.
+        for col in df_to_upload.columns:
+            if col in ['Yes Votes', 'No Votes', 'Abstain Votes', 'Total Votes in Year',
+                       'YesVotes_Topic', 'NoVotes_Topic', 'AbstainVotes_Topic', 'TotalVotes_Topic',
+                       'Year', 'Overall Rank', 'Pillar 1 Rank', 'Pillar 2 Rank', 'Pillar 3 Rank']:
+                df_to_upload[col] = pd.to_numeric(df_to_upload[col], errors='coerce').astype('Int64')
+                # Convert pandas NA to Python None for libsql compatibility
+                df_to_upload[col] = df_to_upload[col].where(pd.notna(df_to_upload[col]), None)
+                df_to_upload[col] = df_to_upload[col].apply(lambda x: int(x) if x is not None else None)
+            elif col in ['Pillar 1 Score', 'Pillar 2 Score', 'Pillar 3 Score',
+                         'Total Index Average', 'Overall Rank Rolling Avg (3y)',
+                         'Total Index Normalized', 'Pillar 1 Normalized', 'Pillar 2 Normalized',
+                         'Pillar 3 Normalized', 'CosineSimilarity']:
+                df_to_upload[col] = pd.to_numeric(df_to_upload[col], errors='coerce')
+                df_to_upload[col] = df_to_upload[col].replace([np.inf, -np.inf], None)
+                # Keep abs(x) > 1e3 guard (Phase 3 fix per PIPE-05)
+                df_to_upload[col] = df_to_upload[col].apply(
+                    lambda x: None if pd.isna(x) or (x is not None and abs(x) > 1e3) else x
+                )
+                df_to_upload[col] = df_to_upload[col].apply(
+                    lambda x: round(x, 4) if x is not None and isinstance(x, float) else x
+                )
+
+        # Remove id column if present (auto-generated by DB)
+        cols = [c for c in df_to_upload.columns if c != 'id']
+
+        placeholders = ', '.join(['?' for _ in cols])
+        col_names = ', '.join([f'"{c}"' for c in cols])
+        sql = f'INSERT OR REPLACE INTO {table_name} ({col_names}) VALUES ({placeholders})'
+
+        # Build rows as list of tuples
+        all_rows = [tuple(row[c] for c in cols) for _, row in df_to_upload.iterrows()]
+
+        # Batch in groups of 1000 to avoid memory issues
+        batch_size = 1000
+        total_rows = len(all_rows)
+        num_batches = (total_rows + batch_size - 1) // batch_size
+
+        logging.info(f"Upserting {total_rows} rows into {table_name} in {num_batches} batch(es)")
+
+        for i in range(num_batches):
+            batch = all_rows[i * batch_size:(i + 1) * batch_size]
+            conn.executemany(sql, batch)
+            conn.commit()
+            logging.info(f"Upserted batch {i + 1}/{num_batches} ({len(batch)} rows)")
+
+        logging.info(f"Successfully saved {total_rows} rows to {table_name}")
+        return total_rows
+
+    except Exception as e:
+        logging.error(f"Error saving data to Turso table {table_name}: {e}")
+        raise
+
+
+# ==============================================================================
+# UTILITY FUNCTIONS (Consolidated)
+# ==============================================================================
+
+# Removed find_latest_raw_data_csv - now using Turso
+
+def identify_country_columns(df_columns):
+    """Identifies likely country ISO3 columns (3 uppercase letters)."""
+    potential_countries = [col for col in df_columns if isinstance(col, str) and len(col) == 3 and col.isupper()]
+    known_non_countries = {'YES', 'NO'}
+    return sorted([col for col in potential_countries if col not in known_non_countries])
+
+def load_region_mapping(mapping_file_path):
+    """Loads the country to UN region mapping CSV."""
+    try:
+        df_regions = pd.read_csv(mapping_file_path)
+        iso_col = df_regions.columns[2].strip()
+        region_col = df_regions.columns[3].strip()
+        df_regions.dropna(subset=[iso_col, region_col], inplace=True)
+        mapping = pd.Series(df_regions[region_col].values, index=df_regions[iso_col]).to_dict()
+        logging.info(f"Loaded region mapping for {len(mapping)} countries.")
+        if 'RUS' in mapping and 'USSR' not in mapping:
+            mapping['USSR'] = mapping['RUS']
+        return mapping
+    except Exception as e:
+        logging.error(f"Failed to load or process region mapping file {mapping_file_path}: {e}")
+        return None
 
 def validate_source_year_coverage(df_raw, expected_year=EXPECTED_LATEST_YEAR):
     """Validates source data includes at least the expected latest year."""
@@ -172,140 +266,6 @@ def validate_output_contains_year(df, output_name, expected_year=EXPECTED_LATEST
             f"Available year range: {int(years.min())}-{int(years.max())}."
         )
 
-def save_data_to_supabase(df, table_name):
-    """
-    Saves processed data to Supabase table.
-    
-    Args:
-        df: DataFrame to save
-        table_name: Name of the Supabase table to save to
-    """
-    if df.empty:
-        logging.info(f"No data to save to {table_name}")
-        return
-    
-    logging.info(f"Saving {len(df)} rows to Supabase table: {table_name}")
-    
-    try:
-        supabase = get_supabase_client()
-        
-        # Prepare data for upload
-        df_to_upload = df.copy()
-        df_to_upload.replace({np.nan: None}, inplace=True)
-        
-        # Handle datetime columns
-        for col in df_to_upload.columns:
-            if pd.api.types.is_datetime64_any_dtype(df_to_upload[col]):
-                df_to_upload[col] = df_to_upload[col].dt.strftime('%Y-%m-%d %H:%M:%S')
-        
-        # Handle numeric columns properly and fix JSON serialization issues
-        for col in df_to_upload.columns:
-            if col in ['Yes Votes', 'No Votes', 'Abstain Votes', 'Total Votes in Year', 'YesVotes_Topic', 'NoVotes_Topic', 'AbstainVotes_Topic', 'TotalVotes_Topic', 'Year', 'Overall Rank', 'Pillar 1 Rank', 'Pillar 2 Rank', 'Pillar 3 Rank']:
-                # Convert to integer, handling NaN values
-                df_to_upload[col] = pd.to_numeric(df_to_upload[col], errors='coerce').astype('Int64')
-            elif col in ['Pillar 1 Score', 'Pillar 2 Score', 'Pillar 3 Score', 'Total Index Average', 'Overall Rank Rolling Avg (3y)', 'Total Index Normalized', 'Pillar 1 Normalized', 'Pillar 2 Normalized', 'Pillar 3 Normalized', 'CosineSimilarity']:
-                # Convert to numeric, handling NaN values and replacing inf/-inf with None
-                df_to_upload[col] = pd.to_numeric(df_to_upload[col], errors='coerce')
-                # Replace inf, -inf, and very large values with None for JSON compatibility
-                df_to_upload[col] = df_to_upload[col].replace([np.inf, -np.inf], None)
-                # Replace very large values that might cause JSON issues (very conservative threshold)
-                df_to_upload[col] = df_to_upload[col].apply(lambda x: None if pd.isna(x) or abs(x) > 1e3 else x)
-                # Round to reasonable precision to avoid floating point issues
-                df_to_upload[col] = df_to_upload[col].apply(lambda x: round(x, 4) if pd.notna(x) and isinstance(x, (int, float)) else x)
-                # Convert to string to avoid any JSON serialization issues
-                df_to_upload[col] = df_to_upload[col].astype(str)
-                # Replace 'nan' strings with None
-                df_to_upload[col] = df_to_upload[col].replace('nan', None)
-        
-        # Remove id column if it exists (let Supabase auto-generate it)
-        if 'id' in df_to_upload.columns:
-            df_to_upload = df_to_upload.drop('id', axis=1)
-        
-        rows_to_insert = df_to_upload.to_dict(orient='records')
-        
-        # Clear existing data
-        supabase.table(table_name).delete().neq('id', 0).execute()  # Delete all rows
-        
-        # Insert data in batches to avoid timeout issues
-        batch_size = 1000 if len(rows_to_insert) > 10000 else 5000
-        total_rows = len(rows_to_insert)
-        num_batches = (total_rows + batch_size - 1) // batch_size
-        
-        logging.info(f"Uploading {total_rows} rows to {table_name} in {num_batches} batches of {batch_size}")
-        
-        for i in range(num_batches):
-            start_idx = i * batch_size
-            end_idx = min((i + 1) * batch_size, total_rows)
-            batch_rows = rows_to_insert[start_idx:end_idx]
-            
-            # Debug the first batch for JSON issues
-            if i == 0:
-                logging.info(f"Debugging first batch ({len(batch_rows)} rows)...")
-                try:
-                    import json
-                    json.dumps(batch_rows)
-                    logging.info("First batch JSON serialization test passed")
-                except Exception as json_error:
-                    logging.error(f"First batch JSON serialization failed: {json_error}")
-                    # Check each row in the first batch
-                    for j, row in enumerate(batch_rows[:3]):  # Check first 3 rows
-                        try:
-                            json.dumps(row)
-                            logging.info(f"  Row {j}: OK")
-                        except Exception as row_error:
-                            logging.error(f"  Row {j}: FAILED - {row_error}")
-                            # Check each value in the problematic row
-                            for key, value in row.items():
-                                try:
-                                    json.dumps({key: value})
-                                except Exception as val_error:
-                                    logging.error(f"    Problematic value: {key} = {value} (type: {type(value)}) - {val_error}")
-                    raise json_error
-            
-            try:
-                supabase.table(table_name).insert(batch_rows).execute()
-                logging.info(f"Uploaded batch {i+1}/{num_batches} ({len(batch_rows)} rows)")
-                # Small delay to avoid overwhelming the API
-                if i < num_batches - 1:  # Don't delay after the last batch
-                    import time
-                    time.sleep(0.1)
-            except Exception as batch_error:
-                logging.error(f"Error uploading batch {i+1}/{num_batches}: {batch_error}")
-                raise batch_error
-        
-        logging.info(f"Successfully saved {len(df_to_upload)} rows to {table_name}")
-        
-    except Exception as e:
-        logging.error(f"Error saving data to Supabase table {table_name}: {e}")
-
-# ==============================================================================
-# UTILITY FUNCTIONS (Consolidated)
-# ==============================================================================
-
-# Removed find_latest_raw_data_csv - now using Supabase
-
-def identify_country_columns(df_columns):
-    """Identifies likely country ISO3 columns (3 uppercase letters)."""
-    potential_countries = [col for col in df_columns if isinstance(col, str) and len(col) == 3 and col.isupper()]
-    known_non_countries = {'YES', 'NO'}
-    return sorted([col for col in potential_countries if col not in known_non_countries])
-
-def load_region_mapping(mapping_file_path):
-    """Loads the country to UN region mapping CSV."""
-    try:
-        df_regions = pd.read_csv(mapping_file_path)
-        iso_col = df_regions.columns[2].strip()
-        region_col = df_regions.columns[3].strip()
-        df_regions.dropna(subset=[iso_col, region_col], inplace=True)
-        mapping = pd.Series(df_regions[region_col].values, index=df_regions[iso_col]).to_dict()
-        logging.info(f"Loaded region mapping for {len(mapping)} countries.")
-        if 'RUS' in mapping and 'USSR' not in mapping:
-            mapping['USSR'] = mapping['RUS']
-        return mapping
-    except Exception as e:
-        logging.error(f"Failed to load or process region mapping file {mapping_file_path}: {e}")
-        return None
-
 # ==============================================================================
 # DATA PROCESSING PIPELINE
 #
@@ -348,7 +308,7 @@ def generate_combined_index(df_main, country_to_region_map, bloc_size_p1=4):
             tags_flat = [str(item).strip() for item in ast.literal_eval(tag_string)[0]]
         except:
             tags_flat = [tag.strip() for tag in str(tag_string).strip('[]').split(',')]
-        
+
         for main_tag in tags_flat:
             if main_tag in un_classification:
                 for sub_tag in tags_flat:
@@ -505,7 +465,7 @@ def generate_combined_index(df_main, country_to_region_map, bloc_size_p1=4):
     if normalized_pillar_cols:
         # Change 1: Calculate 'Total Index Average' from the mean of *normalized* pillars.
         final_df['Total Index Average'] = final_df[normalized_pillar_cols].mean(axis=1, skipna=True)
-        
+
         # The 'Total Index Normalized' is now a direct copy of this new average, without re-normalizing.
         final_df['Total Index Normalized'] = final_df['Total Index Average']
 
@@ -524,7 +484,7 @@ def generate_combined_index(df_main, country_to_region_map, bloc_size_p1=4):
             final_df['Total Index Normalized'] = final_df.groupby('Year')['Total Index Average'].transform(min_max_normalize_100)
 
     final_df.rename(columns={'Country': 'Country name', 'Pillar1': 'Pillar 1 Score', 'Pillar2': 'Pillar 2 Score', 'Pillar3': 'Pillar 3 Score', 'Pillar1_Normalized': 'Pillar 1 Normalized', 'Pillar1_Rank': 'Pillar 1 Rank', 'Pillar2_Normalized': 'Pillar 2 Normalized', 'Pillar2_Rank': 'Pillar 2 Rank', 'Pillar3_Normalized': 'Pillar 3 Normalized', 'Pillar3_Rank': 'Pillar 3 Rank'}, inplace=True)
-    
+
     # Convert 2-letter country codes to 3-letter codes
     logging.info("Converting country codes from 2-letter to 3-letter format...")
     try:
@@ -537,14 +497,14 @@ def generate_combined_index(df_main, country_to_region_map, bloc_size_p1=4):
                 except:
                     return country_code
             return country_code
-        
+
         final_df['Country name'] = final_df['Country name'].apply(convert_country_code)
         logging.info("Country code conversion completed.")
     except ImportError:
         logging.warning("pycountry not available, skipping country code conversion.")
     except Exception as e:
         logging.warning(f"Error converting country codes: {e}")
-    
+
     logging.info("Step 1: Combined Index generation finished.")
     return final_df
 
@@ -582,11 +542,11 @@ def generate_annual_scores(df_combined_index):
 
     # Filter to only columns that actually exist in the input dataframe
     cols_to_keep = [col for col in core_cols if col in df_combined_index.columns]
-    
+
     if len(cols_to_keep) <= 2: # Only country and year found
         logging.error("ANNUAL SCORES: No relevant score/rank or vote columns found. Aborting.")
         return pd.DataFrame()
-        
+
     df_annual = df_combined_index[cols_to_keep].copy()
 
     # Change 2: Overwrite 'score' columns with their 'normalized' counterparts for the final output.
@@ -620,7 +580,7 @@ def generate_topic_votes(df_raw):
     if un_classification is None:
         logging.warning("Topic Votes step skipped: 'un_classification' dictionary not available.")
         return pd.DataFrame()
-    
+
     logging.info("Step 3A: Starting Topic Votes generation...")
 
     def parse_tags_for_subtag1(tag_string):
@@ -678,10 +638,10 @@ def generate_topic_votes(df_raw):
     df_counts = df_counts.rename(columns={'YES': 'YesVotes_Topic', 'NO': 'NoVotes_Topic', 'ABSTAIN': 'AbstainVotes_Topic'})
     df_counts['TotalVotes_Topic'] = df_counts[['YesVotes_Topic', 'NoVotes_Topic', 'AbstainVotes_Topic']].sum(axis=1)
     df_final = df_counts.reset_index().rename(columns={'TopicTags': 'TopicTag'})
-    
+
     final_cols_order = ['Year', 'Country', 'TopicTag', 'YesVotes_Topic', 'NoVotes_Topic', 'AbstainVotes_Topic', 'TotalVotes_Topic']
     df_final = df_final[final_cols_order]
-    
+
     logging.info(f"Step 3A: Topic Votes generation finished. Shape: {df_final.shape}")
     return df_final
 
@@ -695,7 +655,7 @@ def generate_similarity_matrix(df_raw):
     Calculates pairwise cosine similarity between countries for each year.
     """
     logging.info("Step 3B: Starting Pairwise Similarity generation...")
-    
+
     def map_vote(vote):
         if pd.isna(vote): return 0
         vote_str = str(vote).upper().strip()
@@ -736,7 +696,7 @@ def generate_similarity_matrix(df_raw):
 
     final_df = pd.concat(all_year_similarities, ignore_index=True)
     final_df = final_df[['Year', 'Country1_ISO3', 'Country2_ISO3', 'CosineSimilarity']]
-    
+
     logging.info(f"Step 3B: Pairwise Similarity generation finished. Shape: {final_df.shape}")
     return final_df
 
@@ -747,91 +707,146 @@ def generate_similarity_matrix(df_raw):
 def main():
     """
     Main function to orchestrate the entire data processing pipeline.
-    Now Supabase-native: reads from un_votes_with_sc and saves processed data to Supabase tables.
+    Now Turso-native: reads from un_votes_with_sc and saves processed data to Turso tables.
     """
     logging.info("==============================================================================")
-    logging.info("Starting Supabase-native Dashboard Data Pipeline")
+    logging.info("Starting Turso-native Dashboard Data Pipeline")
     logging.info("==============================================================================")
 
-    # --- 1. Load Data from Supabase ---
-    source_table = os.getenv('PIPELINE_SOURCE_TABLE', 'un_votes_with_sc')
-    logging.info(f"Using Supabase source table: {source_table}")
-    df_raw = load_data_from_supabase(source_table)
-    if df_raw.empty:
-        logging.error(f"No data found in {source_table} table. Exiting.")
-        sys.exit(1)
-    
-    logging.info(f"Successfully loaded {len(df_raw)} rows from {source_table} table.")
-    validate_source_year_coverage(df_raw, expected_year=EXPECTED_LATEST_YEAR)
-    
-    # Filter out Security Council resolutions
-    df_filtered = df_raw[~df_raw['Resolution'].str.startswith('S/', na=False)].copy()
-    logging.info(f"Filtered out Security Council resolutions, {len(df_filtered)} rows remaining.")
+    run_id = str(uuid.uuid4())
 
-    # Create 'Year' column from 'Date'
-    df_filtered['Date'] = pd.to_datetime(df_filtered['Date'], errors='coerce')
-    df_filtered.dropna(subset=['Date'], inplace=True)
-    df_filtered['Year'] = df_filtered['Date'].dt.year
-    logging.info("Created 'Year' column from 'Date'.")
+    # --- Record pipeline start in pipeline_runs ---
+    conn = get_turso_connection()
+    conn.execute(
+        "INSERT OR REPLACE INTO pipeline_runs (run_id, pipeline_name, started_at, status) VALUES (?, ?, ?, ?)",
+        (run_id, 'dashboard_data_pipeline', datetime.utcnow().isoformat(), 'running')
+    )
+    conn.commit()
+    logging.info(f"Recorded pipeline run start: run_id={run_id}")
 
-    # Load region mapping
-    region_mapping_path = os.path.join(REFERENCE_DATA_DIR, 'UN_Country_Region_Mapping.csv')
-    # Fix path if running from different directory
-    if not os.path.exists(region_mapping_path):
-        # Try relative to current working directory
-        region_mapping_path = 'data/reference/UN_Country_Region_Mapping.csv'
-    country_to_region_map = load_region_mapping(region_mapping_path)
-    if not country_to_region_map:
-        logging.warning("Continuing without region mapping. Pillar 2 will be affected.")
+    try:
+        # --- 1. Load Data from Turso ---
+        source_table = os.getenv('PIPELINE_SOURCE_TABLE', 'un_votes_with_sc')
+        logging.info(f"Using Turso source table: {source_table}")
+        df_raw = load_data_from_turso(source_table)
+        if df_raw.empty:
+            logging.error(f"No data found in {source_table} table. Exiting.")
+            conn.execute(
+                "UPDATE pipeline_runs SET finished_at=?, status=?, error_message=? WHERE run_id=?",
+                (datetime.utcnow().isoformat(), 'failed', f'No data found in {source_table}', run_id)
+            )
+            conn.commit()
+            sys.exit(1)
 
-    # --- 2. Run Processing Steps ---
-    df_combined_index = generate_combined_index(df_filtered.copy(), country_to_region_map)
-    df_annual_scores = generate_annual_scores(df_combined_index.copy())
-    df_topic_votes = generate_topic_votes(df_filtered.copy())
-    df_similarity = generate_similarity_matrix(df_filtered.copy())
+        logging.info(f"Successfully loaded {len(df_raw)} rows from {source_table} table.")
+        validate_source_year_coverage(df_raw, expected_year=EXPECTED_LATEST_YEAR)
 
-    # --- 3. Save Outputs ---
-    logging.info("Saving processed data...")
-    
-    # Save to Supabase tables
-    logging.info(f"About to save annual_scores: {df_annual_scores.shape}")
-    logging.info(f"Annual scores columns: {list(df_annual_scores.columns)}")
-    logging.info(f"Annual scores sample data:\n{df_annual_scores.head()}")
-    save_data_to_supabase(df_annual_scores, 'annual_scores')
-    
-    # Save locally as CSV files (avoids Supabase timeout issues with large tables)
-    OUTPUT_DATA_DIR = os.path.join(PROJECT_ROOT, 'src', 'un_report_api', 'app', 'required_csvs')
-    
-    if not os.path.exists(OUTPUT_DATA_DIR):
-        os.makedirs(OUTPUT_DATA_DIR)
-        logging.info(f"Created output directory: {OUTPUT_DATA_DIR}")
-    
-    # Define output paths
-    annual_scores_path = os.path.join(OUTPUT_DATA_DIR, 'annual_scores.csv')
-    topic_votes_path = os.path.join(OUTPUT_DATA_DIR, 'topic_votes_yearly.csv')
-    similarity_path = os.path.join(OUTPUT_DATA_DIR, 'pairwise_similarity_yearly.csv')
-    
-    # Save files locally
-    logging.info("Saving CSV files locally...")
-    df_annual_scores.to_csv(annual_scores_path, index=False)
-    logging.info(f"Successfully saved annual scores to: {annual_scores_path}")
-    
-    df_topic_votes.to_csv(topic_votes_path, index=False)
-    logging.info(f"Successfully saved topic votes to: {topic_votes_path}")
-    
-    df_similarity.to_csv(similarity_path, index=False)
-    logging.info(f"Successfully saved similarity matrix to: {similarity_path}")
+        # Filter out Security Council resolutions
+        df_filtered = df_raw[~df_raw['Resolution'].str.startswith('S/', na=False)].copy()
+        logging.info(f"Filtered out Security Council resolutions, {len(df_filtered)} rows remaining.")
 
-    # --- 4. Validate required year coverage in outputs ---
-    validate_output_contains_year(df_annual_scores, 'annual_scores.csv', expected_year=EXPECTED_LATEST_YEAR)
-    validate_output_contains_year(df_topic_votes, 'topic_votes_yearly.csv', expected_year=EXPECTED_LATEST_YEAR)
-    validate_output_contains_year(df_similarity, 'pairwise_similarity_yearly.csv', expected_year=EXPECTED_LATEST_YEAR)
-    logging.info(f"Validated required year coverage ({EXPECTED_LATEST_YEAR}) in all output CSV datasets.")
-    
-    logging.info("==============================================================================")
-    logging.info("Pipeline finished successfully!")
-    logging.info("Data saved to Supabase tables: annual_scores, topic_votes_yearly, pairwise_similarity_yearly")
-    logging.info("==============================================================================")
+        # Create 'Year' column from 'Date'
+        df_filtered['Date'] = pd.to_datetime(df_filtered['Date'], errors='coerce')
+        df_filtered.dropna(subset=['Date'], inplace=True)
+        df_filtered['Year'] = df_filtered['Date'].dt.year
+        logging.info("Created 'Year' column from 'Date'.")
+
+        # Load region mapping
+        region_mapping_path = os.path.join(REFERENCE_DATA_DIR, 'UN_Country_Region_Mapping.csv')
+        # Fix path if running from different directory
+        if not os.path.exists(region_mapping_path):
+            # Try relative to current working directory
+            region_mapping_path = 'data/reference/UN_Country_Region_Mapping.csv'
+        country_to_region_map = load_region_mapping(region_mapping_path)
+        if not country_to_region_map:
+            logging.warning("Continuing without region mapping. Pillar 2 will be affected.")
+
+        # --- 2. Run Processing Steps ---
+        df_combined_index = generate_combined_index(df_filtered.copy(), country_to_region_map)
+        df_annual_scores = generate_annual_scores(df_combined_index.copy())
+        df_topic_votes = generate_topic_votes(df_filtered.copy())
+        df_similarity = generate_similarity_matrix(df_filtered.copy())
+
+        # --- 3. Save Outputs to Turso ---
+        logging.info("Saving processed data to Turso...")
+
+        # Rename 'Country name' -> 'Country' to match Turso schema for annual_scores
+        df_annual_scores_db = df_annual_scores.copy()
+        if 'Country name' in df_annual_scores_db.columns:
+            df_annual_scores_db = df_annual_scores_db.rename(columns={'Country name': 'Country'})
+
+        # Rename Country1_ISO3/Country2_ISO3 -> Country1/Country2 to match Turso schema
+        df_similarity_db = df_similarity.copy()
+        if 'Country1_ISO3' in df_similarity_db.columns:
+            df_similarity_db = df_similarity_db.rename(columns={
+                'Country1_ISO3': 'Country1',
+                'Country2_ISO3': 'Country2'
+            })
+
+        logging.info(f"About to save annual_scores: {df_annual_scores_db.shape}")
+        logging.info(f"Annual scores columns: {list(df_annual_scores_db.columns)}")
+        rows_annual = save_data_to_turso(df_annual_scores_db, 'annual_scores')
+
+        logging.info(f"About to save topic_votes_yearly: {df_topic_votes.shape}")
+        rows_topic = save_data_to_turso(df_topic_votes, 'topic_votes_yearly')
+
+        logging.info(f"About to save pairwise_similarity_yearly: {df_similarity_db.shape}")
+        rows_similarity = save_data_to_turso(df_similarity_db, 'pairwise_similarity_yearly')
+
+        # --- 4. Save locally as CSV files (for API fallback) ---
+        OUTPUT_DATA_DIR = os.path.join(PROJECT_ROOT, 'src', 'un_report_api', 'app', 'required_csvs')
+
+        if not os.path.exists(OUTPUT_DATA_DIR):
+            os.makedirs(OUTPUT_DATA_DIR)
+            logging.info(f"Created output directory: {OUTPUT_DATA_DIR}")
+
+        # Define output paths
+        annual_scores_path = os.path.join(OUTPUT_DATA_DIR, 'annual_scores.csv')
+        topic_votes_path = os.path.join(OUTPUT_DATA_DIR, 'topic_votes_yearly.csv')
+        similarity_path = os.path.join(OUTPUT_DATA_DIR, 'pairwise_similarity_yearly.csv')
+
+        # Save files locally
+        logging.info("Saving CSV files locally...")
+        df_annual_scores.to_csv(annual_scores_path, index=False)
+        logging.info(f"Successfully saved annual scores to: {annual_scores_path}")
+
+        df_topic_votes.to_csv(topic_votes_path, index=False)
+        logging.info(f"Successfully saved topic votes to: {topic_votes_path}")
+
+        df_similarity.to_csv(similarity_path, index=False)
+        logging.info(f"Successfully saved similarity matrix to: {similarity_path}")
+
+        # --- 5. Validate required year coverage in outputs ---
+        validate_output_contains_year(df_annual_scores, 'annual_scores.csv', expected_year=EXPECTED_LATEST_YEAR)
+        validate_output_contains_year(df_topic_votes, 'topic_votes_yearly.csv', expected_year=EXPECTED_LATEST_YEAR)
+        validate_output_contains_year(df_similarity, 'pairwise_similarity_yearly.csv', expected_year=EXPECTED_LATEST_YEAR)
+        logging.info(f"Validated required year coverage ({EXPECTED_LATEST_YEAR}) in all output CSV datasets.")
+
+        # --- 6. Update pipeline_runs with success ---
+        total_rows = rows_annual + rows_topic + rows_similarity
+        conn.execute(
+            "UPDATE pipeline_runs SET finished_at=?, status=?, rows_affected=? WHERE run_id=?",
+            (datetime.utcnow().isoformat(), 'success', total_rows, run_id)
+        )
+        conn.commit()
+        logging.info(f"Updated pipeline run: run_id={run_id}, status=success, rows_affected={total_rows}")
+
+        logging.info("==============================================================================")
+        logging.info("Pipeline finished successfully!")
+        logging.info("Data saved to Turso tables: annual_scores, topic_votes_yearly, pairwise_similarity_yearly")
+        logging.info("==============================================================================")
+
+    except Exception as e:
+        logging.error(f"Pipeline failed: {e}")
+        try:
+            conn.execute(
+                "UPDATE pipeline_runs SET finished_at=?, status=?, error_message=? WHERE run_id=?",
+                (datetime.utcnow().isoformat(), 'failed', str(e), run_id)
+            )
+            conn.commit()
+        except Exception as update_err:
+            logging.error(f"Failed to update pipeline_runs with error status: {update_err}")
+        raise
 
 
 if __name__ == '__main__':
