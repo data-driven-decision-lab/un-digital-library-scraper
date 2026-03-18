@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-ship/04-03-PLAN.md
-last_updated: "2026-03-18T21:31:33.948Z"
+stopped_at: Completed 04-ship/04-04-PLAN.md
+last_updated: "2026-03-18T21:35:08.379Z"
 last_activity: 2026-03-19 — Phase 04 Plan 01 complete (CI/CD Turso env vars + .env.example)
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 12
-  completed_plans: 11
+  completed_plans: 12
   percent: 75
 ---
 
@@ -61,6 +61,7 @@ Progress: [████████░░] 75%
 | Phase 04-ship P01 | 1 | 2 tasks | 2 files |
 | Phase 04-ship P02 | 2 | 2 tasks | 2 files |
 | Phase 04-ship P03 | 10 | 2 tasks | 2 files |
+| Phase 04-ship P04 | 5 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -100,6 +101,8 @@ Recent decisions affecting current work:
 - [Phase 04-ship]: Added docstrings to all inner helper functions — AST verification walks all FunctionDef nodes including nested ones
 - [Phase 04-ship]: generate_combined_index docstring documents bloc_size_p1 as rolling window (4-year default for Pillar 1)
 - [Phase 04-ship]: generate_similarity_matrix docstring documents Country1 < Country2 alphabetical deduplication constraint (PIPE-04)
+- [Phase 04-ship]: README sections removed: Contributing, Limitations, Changelog, stale Data Schema — superseded by docs/
+- [Phase 04-ship]: API_KEY omitted from Cloud Run env vars — only needed by scraper pipeline, not the deployed API container
 
 ### Pending Todos
 
@@ -112,6 +115,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T21:31:33.946Z
-Stopped at: Completed 04-ship/04-03-PLAN.md
+Last session: 2026-03-18T21:35:08.377Z
+Stopped at: Completed 04-ship/04-04-PLAN.md
 Resume file: None
