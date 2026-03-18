@@ -32,8 +32,8 @@
 
 ### Documentation
 
-- [ ] **DOC-01**: Write methodology document explaining pipeline computation (P1 4-year rolling window, normalization, pillar formulas)
-- [ ] **DOC-02**: Document Turso database schema with table descriptions and column semantics
+- [x] **DOC-01**: Write methodology document explaining pipeline computation (P1 4-year rolling window, normalization, pillar formulas)
+- [x] **DOC-02**: Document Turso database schema with table descriptions and column semantics
 - [ ] **DOC-03**: Write comprehensive README with setup, architecture, and deployment instructions
 - [ ] **DOC-04**: Add inline docstrings to all major pipeline functions
 
@@ -87,8 +87,8 @@
 | PIPE-04 | Phase 3 | Complete |
 | PIPE-05 | Phase 3 | Complete |
 | PIPE-06 | Phase 3 | Complete |
-| DOC-01 | Phase 4 | Pending |
-| DOC-02 | Phase 4 | Pending |
+| DOC-01 | Phase 4 | Complete |
+| DOC-02 | Phase 4 | Complete |
 | DOC-03 | Phase 4 | Pending |
 | DOC-04 | Phase 4 | Pending |
 | CICD-01 | Phase 4 | Complete |

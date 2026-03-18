@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-ship/04-01-PLAN.md
-last_updated: "2026-03-18T21:28:32.612Z"
+stopped_at: Completed 04-ship/04-02-PLAN.md
+last_updated: "2026-03-18T21:30:23.907Z"
 last_activity: 2026-03-19 — Phase 04 Plan 01 complete (CI/CD Turso env vars + .env.example)
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 12
-  completed_plans: 9
+  completed_plans: 10
   percent: 75
 ---
 
@@ -59,6 +59,7 @@ Progress: [████████░░] 75%
 | Phase 03-pipeline-fixes P01 | 10 | 1 tasks | 1 files |
 | Phase 03-pipeline-fixes P02 | 15 | 2 tasks | 1 files |
 | Phase 04-ship P01 | 1 | 2 tasks | 2 files |
+| Phase 04-ship P02 | 2 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,8 @@ Recent decisions affecting current work:
 - [Phase 04-ship]: $$TURSO_DATABASE_URL double-dollar syntax used in cloudbuild.yaml — Cloud Build substitution escape resolves to single $ at runtime for Cloud Run env var injection
 - [Phase 04-ship]: Dockerfile unchanged — libsql-experimental already covered by requirements.txt pip install from Phase 02-04
 - [Phase 04-ship]: .env.example committed (not gitignored) as a public credential template; .env stays gitignored
+- [Phase 04-ship]: METHODOLOGY.md references actual source function names for auditability
+- [Phase 04-ship]: SCHEMA.md explicitly notes Pillar X Score == Pillar X Normalized to prevent future confusion
 
 ### Pending Todos
 
@@ -105,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T21:28:32.610Z
-Stopped at: Completed 04-ship/04-01-PLAN.md
+Last session: 2026-03-18T21:30:23.905Z
+Stopped at: Completed 04-ship/04-02-PLAN.md
 Resume file: None
