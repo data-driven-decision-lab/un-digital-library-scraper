@@ -35,11 +35,15 @@ sys.path.insert(0, PROJECT_ROOT)
 try:
     from src.un_data_pipeline.data_modules.un_classification import un_classification
     main_category_keys = set(un_classification.keys())
+    subcategory_keys = set()
+    for _mc_dict in un_classification.values():
+        subcategory_keys.update(_mc_dict.keys())
     logging.info("Successfully imported 'un_classification' dictionary.")
 except ImportError:
     logging.error("Could not import 'un_classification'. Ensure 'dictionaries/un_classification.py' exists.")
     un_classification = None
     main_category_keys = set()
+    subcategory_keys = set()
 
 # ==============================================================================
 # TURSO FUNCTIONS
@@ -584,23 +588,14 @@ def generate_topic_votes(df_raw):
     logging.info("Step 3A: Starting Topic Votes generation...")
 
     def parse_tags_for_subtag1(tag_string):
-        if pd.isna(tag_string) or not isinstance(tag_string, str): return []
+        if pd.isna(tag_string) or not isinstance(tag_string, str):
+            return []
         tag_items = [item.strip() for item in tag_string.split(',') if item.strip()]
-        if not tag_items: return []
-        found_tags = []
-        i = 0
-        while i < len(tag_items):
-            current_item = tag_items[i]
-            if current_item in main_category_keys:
-                tag_to_add = current_item
-                if i + 1 < len(tag_items):
-                    next_item = tag_items[i+1]
-                    if next_item in un_classification.get(current_item, {}):
-                        tag_to_add = next_item
-                        i += 1
-                found_tags.append(tag_to_add)
-            i += 1
-        return list(set(found_tags)) if found_tags else ["No Tag"]
+        matched = []
+        for item in tag_items:
+            if item in main_category_keys or item in subcategory_keys:
+                matched.append(item)
+        return list(dict.fromkeys(matched))  # dedupe preserving insertion order
 
     country_cols = identify_country_columns(df_raw.columns)
     if not country_cols:
@@ -641,6 +636,7 @@ def generate_topic_votes(df_raw):
 
     final_cols_order = ['Year', 'Country', 'TopicTag', 'YesVotes_Topic', 'NoVotes_Topic', 'AbstainVotes_Topic', 'TotalVotes_Topic']
     df_final = df_final[final_cols_order]
+    df_final.drop_duplicates(subset=['Year', 'Country', 'TopicTag'], inplace=True)
 
     logging.info(f"Step 3A: Topic Votes generation finished. Shape: {df_final.shape}")
     return df_final
