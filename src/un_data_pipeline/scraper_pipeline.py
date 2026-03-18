@@ -122,7 +122,17 @@ current_run_id: Optional[str] = None
 scraper_log_data: Dict[str, Any] = {}
 
 def get_turso_connection():
-    """Get libsql connection to Turso."""
+    """Get a libsql connection to the Turso database.
+
+    Reads TURSO_DATABASE_URL and TURSO_AUTH_TOKEN from environment.
+    Defined inline (not imported from turso_client.py) to keep scraper self-contained.
+
+    Returns:
+        libsql.Connection: Active database connection.
+
+    Raises:
+        ValueError: If either environment variable is not set.
+    """
     url = os.getenv("TURSO_DATABASE_URL")
     auth_token = os.getenv("TURSO_AUTH_TOKEN")
     if not url:
@@ -133,7 +143,11 @@ def get_turso_connection():
 
 
 def start_scraper_log():
-    """Initialize a new scraper run log entry in Turso pipeline_runs table."""
+    """Initialize a new scraper run log entry in the Turso pipeline_runs table.
+
+    Sets global `current_run_id` and `scraper_log_data`. Inserts a 'running'
+    row into pipeline_runs with the current timestamp.
+    """
     global current_run_id, scraper_log_data
 
     current_run_id = str(uuid.uuid4())
@@ -162,7 +176,14 @@ def start_scraper_log():
         logger.error(f"Failed to create scraper log entry: {e}")
 
 def update_scraper_log(updates: Dict[str, Any]):
-    """Update the current scraper run log with new data."""
+    """Update the current scraper run with incremental metadata.
+
+    Writes the updates dict as a JSON blob to pipeline_runs.notes for the
+    active run_id.
+
+    Args:
+        updates: Dict of key-value pairs to merge into the current run's log data.
+    """
     global scraper_log_data
 
     if not current_run_id:
@@ -184,7 +205,16 @@ def update_scraper_log(updates: Dict[str, Any]):
         logger.error(f"Failed to update scraper log: {e}")
 
 def finish_scraper_log(status: str, error_message: Optional[str] = None):
-    """Finalize the scraper run log with final status and metrics."""
+    """Finalize the scraper run log with completion status and metrics.
+
+    Updates pipeline_runs with finished_at, final status, rows_affected
+    (from new_records_processed), and optional error_message.
+    Resets global run tracking variables.
+
+    Args:
+        status: Final run status string ('success' or 'failed').
+        error_message: Optional error description if status is 'failed'.
+    """
     global current_run_id, scraper_log_data
 
     if not current_run_id:
