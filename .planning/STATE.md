@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-database-migration/02-04-PLAN.md
-last_updated: "2026-03-18T20:49:53.296Z"
+stopped_at: Completed 03-pipeline-fixes/03-01-PLAN.md
+last_updated: "2026-03-18T21:09:24.232Z"
 last_activity: 2026-03-18 — Phase 02 Plan 03 complete (Turso-native scraper pipeline)
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 8
+  completed_plans: 7
   percent: 50
 ---
 
@@ -56,6 +56,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02-database-migration P02 | 3 | 1 tasks | 1 files |
 | Phase 02-database-migration P03 | 3 | 1 tasks | 1 files |
 | Phase 02-database-migration P04 | 2 | 2 tasks | 5 files |
+| Phase 03-pipeline-fixes P01 | 10 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,9 @@ Recent decisions affecting current work:
 - [Phase 02-03]: update_scraper_log() writes JSON blob to pipeline_runs.notes; rows_affected written on finish from new_records_processed
 - [Phase 02-04]: supabase_client.py retained as ImportError stub (not deleted) — serves as safety net; deletion deferred to Phase 4 cleanup
 - [Phase 02-04]: libsql-experimental added to root requirements.txt only — no separate pipeline requirements.txt exists
+- [Phase 03-pipeline-fixes]: Match tags at both Main Category and Subcategory levels — all items in un_classification key sets are valid UNBIS tags
+- [Phase 03-pipeline-fixes]: Return [] on no tag match instead of 'No Tag' sentinel — callers use explode+dropna, sentinel created spurious rows
+- [Phase 03-pipeline-fixes]: subcategory_keys built eagerly at import time alongside main_category_keys — avoids recomputing per generate_topic_votes() call
 
 ### Pending Todos
 
@@ -93,6 +97,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T20:42:53.135Z
-Stopped at: Completed 02-database-migration/02-04-PLAN.md
+Last session: 2026-03-18T21:09:24.230Z
+Stopped at: Completed 03-pipeline-fixes/03-01-PLAN.md
 Resume file: None
