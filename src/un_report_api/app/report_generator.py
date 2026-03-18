@@ -100,10 +100,10 @@ def scale_similarity(score):
     except (ValueError, TypeError):
         return None
 
-# --- New Helper Function for Region Mapping from Supabase ---
-def load_un_region_mapping_from_supabase() -> Tuple[Optional[Dict], Optional[Dict]]:
+# --- Helper Function for Region Mapping from Turso ---
+def load_un_region_mapping_from_turso() -> Tuple[Optional[Dict], Optional[Dict]]:
     """
-    Loads UN country to region mapping from Supabase.
+    Loads UN country to region mapping from Turso.
 
     Returns:
         tuple[dict, dict]: A tuple containing:
@@ -115,7 +115,7 @@ def load_un_region_mapping_from_supabase() -> Tuple[Optional[Dict], Optional[Dic
         df_regions = turso_loader.load_un_region_mapping()
         
         if df_regions.empty:
-            logging.error("No region mapping data found in Supabase.")
+            logging.error("No region mapping data found in Turso.")
             return None, None
             
         # Standardize column names for robustness
@@ -135,11 +135,11 @@ def load_un_region_mapping_from_supabase() -> Tuple[Optional[Dict], Optional[Dic
         
         region_to_iso_list_map = df_regions.groupby('UN Region')['ISO-alpha3 code'].apply(list).to_dict()
         
-        logging.info(f"Successfully loaded UN region mapping from Supabase.")
+        logging.info(f"Successfully loaded UN region mapping from Turso.")
         return iso_to_region_map, region_to_iso_list_map
         
     except Exception as e:
-        logging.error(f"Error loading UN region mapping from Supabase: {e}")
+        logging.error(f"Error loading UN region mapping from Turso: {e}")
         return None, None
 
 # --- Legacy Helper Function for Region Mapping (kept for compatibility) ---
@@ -196,29 +196,29 @@ def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:
     """
     logging.info(f"Report generation started for {country_iso}, period: {start_year}-{end_year}.")
 
-    # --- Load Region Mapping from Supabase ---
-    iso_to_region_map, region_to_iso_list_map = load_un_region_mapping_from_supabase()
+    # --- Load Region Mapping from Turso ---
+    iso_to_region_map, region_to_iso_list_map = load_un_region_mapping_from_turso()
     if iso_to_region_map is None or region_to_iso_list_map is None:
         # Logged in helper, allow report generation to proceed without regional context if mapping fails
         logging.warning("UN Region mapping failed to load. Regional context will be unavailable.")
     
-    # --- Load Data from Supabase ---
+    # --- Load Data from Turso ---
     try:
-        logging.debug("Loading annual scores from Supabase")
+        logging.debug("Loading annual scores from Turso")
         df_scores_raw = turso_loader.load_annual_scores()
         df_scores = standardize_col_names(df_scores_raw.copy())
         
-        logging.debug("Loading pairwise similarity from Supabase")
+        logging.debug("Loading pairwise similarity from Turso")
         df_similarity_raw = turso_loader.load_pairwise_similarity()
         df_similarity = standardize_col_names(df_similarity_raw.copy())
 
-        logging.debug("Loading topic votes from Supabase")
+        logging.debug("Loading topic votes from Turso")
         df_topics_raw = turso_loader.load_topic_votes()
         df_topics = standardize_col_names(df_topics_raw.copy())
 
     except Exception as e:
-        logging.error(f"Failed to load data from Supabase: {e}")
-        raise ValueError(f"Error loading data from Supabase: {e}")
+        logging.error(f"Failed to load data from Turso: {e}")
+        raise ValueError(f"Error loading data from Turso: {e}")
 
     # Determine country column names (after standardization)
     country_col_scores = 'country_name' # After standardization, 'Country name' becomes 'country_name'
@@ -229,13 +229,13 @@ def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:
             country_col_scores = alt_country_col
             logging.warning(f"Using '{alt_country_col}' as country ISO column in scores data.")
         else:
-             raise ValueError(f"Cannot find a suitable country ISO identifier column (expected '{country_col_scores}' or '{alt_country_col}') in Supabase data. Available columns: {list(df_scores.columns)}")
+             raise ValueError(f"Cannot find a suitable country ISO identifier column (expected '{country_col_scores}' or '{alt_country_col}') in Turso data. Available columns: {list(df_scores.columns)}")
 
     country_col_topics = 'country' # After standardization, 'Country' becomes 'country'
     country_col_sim = 'country1_iso3' # After standardization, 'Country1_ISO3' becomes 'country1_iso3'
 
     if country_iso not in df_scores[country_col_scores].unique():
-        raise ValueError(f"Country ISO '{country_iso}' not found in the scores data from Supabase.")
+        raise ValueError(f"Country ISO '{country_iso}' not found in the scores data from Turso.")
         
     # --- Filter Data For Country & Period ---
     df_scores['year'] = pd.to_numeric(df_scores['year'], errors='coerce')
