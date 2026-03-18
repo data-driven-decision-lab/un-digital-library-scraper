@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-database-migration/02-03-PLAN.md
-last_updated: "2026-03-18T20:37:48.009Z"
+stopped_at: Completed 02-database-migration/02-04-PLAN.md
+last_updated: "2026-03-18T20:42:53.137Z"
 last_activity: 2026-03-18 — Phase 02 Plan 03 complete (Turso-native scraper pipeline)
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
   completed_plans: 6
   percent: 50
@@ -55,6 +55,7 @@ Progress: [█████░░░░░] 50%
 | Phase 01-cleanup P01 | 2 | 2 tasks | 16 files |
 | Phase 02-database-migration P02 | 3 | 1 tasks | 1 files |
 | Phase 02-database-migration P03 | 3 | 1 tasks | 1 files |
+| Phase 02-database-migration P04 | 2 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,8 @@ Recent decisions affecting current work:
 - [Phase 02-02]: abs(x) > 1e3 guard retained for float columns (Phase 3 fix per PIPE-05); only removed string conversion step that was Supabase JSON serialisation workaround
 - [Phase 02-03]: get_turso_connection() defined inline in scraper_pipeline.py (self-contained, no cross-module coupling with turso_client.py)
 - [Phase 02-03]: update_scraper_log() writes JSON blob to pipeline_runs.notes; rows_affected written on finish from new_records_processed
+- [Phase 02-04]: supabase_client.py retained as ImportError stub (not deleted) — serves as safety net; deletion deferred to Phase 4 cleanup
+- [Phase 02-04]: libsql-experimental added to root requirements.txt only — no separate pipeline requirements.txt exists
 
 ### Pending Todos
 
@@ -90,6 +93,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T20:37:02Z
-Stopped at: Completed 02-database-migration/02-03-PLAN.md
+Last session: 2026-03-18T20:42:53.135Z
+Stopped at: Completed 02-database-migration/02-04-PLAN.md
 Resume file: None

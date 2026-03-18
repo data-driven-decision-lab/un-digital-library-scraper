@@ -17,7 +17,7 @@
 - [x] **DB-01**: Create Turso database schema matching current Supabase tables (un_votes_raw, un_votes_with_sc, annual_scores, topic_votes_yearly, pairwise_similarity_yearly)
 - [x] **DB-02**: Implement Turso client module replacing Supabase client (libsql connection)
 - [x] **DB-03**: Migrate `save_data_to_supabase()` to Turso with upsert-based writes instead of delete-then-insert
-- [ ] **DB-04**: Migrate all API data reads from Supabase to Turso
+- [x] **DB-04**: Migrate all API data reads from Supabase to Turso
 - [x] **DB-05**: Add unique constraints on key tables (Year/Country/TopicTag for topic_votes, Year/Country1/Country2 for pairwise)
 - [x] **DB-06**: Add pipeline_runs metadata table for tracking pipeline execution history
 
@@ -78,7 +78,7 @@
 | DB-01 | Phase 2 | Complete |
 | DB-02 | Phase 2 | Complete |
 | DB-03 | Phase 2 | Complete |
-| DB-04 | Phase 2 | Pending |
+| DB-04 | Phase 2 | Complete |
 | DB-05 | Phase 2 | Complete |
 | DB-06 | Phase 2 | Complete |
 | PIPE-01 | Phase 3 | Pending |

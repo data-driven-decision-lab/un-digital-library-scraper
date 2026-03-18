@@ -13,7 +13,7 @@ This milestone revamps the pipeline to fix data quality bugs (tag loss, duplicat
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Cleanup** - Remove dead code, junk data, and stale artifacts from the codebase (completed 2026-03-18)
-- [ ] **Phase 2: Database Migration** - Replace Supabase with Turso (LibSQL) across pipeline and API
+- [x] **Phase 2: Database Migration** - Replace Supabase with Turso (LibSQL) across pipeline and API (completed 2026-03-18)
 - [ ] **Phase 3: Pipeline Fixes** - Correct data quality bugs and standardize pipeline behavior
 - [ ] **Phase 4: Ship** - Finalize documentation, update CI/CD, and deploy
 
@@ -84,6 +84,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Cleanup | 2/2 | Complete   | 2026-03-18 |
-| 2. Database Migration | 4/4 | In Progress|  |
+| 2. Database Migration | 4/4 | Complete   | 2026-03-18 |
 | 3. Pipeline Fixes | 0/TBD | Not started | - |
 | 4. Ship | 0/TBD | Not started | - |
