@@ -134,7 +134,7 @@ def generate_yearly_rankings(year: int) -> Tuple[Dict, Optional[str]]:
     message = None
 
     try:
-        # Load scores from Supabase and standardize.
+        # Load scores from Turso and standardize.
         df_all_scores_raw = turso_loader.load_annual_scores()
         df_scores = standardize_col_names(df_all_scores_raw.copy())
         # The 'Country name' column in this file actually contains the 3-letter codes.
@@ -143,17 +143,17 @@ def generate_yearly_rankings(year: int) -> Tuple[Dict, Optional[str]]:
         # Drop any leftover index columns from previous CSV saves to avoid confusion.
         if 'unnamed:_0' in df_scores.columns:
             df_scores = df_scores.drop(columns=['unnamed:_0'])
-        logger.debug(f"Successfully loaded and standardized annual_scores from Supabase")
+        logger.debug(f"Successfully loaded and standardized annual_scores from Turso")
     except Exception as e:
-        logger.error(f"Error loading or processing annual_scores from Supabase: {e}")
-        raise ValueError(f"Error processing data from Supabase: {e}")
+        logger.error(f"Error loading or processing annual_scores from Turso: {e}")
+        raise ValueError(f"Error processing data from Turso: {e}")
 
     try:
         df_classifications_raw = turso_loader.load_country_classifications()
         df_classifications = standardize_col_names(df_classifications_raw.copy())
-        logger.debug(f"Successfully loaded and standardized country_classifications from Supabase")
+        logger.debug(f"Successfully loaded and standardized country_classifications from Turso")
     except Exception as e:
-        logger.error(f"Error loading country_classifications from Supabase: {e}")
+        logger.error(f"Error loading country_classifications from Turso: {e}")
         # Continue without classifications if not available
         df_classifications = pd.DataFrame()
     
