@@ -39,9 +39,9 @@
 
 ### CI/CD & Deployment
 
-- [ ] **CICD-01**: Update GitHub Action / Cloud Build configuration to use Turso environment variables
-- [ ] **CICD-02**: Update Dockerfile to include Turso/LibSQL dependencies
-- [ ] **CICD-03**: Update .env.example with Turso credential placeholders
+- [x] **CICD-01**: Update GitHub Action / Cloud Build configuration to use Turso environment variables
+- [x] **CICD-02**: Update Dockerfile to include Turso/LibSQL dependencies
+- [x] **CICD-03**: Update .env.example with Turso credential placeholders
 
 ## v2 Requirements
 
@@ -91,9 +91,9 @@
 | DOC-02 | Phase 4 | Pending |
 | DOC-03 | Phase 4 | Pending |
 | DOC-04 | Phase 4 | Pending |
-| CICD-01 | Phase 4 | Pending |
-| CICD-02 | Phase 4 | Pending |
-| CICD-03 | Phase 4 | Pending |
+| CICD-01 | Phase 4 | Complete |
+| CICD-02 | Phase 4 | Complete |
+| CICD-03 | Phase 4 | Complete |
 
 **Coverage:**
 - v1 requirements: 23 total
