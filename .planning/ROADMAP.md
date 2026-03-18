@@ -62,7 +62,11 @@ Plans:
   3. Countries with zero votes (AFG, VEN) are excluded consistently from all output tables (annual_scores, topic_votes_yearly, pairwise_similarity_yearly)
   4. CosineSimilarity values are stored at full float precision — `round(x, 4)` is not applied
   5. The `abs(x) > 1e3` guard does not silently nullify valid score values
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Rewrite parse_tags_for_subtag1() for full UNBIS tag coverage and add dedup (PIPE-01, PIPE-02)
+- [ ] 03-02-PLAN.md — Filter zero-vote countries from similarity matrix, remove precision guards, document column normalization (PIPE-03, PIPE-04, PIPE-05, PIPE-06)
 
 ### Phase 4: Ship
 **Goal**: The revamped pipeline is deployed, documented, and reproducible by any team member
@@ -85,5 +89,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Cleanup | 2/2 | Complete   | 2026-03-18 |
 | 2. Database Migration | 4/4 | Complete   | 2026-03-18 |
-| 3. Pipeline Fixes | 0/TBD | Not started | - |
+| 3. Pipeline Fixes | 0/2 | Not started | - |
 | 4. Ship | 0/TBD | Not started | - |
