@@ -28,5 +28,5 @@ pytz>=2022.7
 # Country data
 pycountry>=22.3.5
 
-# Supabase client
-supabase>=2.0.0
+# Turso / LibSQL client
+libsql-experimental>=0.0.5
