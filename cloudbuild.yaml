@@ -21,6 +21,8 @@ steps:
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'TURSO_DATABASE_URL=$$TURSO_DATABASE_URL,TURSO_AUTH_TOKEN=$$TURSO_AUTH_TOKEN'
 
 images:
   - 'gcr.io/$PROJECT_ID/unreportapi:$COMMIT_SHA'
