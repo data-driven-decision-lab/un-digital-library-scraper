@@ -25,10 +25,10 @@
 
 - [x] **PIPE-01**: Fix `generate_topic_votes()` tag parser to handle full UNBIS hierarchy (Main Category + Subcategory levels, not just top-level matches)
 - [x] **PIPE-02**: Add deduplication before insert in topic_votes pipeline (`drop_duplicates` on Year/Country/TopicTag)
-- [ ] **PIPE-03**: Standardize non-voting country handling — exclude countries with zero votes from all output tables consistently
-- [ ] **PIPE-04**: Remove `round(x, 4)` precision truncation for CosineSimilarity in save function
-- [ ] **PIPE-05**: Remove `abs(x) > 1e3` guard or make it column-specific to prevent silent data nullification
-- [ ] **PIPE-06**: Rename misleading column `Pillar X Score` to `Pillar X Score (Normalized)` or document the normalization clearly
+- [x] **PIPE-03**: Standardize non-voting country handling — exclude countries with zero votes from all output tables consistently
+- [x] **PIPE-04**: Remove `round(x, 4)` precision truncation for CosineSimilarity in save function
+- [x] **PIPE-05**: Remove `abs(x) > 1e3` guard or make it column-specific to prevent silent data nullification
+- [x] **PIPE-06**: Rename misleading column `Pillar X Score` to `Pillar X Score (Normalized)` or document the normalization clearly
 
 ### Documentation
 
@@ -83,10 +83,10 @@
 | DB-06 | Phase 2 | Complete |
 | PIPE-01 | Phase 3 | Complete |
 | PIPE-02 | Phase 3 | Complete |
-| PIPE-03 | Phase 3 | Pending |
-| PIPE-04 | Phase 3 | Pending |
-| PIPE-05 | Phase 3 | Pending |
-| PIPE-06 | Phase 3 | Pending |
+| PIPE-03 | Phase 3 | Complete |
+| PIPE-04 | Phase 3 | Complete |
+| PIPE-05 | Phase 3 | Complete |
+| PIPE-06 | Phase 3 | Complete |
 | DOC-01 | Phase 4 | Pending |
 | DOC-02 | Phase 4 | Pending |
 | DOC-03 | Phase 4 | Pending |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-pipeline-fixes/03-01-PLAN.md
-last_updated: "2026-03-18T21:09:24.232Z"
+stopped_at: Completed 03-pipeline-fixes/03-02-PLAN.md
+last_updated: "2026-03-18T21:14:38.659Z"
 last_activity: 2026-03-18 — Phase 02 Plan 03 complete (Turso-native scraper pipeline)
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
   percent: 50
 ---
 
@@ -57,6 +57,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02-database-migration P03 | 3 | 1 tasks | 1 files |
 | Phase 02-database-migration P04 | 2 | 2 tasks | 5 files |
 | Phase 03-pipeline-fixes P01 | 10 | 1 tasks | 1 files |
+| Phase 03-pipeline-fixes P02 | 15 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,9 @@ Recent decisions affecting current work:
 - [Phase 03-pipeline-fixes]: Match tags at both Main Category and Subcategory levels — all items in un_classification key sets are valid UNBIS tags
 - [Phase 03-pipeline-fixes]: Return [] on no tag match instead of 'No Tag' sentinel — callers use explode+dropna, sentinel created spurious rows
 - [Phase 03-pipeline-fixes]: subcategory_keys built eagerly at import time alongside main_category_keys — avoids recomputing per generate_topic_votes() call
+- [Phase 03-pipeline-fixes]: active_cols filter in generate_similarity_matrix() uses vote_matrix_numeric.columns post-fillna(0) so zero-vote countries (all-null votes mapped to 0) are cleanly excluded
+- [Phase 03-pipeline-fixes]: df_sim index/columns use active_cols not country_cols after PIPE-03 filter — avoids shape mismatch in pd.DataFrame constructor
+- [Phase 03-pipeline-fixes]: abs(x)>1e3 guard and round(x,4) removed from save_data_to_turso() float columns — not applicable to CosineSimilarity[-1,1] or Pillar scores[0-100]; replaced with pd.where(pd.notna())
 
 ### Pending Todos
 
@@ -97,6 +101,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T21:09:24.230Z
-Stopped at: Completed 03-pipeline-fixes/03-01-PLAN.md
+Last session: 2026-03-18T21:14:38.657Z
+Stopped at: Completed 03-pipeline-fixes/03-02-PLAN.md
 Resume file: None
