@@ -50,7 +50,16 @@ except ImportError:
 # ==============================================================================
 
 def get_turso_connection():
-    """Get libsql connection to Turso."""
+    """Get a libsql connection to the Turso database.
+
+    Reads TURSO_DATABASE_URL and TURSO_AUTH_TOKEN from environment.
+
+    Returns:
+        libsql.Connection: Active database connection.
+
+    Raises:
+        ValueError: If either environment variable is not set.
+    """
     url = os.getenv("TURSO_DATABASE_URL")
     auth_token = os.getenv("TURSO_AUTH_TOKEN")
     if not url:
@@ -61,9 +70,18 @@ def get_turso_connection():
 
 
 def _expand_vote_data(df):
-    """
-    Expand the vote_data JSON column into per-country columns.
+    """Expand the vote_data JSON column into per-country columns.
+
     Called after loading from Turso when vote_data column is present.
+    The vote_data column contains JSON blobs like {'ISO3': 'YES'|'NO'|'ABSTAIN'|null}.
+    Each key becomes a column in the returned DataFrame.
+
+    Args:
+        df: DataFrame that may contain a 'vote_data' column with JSON strings.
+
+    Returns:
+        pd.DataFrame: DataFrame with vote_data expanded into individual country
+            columns, or the original DataFrame if vote_data is absent.
     """
     if 'vote_data' not in df.columns:
         return df
@@ -199,13 +217,33 @@ def save_data_to_turso(df: pd.DataFrame, table_name: str) -> int:
 # Removed find_latest_raw_data_csv - now using Turso
 
 def identify_country_columns(df_columns):
-    """Identifies likely country ISO3 columns (3 uppercase letters)."""
+    """Identify country ISO3 code columns in a DataFrame column list.
+
+    Matches columns that are exactly 3 uppercase letters, excluding known
+    non-country codes ('YES', 'NO').
+
+    Args:
+        df_columns: Iterable of column names from a DataFrame.
+
+    Returns:
+        list[str]: Sorted list of ISO3 country code columns.
+    """
     potential_countries = [col for col in df_columns if isinstance(col, str) and len(col) == 3 and col.isupper()]
     known_non_countries = {'YES', 'NO'}
     return sorted([col for col in potential_countries if col not in known_non_countries])
 
 def load_region_mapping(mapping_file_path):
-    """Loads the country to UN region mapping CSV."""
+    """Load the UN country-to-region mapping CSV.
+
+    Expects a CSV where column index 2 is ISO3 country code and column index 3
+    is the UN region name. Adds a USSR -> RUS alias automatically.
+
+    Args:
+        mapping_file_path: Path to UN_Country_Region_Mapping.csv.
+
+    Returns:
+        dict[str, str] | None: Mapping of ISO3 -> UN region string, or None on failure.
+    """
     try:
         df_regions = pd.read_csv(mapping_file_path)
         iso_col = df_regions.columns[2].strip()
@@ -221,7 +259,18 @@ def load_region_mapping(mapping_file_path):
         return None
 
 def validate_source_year_coverage(df_raw, expected_year=EXPECTED_LATEST_YEAR):
-    """Validates source data includes at least the expected latest year."""
+    """Validate that source data covers at least the expected latest year.
+
+    Raises ValueError if the data's maximum year is below expected_year,
+    preventing pipeline runs on stale data.
+
+    Args:
+        df_raw: Raw voting DataFrame with a 'Date' column.
+        expected_year: Minimum required year (default: EXPECTED_LATEST_YEAR constant).
+
+    Raises:
+        ValueError: If data is empty, missing 'Date', or max year < expected_year.
+    """
     if df_raw.empty:
         raise ValueError("Source data is empty; cannot validate year coverage.")
     if 'Date' not in df_raw.columns:
@@ -241,7 +290,16 @@ def validate_source_year_coverage(df_raw, expected_year=EXPECTED_LATEST_YEAR):
         )
 
 def validate_output_contains_year(df, output_name, expected_year=EXPECTED_LATEST_YEAR):
-    """Ensures an output dataframe contains the expected year in its Year/year column."""
+    """Validate that a pipeline output DataFrame contains a specific year.
+
+    Args:
+        df: Output DataFrame with a 'Year' or 'year' column.
+        output_name: Human-readable name for error messages.
+        expected_year: Year that must be present in the output.
+
+    Raises:
+        ValueError: If the DataFrame is empty, has no year column, or is missing the year.
+    """
     if df is None or df.empty:
         raise ValueError(f"{output_name} is empty; expected output including year {expected_year}.")
 
@@ -278,14 +336,31 @@ def validate_output_contains_year(df, output_name, expected_year=EXPECTED_LATEST
 # ------------------------------------------------------------------------------
 
 def generate_combined_index(df_main, country_to_region_map, bloc_size_p1=4):
-    """
-    Takes raw voting data and generates a DataFrame with Pillar 1, 2, and 3 scores,
-    along with ranks and normalizations.
+    """Compute Pillar 1, 2, and 3 scores for all countries and years.
+
+    Orchestrates three sub-analyses:
+    - Pillar 1 (Policy Consistency): Uses a rolling bloc of `bloc_size_p1` years.
+      Score = 1 - weighted_deviation across consistent UNBIS tag groups.
+    - Pillar 2 (Regional Alignment): BMM + BDS averaged per country per year.
+    - Pillar 3 (Global Alignment): GMMC + GDSC averaged per country per year.
+
+    All three pillars are min-max normalized to 0-100 within each year before merging.
+
+    Args:
+        df_main: Wide-format voting DataFrame from un_votes_with_sc (SC rows pre-filtered).
+                 Country ISO3 codes are column names; values are 'YES'/'NO'/'ABSTAIN'/None.
+        country_to_region_map: Dict mapping ISO3 -> UN region string. Used for Pillar 2.
+        bloc_size_p1: Rolling window size for Pillar 1 (default 4 years).
+
+    Returns:
+        pd.DataFrame: One row per (Country, Year) with Pillar scores, normalized values,
+                      ranks, vote counts, and rolling rank average.
     """
     logging.info("Step 1: Starting Combined Index generation...")
 
     # --- Helper functions specific to this step ---
     def calculate_cosine_similarity(vec1, vec2):
+        """Compute cosine similarity between two vote vectors, returning nan if either is zero."""
         if np.isnan(vec1).any() or np.isnan(vec2).any(): return np.nan
         norm1, norm2 = np.linalg.norm(vec1), np.linalg.norm(vec2)
         if norm1 == 0 or norm2 == 0: return np.nan
@@ -300,6 +375,7 @@ def generate_combined_index(df_main, country_to_region_map, bloc_size_p1=4):
         return 100 * (series - min_val) / (max_val - min_val)
 
     def parse_tags_p1(tag_string):
+        """Extract the first matching UNBIS subcategory tag for Pillar 1 scoring."""
         if un_classification is None or pd.isna(tag_string): return None
         try:
             tags_flat = [str(item).strip() for item in ast.literal_eval(tag_string)[0]]
@@ -314,6 +390,7 @@ def generate_combined_index(df_main, country_to_region_map, bloc_size_p1=4):
         return None
 
     def calculate_alignment_score_p1(df_country_bloc, bloc_years):
+        """Calculate Pillar 1 alignment score for one country over a rolling bloc of years."""
         num_bloc_years = len(bloc_years)
         if df_country_bloc.empty or num_bloc_years == 0: return np.nan
         tag_year_counts = df_country_bloc.groupby('tag_group')['Year'].nunique()
@@ -344,6 +421,7 @@ def generate_combined_index(df_main, country_to_region_map, bloc_size_p1=4):
         return score
 
     def run_pillar1_analysis(df_wide, country_columns, bloc_size):
+        """Run Pillar 1 (Policy Consistency) analysis across all countries using a rolling bloc window."""
         if un_classification is None:
             logging.warning("Pillar 1 skipped: un_classification dictionary not available.")
             return pd.DataFrame(columns=['Year', 'Country', 'Pillar1'])
@@ -371,6 +449,7 @@ def generate_combined_index(df_main, country_to_region_map, bloc_size_p1=4):
         return pd.DataFrame(p1_results)
 
     def run_pillar2_analysis(df_wide, country_columns, country_to_region):
+        """Run Pillar 2 (Regional Alignment) analysis using BMM and BDS metrics per country per year."""
         if not country_to_region:
             logging.warning("Pillar 2 skipped: Region mapping not available.")
             return pd.DataFrame(columns=['Year', 'Country', 'Pillar2'])
@@ -402,6 +481,7 @@ def generate_combined_index(df_main, country_to_region_map, bloc_size_p1=4):
         return pd.DataFrame(p2_results)
 
     def run_pillar3_analysis(df_wide, country_columns):
+        """Run Pillar 3 (Global Alignment) analysis using GMMC and GDSC metrics per country per year."""
         logging.info("... starting Pillar 3 analysis")
         p3_results = []
         for year in tqdm(sorted(df_wide['Year'].unique()), desc="Pillar 3", leave=False):
@@ -487,6 +567,7 @@ def generate_combined_index(df_main, country_to_region_map, bloc_size_p1=4):
     try:
         import pycountry
         def convert_country_code(country_code):
+            """Convert a 2-letter ISO alpha-2 country code to ISO alpha-3; returns unchanged if already 3 letters."""
             if len(country_code) == 2:
                 try:
                     country = pycountry.countries.get(alpha_2=country_code)
@@ -511,9 +592,17 @@ def generate_combined_index(df_main, country_to_region_map, bloc_size_p1=4):
 # ------------------------------------------------------------------------------
 
 def generate_annual_scores(df_combined_index):
-    """
-    Processes the output from the combined index step to create the final
-    'annual_scores.csv' data.
+    """Produce the final annual_scores table from combined index output.
+
+    Selects relevant columns, overwrites 'Pillar X Score' columns with their
+    normalized counterparts (PIPE-06: Score == Normalized for all three pillars),
+    and filters out country-years with zero total votes (PIPE-03).
+
+    Args:
+        df_combined_index: Output of generate_combined_index().
+
+    Returns:
+        pd.DataFrame: Cleaned annual scores ready for Turso upsert.
     """
     if df_combined_index is None or df_combined_index.empty:
         logging.warning("Annual Scores step skipped: Input DataFrame is empty.")
@@ -581,8 +670,20 @@ def generate_annual_scores(df_combined_index):
 # ------------------------------------------------------------------------------
 
 def generate_topic_votes(df_raw):
-    """
-    Aggregates votes yearly by country and topic (subtag1).
+    """Aggregate votes by country, year, and UNBIS topic tag.
+
+    Parses the 'tags' column to extract all matching UNBIS Main Category and
+    Subcategory tags (both levels — PIPE-01 fix). Each resolution can match
+    multiple tags; the DataFrame is exploded so each tag gets its own row.
+    Deduplicates on (Year, Country, TopicTag) before returning (PIPE-02).
+
+    Args:
+        df_raw: Wide-format voting DataFrame with 'Year', 'Resolution', 'tags' columns
+                and ISO3 country columns.
+
+    Returns:
+        pd.DataFrame: Columns [Year, Country, TopicTag, YesVotes_Topic, NoVotes_Topic,
+                      AbstainVotes_Topic, TotalVotes_Topic].
     """
     if un_classification is None:
         logging.warning("Topic Votes step skipped: 'un_classification' dictionary not available.")
@@ -591,6 +692,7 @@ def generate_topic_votes(df_raw):
     logging.info("Step 3A: Starting Topic Votes generation...")
 
     def parse_tags_for_subtag1(tag_string):
+        """Parse a comma-separated tags string and return all matching UNBIS Main Category and Subcategory tags."""
         if pd.isna(tag_string) or not isinstance(tag_string, str):
             return []
         tag_items = [item.strip() for item in tag_string.split(',') if item.strip()]
@@ -650,12 +752,24 @@ def generate_topic_votes(df_raw):
 # ------------------------------------------------------------------------------
 
 def generate_similarity_matrix(df_raw):
-    """
-    Calculates pairwise cosine similarity between countries for each year.
+    """Compute pairwise cosine similarity between all countries for each year.
+
+    Vote encoding: YES=1, NO=-1, ABSTAIN/null=0. Countries with all-zero vectors
+    (non-voting, e.g., AFG in some years) are excluded (PIPE-03).
+
+    Only stores pairs where Country1 < Country2 (alphabetical) to avoid duplicates.
+    CosineSimilarity is stored at full float precision — no rounding applied (PIPE-04).
+
+    Args:
+        df_raw: Wide-format voting DataFrame with ISO3 country columns and 'Year' column.
+
+    Returns:
+        pd.DataFrame: Columns [Year, Country1_ISO3, Country2_ISO3, CosineSimilarity].
     """
     logging.info("Step 3B: Starting Pairwise Similarity generation...")
 
     def map_vote(vote):
+        """Map a vote string to a numeric value: YES=1, NO=-1, ABSTAIN/null=0."""
         if pd.isna(vote): return 0
         vote_str = str(vote).upper().strip()
         if vote_str == 'YES': return 1
@@ -707,9 +821,16 @@ def generate_similarity_matrix(df_raw):
 # ==============================================================================
 
 def main():
-    """
-    Main function to orchestrate the entire data processing pipeline.
-    Now Turso-native: reads from un_votes_with_sc and saves processed data to Turso tables.
+    """Orchestrate the full dashboard data pipeline (Turso-native).
+
+    Reads from un_votes_with_sc Turso table, runs all pipeline steps, writes
+    results back to Turso (annual_scores, topic_votes_yearly, pairwise_similarity_yearly),
+    saves CSV copies to src/un_report_api/app/required_csvs/ for API fallback,
+    and records run metadata in pipeline_runs.
+
+    Environment variables required:
+        TURSO_DATABASE_URL: LibSQL connection URL.
+        TURSO_AUTH_TOKEN: Auth token for Turso.
     """
     logging.info("==============================================================================")
     logging.info("Starting Turso-native Dashboard Data Pipeline")

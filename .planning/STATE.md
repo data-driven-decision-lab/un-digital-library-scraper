@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-pipeline-fixes/03-02-PLAN.md
-last_updated: "2026-03-18T21:18:13.071Z"
-last_activity: 2026-03-18 — Phase 02 Plan 03 complete (Turso-native scraper pipeline)
+stopped_at: Completed 04-ship/04-01-PLAN.md
+last_updated: "2026-03-18T21:28:32.612Z"
+last_activity: 2026-03-19 — Phase 04 Plan 01 complete (CI/CD Turso env vars + .env.example)
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 8
-  completed_plans: 8
-  percent: 50
+  total_plans: 12
+  completed_plans: 9
+  percent: 75
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Pipeline produces accurate, complete, and consistent voting analytics across all tables — served reliably via the API
-**Current focus:** Phase 2 — Database Migration
+**Current focus:** Phase 4 — Ship
 
 ## Current Position
 
-Phase: 2 of 4 (Database Migration)
-Plan: 3 of 3 in current phase (02-03 complete)
+Phase: 4 of 4 (Ship)
+Plan: 1 of 4 in current phase (04-01 complete)
 Status: In progress
-Last activity: 2026-03-18 — Phase 02 Plan 03 complete (Turso-native scraper pipeline)
+Last activity: 2026-03-19 — Phase 04 Plan 01 complete (CI/CD Turso env vars + .env.example)
 
-Progress: [█████░░░░░] 50%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02-database-migration P04 | 2 | 2 tasks | 5 files |
 | Phase 03-pipeline-fixes P01 | 10 | 1 tasks | 1 files |
 | Phase 03-pipeline-fixes P02 | 15 | 2 tasks | 1 files |
+| Phase 04-ship P01 | 1 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,9 @@ Recent decisions affecting current work:
 - [Phase 03-pipeline-fixes]: active_cols filter in generate_similarity_matrix() uses vote_matrix_numeric.columns post-fillna(0) so zero-vote countries (all-null votes mapped to 0) are cleanly excluded
 - [Phase 03-pipeline-fixes]: df_sim index/columns use active_cols not country_cols after PIPE-03 filter — avoids shape mismatch in pd.DataFrame constructor
 - [Phase 03-pipeline-fixes]: abs(x)>1e3 guard and round(x,4) removed from save_data_to_turso() float columns — not applicable to CosineSimilarity[-1,1] or Pillar scores[0-100]; replaced with pd.where(pd.notna())
+- [Phase 04-ship]: $$TURSO_DATABASE_URL double-dollar syntax used in cloudbuild.yaml — Cloud Build substitution escape resolves to single $ at runtime for Cloud Run env var injection
+- [Phase 04-ship]: Dockerfile unchanged — libsql-experimental already covered by requirements.txt pip install from Phase 02-04
+- [Phase 04-ship]: .env.example committed (not gitignored) as a public credential template; .env stays gitignored
 
 ### Pending Todos
 
@@ -101,6 +105,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T21:14:38.657Z
-Stopped at: Completed 03-pipeline-fixes/03-02-PLAN.md
+Last session: 2026-03-18T21:28:32.610Z
+Stopped at: Completed 04-ship/04-01-PLAN.md
 Resume file: None
