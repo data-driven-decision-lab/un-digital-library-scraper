@@ -44,7 +44,13 @@ Plans:
   3. All API endpoints return data sourced from Turso, not Supabase
   4. Unique constraints on topic_votes_yearly (Year/Country/TopicTag) and pairwise_similarity_yearly (Year/Country1/Country2) prevent duplicate rows at the database level
   5. `pipeline_runs` table records each execution with metadata (start time, status, rows affected)
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Create Turso schema (db/schema.sql) and TursoDataLoader client (turso_client.py)
+- [ ] 02-02-PLAN.md — Migrate dashboard_data_pipeline.py to Turso with upsert writes and pipeline_runs tracking
+- [ ] 02-03-PLAN.md — Migrate scraper_pipeline.py to Turso (reads/writes un_votes_raw, un_votes_with_sc)
+- [ ] 02-04-PLAN.md — Wire API modules to turso_client, remove supabase from requirements.txt
 
 ### Phase 3: Pipeline Fixes
 **Goal**: Pipeline produces accurate, complete, and consistent voting analytics — tag loss, duplicates, and stale data are eliminated
@@ -78,6 +84,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Cleanup | 2/2 | Complete   | 2026-03-18 |
-| 2. Database Migration | 0/TBD | Not started | - |
+| 2. Database Migration | 0/4 | Not started | - |
 | 3. Pipeline Fixes | 0/TBD | Not started | - |
 | 4. Ship | 0/TBD | Not started | - |
