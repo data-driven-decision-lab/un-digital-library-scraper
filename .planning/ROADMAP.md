@@ -48,8 +48,8 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md — Create Turso schema (db/schema.sql) and TursoDataLoader client (turso_client.py)
-- [ ] 02-02-PLAN.md — Migrate dashboard_data_pipeline.py to Turso with upsert writes and pipeline_runs tracking
-- [ ] 02-03-PLAN.md — Migrate scraper_pipeline.py to Turso (reads/writes un_votes_raw, un_votes_with_sc)
+- [x] 02-02-PLAN.md — Migrate dashboard_data_pipeline.py to Turso with upsert writes and pipeline_runs tracking
+- [x] 02-03-PLAN.md — Migrate scraper_pipeline.py to Turso (reads/writes un_votes_raw, un_votes_with_sc)
 - [ ] 02-04-PLAN.md — Wire API modules to turso_client, remove supabase from requirements.txt
 
 ### Phase 3: Pipeline Fixes
@@ -84,6 +84,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Cleanup | 2/2 | Complete   | 2026-03-18 |
-| 2. Database Migration | 3/4 | In Progress|  |
+| 2. Database Migration | 4/4 | In Progress|  |
 | 3. Pipeline Fixes | 0/TBD | Not started | - |
 | 4. Ship | 0/TBD | Not started | - |
