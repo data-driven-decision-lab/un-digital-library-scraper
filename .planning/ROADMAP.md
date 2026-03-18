@@ -28,7 +28,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. The test resolution `A/RES/79/125` does not appear in any pipeline logic or raw data references
   3. Junk tags (`test`, `data-type-fix`, empty strings) are not produced or consumed by any pipeline function
   4. No unused scripts, stale CSVs, or orphaned files remain that were identified in the audit
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Delete src/un_report_apiold/, remove turso_stuff.txt, move stale analysis docs to .planning/
+- [ ] 01-02-PLAN.md — Delete stale root-level CSVs (un_votes_raw_rows.csv, annual_scores.csv, topic_votes_yearly.csv)
 
 ### Phase 2: Database Migration
 **Goal**: The pipeline and API read from and write to Turso (LibSQL) exclusively — Supabase is fully removed
@@ -73,7 +77,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Cleanup | 0/TBD | Not started | - |
+| 1. Cleanup | 0/2 | Not started | - |
 | 2. Database Migration | 0/TBD | Not started | - |
 | 3. Pipeline Fixes | 0/TBD | Not started | - |
 | 4. Ship | 0/TBD | Not started | - |
