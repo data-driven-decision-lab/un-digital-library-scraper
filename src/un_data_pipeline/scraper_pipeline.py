@@ -47,7 +47,7 @@ from .data_modules.un_classification import un_classification
 from .data_modules.un_geo_hierarchy import geo_hierarchy
 from .data_modules.iso2_country import iso2_country_code
 import pycountry
-from supabase import create_client, Client
+import libsql_experimental as libsql
 
 
 
@@ -121,10 +121,21 @@ os.makedirs("../data/processed", exist_ok=True)
 current_run_id: Optional[str] = None
 scraper_log_data: Dict[str, Any] = {}
 
+def get_turso_connection():
+    """Get libsql connection to Turso."""
+    url = os.getenv("TURSO_DATABASE_URL")
+    auth_token = os.getenv("TURSO_AUTH_TOKEN")
+    if not url:
+        raise ValueError("TURSO_DATABASE_URL environment variable not set.")
+    if not auth_token:
+        raise ValueError("TURSO_AUTH_TOKEN environment variable not set.")
+    return libsql.connect(url, auth_token=auth_token)
+
+
 def start_scraper_log():
-    """Initialize a new scraper run log entry."""
+    """Initialize a new scraper run log entry in Turso pipeline_runs table."""
     global current_run_id, scraper_log_data
-    
+
     current_run_id = str(uuid.uuid4())
     scraper_log_data = {
         'run_id': current_run_id,
@@ -138,73 +149,70 @@ def start_scraper_log():
         'error_message': None,
         'execution_time_seconds': None
     }
-    
+
     try:
-        supabase_client = get_supabase_client()
-        if supabase_client:
-            result = supabase_client.table('scraper_logs').insert(scraper_log_data).execute()
-            logger.info(f"Started scraper run log: {current_run_id}")
-        else:
-            logger.warning("Supabase client not initialized, cannot log scraper run")
+        conn = get_turso_connection()
+        conn.execute(
+            "INSERT INTO pipeline_runs (run_id, pipeline_name, started_at, status) VALUES (?, ?, ?, ?)",
+            (current_run_id, 'scraper_pipeline', scraper_log_data['start_time'], 'running')
+        )
+        conn.commit()
+        logger.info(f"Started scraper run log: {current_run_id}")
     except Exception as e:
         logger.error(f"Failed to create scraper log entry: {e}")
 
 def update_scraper_log(updates: Dict[str, Any]):
     """Update the current scraper run log with new data."""
     global scraper_log_data
-    
+
     if not current_run_id:
         logger.warning("No active scraper run to update")
         return
-    
+
     scraper_log_data.update(updates)
-    
+
     try:
-        supabase_client = get_supabase_client()
-        if supabase_client:
-            result = supabase_client.table('scraper_logs').update(updates).eq('run_id', current_run_id).execute()
-            logger.debug(f"Updated scraper log: {updates}")
-        else:
-            logger.warning("Supabase client not initialized, cannot update scraper log")
+        conn = get_turso_connection()
+        notes_val = json.dumps(updates)
+        conn.execute(
+            "UPDATE pipeline_runs SET notes = ? WHERE run_id = ?",
+            (notes_val, current_run_id)
+        )
+        conn.commit()
+        logger.debug(f"Updated scraper log: {updates}")
     except Exception as e:
         logger.error(f"Failed to update scraper log: {e}")
 
 def finish_scraper_log(status: str, error_message: Optional[str] = None):
     """Finalize the scraper run log with final status and metrics."""
     global current_run_id, scraper_log_data
-    
+
     if not current_run_id:
         logger.warning("No active scraper run to finish")
         return
-    
+
     end_time = datetime.now()
     start_time = datetime.fromisoformat(scraper_log_data['start_time'])
     execution_time = int((end_time - start_time).total_seconds())
-    
-    final_updates = {
-        'end_time': end_time.isoformat(),
-        'status': status,
-        'execution_time_seconds': execution_time,
-        'error_message': error_message
-    }
-    
-    scraper_log_data.update(final_updates)
-    
+
+    rows_affected = scraper_log_data.get('new_records_processed', 0)
+
     try:
-        supabase_client = get_supabase_client()
-        if supabase_client:
-            result = supabase_client.table('scraper_logs').update(final_updates).eq('run_id', current_run_id).execute()
-            logger.info(f"Finished scraper run log: {current_run_id} - Status: {status}, Duration: {execution_time}s")
-        else:
-            logger.warning("Supabase client not initialized, cannot finish scraper log")
+        conn = get_turso_connection()
+        conn.execute(
+            "UPDATE pipeline_runs SET finished_at = ?, status = ?, rows_affected = ?, error_message = ? WHERE run_id = ?",
+            (end_time.isoformat(), status, rows_affected, error_message, current_run_id)
+        )
+        conn.commit()
+        logger.info(f"Finished scraper run log: {current_run_id} - Status: {status}, Duration: {execution_time}s")
     except Exception as e:
         logger.error(f"Failed to finish scraper log: {e}")
-    
+
     # Reset global variables
     current_run_id = None
     scraper_log_data = {}
 
-# Supabase-native configuration - no more CSV dependencies
+# Turso-native configuration - no more CSV dependencies
 
 FIXED_COLUMNS = [
     "Council", "Date", "Title", "Resolution", "TOTAL VOTES", "NO-VOTE COUNT",
@@ -1894,215 +1902,128 @@ def retry_failed_links(failed_links, year):
     logging.info(f"Retried {len(failed_links)} links, successfully recovered {len(retried_rows)} records.")
     return retried_rows
 
-# -------------------- Supabase Functions --------------------
+# -------------------- Turso Functions --------------------
 
-def get_supabase_client():
-    """Get Supabase client with error handling."""
-    supabase_url = os.getenv("SUPABASE_URL", "https://gjakiqtayqltssvbzasd.supabase.co")
-    supabase_key = os.getenv("SUPABASE_KEY")
-    
-    if not supabase_key:
-        raise ValueError("SUPABASE_KEY environment variable not set.")
-    
-    return create_client(supabase_url, supabase_key)
-
-def get_links_from_supabase() -> set:
-    """
-    Fetches all existing record links from the 'un_votes_with_sc' table in Supabase.
-    This ensures we don't re-scrape data that's already been processed for the dashboard.
-
-    Returns:
-        set: A set of unique, normalized links from Supabase.
-    """
-    logger.info("Fetching existing links from Supabase table 'un_votes_with_sc' to guide scraping...")
-
+def get_links_from_turso() -> set:
+    """Fetches existing record links from un_votes_with_sc in Turso."""
+    logger.info("Fetching existing links from Turso un_votes_with_sc...")
     try:
-        supabase = get_supabase_client()
-        
-        # Test connection first
-        logger.debug("Testing Supabase connection...")
-        response = supabase.table('un_votes_with_sc').select('Link').limit(1).execute()
-        
-        # If test successful, fetch all links
-        response = supabase.table('un_votes_with_sc').select('Link').execute()
-        
+        conn = get_turso_connection()
+        rows = conn.execute("SELECT Link FROM un_votes_with_sc").fetchall()
         links = set()
-        if response.data:
-            for item in response.data:
-                if 'Link' in item and item['Link']:
-                    norm_link = normalize_link(item['Link'])
-                    if norm_link:
-                        links.add(norm_link)
-        
-        logger.info(f"Found {len(links)} unique links in Supabase table 'un_votes_with_sc'.")
+        for row in rows:
+            if row[0]:
+                norm_link = normalize_link(row[0])
+                if norm_link:
+                    links.add(norm_link)
+        logger.info(f"Found {len(links)} existing links in Turso.")
         return links
-
     except Exception as e:
-        logger.error(f"Could not fetch links from Supabase: {e}")
+        logger.error(f"Error fetching links from Turso: {e}")
         logger.info("Continuing without deduplication...")
         return set()
-    
-def upload_to_supabase_raw(df: pd.DataFrame):
-    """
-    Uploads new rows to the 'un_votes_raw' table in Supabase.
-    This is the raw data table with all scraped data.
 
-    Args:
-        df (pd.DataFrame): The DataFrame containing new rows to upload.
+
+def upload_to_turso_raw(df: pd.DataFrame):
+    """
+    Uploads new rows to the 'un_votes_raw' table in Turso.
+    Converts wide-format DataFrame (country ISO3 columns) to vote_data JSON blob.
+    Uses INSERT OR IGNORE to skip rows with duplicate Link values.
     """
     if df.empty:
         logger.info("No new rows to upload to un_votes_raw.")
         return
 
-    logger.info("Starting upload to un_votes_raw table...")
-
+    logger.info(f"Uploading {len(df)} rows to Turso un_votes_raw...")
     try:
-        supabase = get_supabase_client()
-        
-        # Prepare data for upload
-        df_to_upload = df.copy()
-        df_to_upload.replace({np.nan: None}, inplace=True)
-        
-        # Note: id column has been removed from the table schema
-        
-        # Also remove created_at and updated_at as they should be auto-generated
-        if 'created_at' in df_to_upload.columns:
-            df_to_upload = df_to_upload.drop('created_at', axis=1)
-        if 'updated_at' in df_to_upload.columns:
-            df_to_upload = df_to_upload.drop('updated_at', axis=1)
-        
-        # Handle numeric columns properly
-        for col in df_to_upload.columns:
-            if col in ['TOTAL VOTES', 'NO-VOTE COUNT', 'ABSTAIN COUNT', 'NO COUNT', 'YES COUNT', 'Scrape_Year']:
-                # Convert to integer, handling NaN values
-                df_to_upload[col] = pd.to_numeric(df_to_upload[col], errors='coerce').astype('Int64')
-            elif pd.api.types.is_datetime64_any_dtype(df_to_upload[col]):
-                df_to_upload[col] = df_to_upload[col].dt.strftime('%Y-%m-%d %H:%M:%S')
-            elif df_to_upload[col].dtype == 'object':
-                # Check if column contains Timestamp objects
-                if df_to_upload[col].apply(lambda x: isinstance(x, pd.Timestamp)).any():
-                    df_to_upload[col] = df_to_upload[col].apply(
-                        lambda x: x.strftime('%Y-%m-%d %H:%M:%S') if isinstance(x, pd.Timestamp) else x
-                    )
-        
-        # Remove duplicates on Link column
-        original_count = len(df_to_upload)
-        df_to_upload.drop_duplicates(subset=['Link'], keep='first', inplace=True)
-        if len(df_to_upload) < original_count:
-            logger.warning(f"Removed {original_count - len(df_to_upload)} duplicate rows from upload batch.")
-
-        # Debug: Check for any remaining Timestamp objects
-        for i, row in df_to_upload.iterrows():
-            for col, value in row.items():
-                if isinstance(value, pd.Timestamp):
-                    logger.warning(f"Found Timestamp object in row {i}, column {col}: {value}")
-                    df_to_upload.at[i, col] = value.strftime('%Y-%m-%d %H:%M:%S')
-        
-        rows_to_insert = df_to_upload.to_dict(orient='records')
-        
-        # Use insert for new records (IDs will be auto-generated)
-        supabase.table('un_votes_raw').insert(rows_to_insert).execute()
-        
-        logger.info(f"Successfully inserted {len(df_to_upload)} rows to un_votes_raw table.")
-
+        conn = get_turso_connection()
+        country_cols = [
+            c for c in df.columns
+            if isinstance(c, str) and len(c) == 3 and c.isupper() and c not in {'YES', 'NO'}
+        ]
+        meta_cols = ['Resolution', 'Date', 'Title', 'Link', 'tags']
+        rows = []
+        for _, row in df.iterrows():
+            vote_data = {c: row[c] for c in country_cols if c in row and pd.notna(row[c])}
+            meta = [row.get(c) for c in meta_cols]
+            rows.append(tuple(meta + [json.dumps(vote_data)]))
+        conn.executemany(
+            "INSERT OR IGNORE INTO un_votes_raw (Resolution, Date, Title, Link, tags, vote_data) VALUES (?, ?, ?, ?, ?, ?)",
+            rows
+        )
+        conn.commit()
+        logger.info(f"Inserted {len(rows)} rows to un_votes_raw (duplicates skipped).")
     except Exception as e:
-        logger.error(f"An error occurred during un_votes_raw upload: {e}")
+        logger.error(f"Error uploading to Turso un_votes_raw: {e}")
+        raise
 
-def upload_to_supabase_with_sc(df: pd.DataFrame):
+
+def upload_to_turso_with_sc(df: pd.DataFrame):
     """
-    Uploads processed rows to the 'un_votes_with_sc' table in Supabase.
-    This table contains data processed for the dashboard with Security Council data.
-
-    Args:
-        df (pd.DataFrame): The DataFrame containing processed rows to upload.
+    Uploads processed rows to the 'un_votes_with_sc' table in Turso.
+    Converts wide-format DataFrame to vote_data JSON blob.
+    Adds sc_flag=1 for Security Council resolutions (Resolution starts with 'S/').
+    Uses INSERT OR IGNORE to skip rows with duplicate Link values.
     """
     if df.empty:
         logger.info("No new rows to upload to un_votes_with_sc.")
         return
 
-    logger.info("Starting upload to un_votes_with_sc table...")
-
+    logger.info(f"Uploading {len(df)} rows to Turso un_votes_with_sc...")
     try:
-        supabase = get_supabase_client()
-        
-        # Prepare data for upload
-        df_to_upload = df.copy()
-        df_to_upload.replace({np.nan: None}, inplace=True)
-        
-        # Note: id column has been removed from the table schema
-        
-        # Also remove created_at and updated_at as they should be auto-generated
-        if 'created_at' in df_to_upload.columns:
-            df_to_upload = df_to_upload.drop('created_at', axis=1)
-        if 'updated_at' in df_to_upload.columns:
-            df_to_upload = df_to_upload.drop('updated_at', axis=1)
-        
-        # Handle numeric columns properly
-        for col in df_to_upload.columns:
-            if col in ['TOTAL VOTES', 'NO-VOTE COUNT', 'ABSTAIN COUNT', 'NO COUNT', 'YES COUNT', 'Scrape_Year']:
-                # Convert to integer, handling NaN values
-                df_to_upload[col] = pd.to_numeric(df_to_upload[col], errors='coerce').astype('Int64')
-            elif pd.api.types.is_datetime64_any_dtype(df_to_upload[col]):
-                df_to_upload[col] = df_to_upload[col].dt.strftime('%Y-%m-%d %H:%M:%S')
-            elif df_to_upload[col].dtype == 'object':
-                # Check if column contains Timestamp objects
-                if df_to_upload[col].apply(lambda x: isinstance(x, pd.Timestamp)).any():
-                    df_to_upload[col] = df_to_upload[col].apply(
-                        lambda x: x.strftime('%Y-%m-%d %H:%M:%S') if isinstance(x, pd.Timestamp) else x
-                    )
-        
-        # Remove duplicates on Link column
-        original_count = len(df_to_upload)
-        df_to_upload.drop_duplicates(subset=['Link'], keep='first', inplace=True)
-        if len(df_to_upload) < original_count:
-            logger.warning(f"Removed {original_count - len(df_to_upload)} duplicate rows from upload batch.")
-
-        # Debug: Check for any remaining Timestamp objects
-        for i, row in df_to_upload.iterrows():
-            for col, value in row.items():
-                if isinstance(value, pd.Timestamp):
-                    logger.warning(f"Found Timestamp object in row {i}, column {col}: {value}")
-                    df_to_upload.at[i, col] = value.strftime('%Y-%m-%d %H:%M:%S')
-        
-        rows_to_insert = df_to_upload.to_dict(orient='records')
-        
-        # Use insert for new records (IDs will be auto-generated)
-        supabase.table('un_votes_with_sc').insert(rows_to_insert).execute()
-        
-        logger.info(f"Successfully inserted {len(df_to_upload)} rows to un_votes_with_sc table.")
-
+        conn = get_turso_connection()
+        country_cols = [
+            c for c in df.columns
+            if isinstance(c, str) and len(c) == 3 and c.isupper() and c not in {'YES', 'NO'}
+        ]
+        meta_cols = ['Resolution', 'Date', 'Title', 'Link', 'tags']
+        rows = []
+        for _, row in df.iterrows():
+            vote_data = {c: row[c] for c in country_cols if c in row and pd.notna(row[c])}
+            resolution = row.get('Resolution') or ''
+            sc_flag = 1 if str(resolution).startswith('S/') else 0
+            meta = [row.get(c) for c in meta_cols]
+            rows.append(tuple(meta + [json.dumps(vote_data), sc_flag]))
+        conn.executemany(
+            "INSERT OR IGNORE INTO un_votes_with_sc (Resolution, Date, Title, Link, tags, vote_data, sc_flag) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            rows
+        )
+        conn.commit()
+        logger.info(f"Inserted {len(rows)} rows to un_votes_with_sc (duplicates skipped).")
     except Exception as e:
-        logger.error(f"An error occurred during un_votes_with_sc upload: {e}")
+        logger.error(f"Error uploading to Turso un_votes_with_sc: {e}")
+        raise
 
-def get_all_data_from_supabase():
-    """
-    Fetches all data from the un_votes_raw table in Supabase.
-    Returns a pandas DataFrame with all existing data.
-    """
-    logger.info("Fetching all data from un_votes_raw table...")
-    
+
+def get_all_data_from_turso():
+    """Fetches all data from un_votes_raw in Turso."""
+    logger.info("Fetching all data from Turso un_votes_raw...")
     try:
-        supabase = get_supabase_client()
-        
-        # Fetch all data from the table
-        response = supabase.table('un_votes_raw').select('*').execute()
-        
-        if response.data:
-            df = pd.DataFrame(response.data)
-            logger.info(f"Fetched {len(df)} rows from un_votes_raw table.")
+        conn = get_turso_connection()
+        cursor = conn.execute("SELECT * FROM un_votes_raw")
+        cols = [d[0] for d in cursor.description]
+        rows = cursor.fetchall()
+        if rows:
+            df = pd.DataFrame(rows, columns=cols)
+            # Expand vote_data JSON back to wide format
+            if 'vote_data' in df.columns:
+                vote_expanded = df['vote_data'].apply(
+                    lambda x: json.loads(x) if x else {}
+                ).apply(pd.Series)
+                df = pd.concat([df.drop('vote_data', axis=1), vote_expanded], axis=1)
+            logger.info(f"Fetched {len(df)} rows from Turso un_votes_raw.")
             return df
         else:
-            logger.info("No data found in un_votes_raw table.")
+            logger.info("No data in Turso un_votes_raw.")
             return pd.DataFrame()
-            
     except Exception as e:
-        logger.error(f"Error fetching data from Supabase: {e}")
+        logger.error(f"Error fetching from Turso: {e}")
         return pd.DataFrame()
 
 def process_and_upload_data(new_df, existing_df=None):
     """
-    Process new data and upload to both Supabase tables.
-    
+    Process new data and upload to both Turso tables.
+
     Args:
         new_df: DataFrame with new scraped data
         existing_df: DataFrame with existing data (optional)
@@ -2138,7 +2059,7 @@ def process_and_upload_data(new_df, existing_df=None):
     combined_df['Date'] = pd.to_datetime(combined_df['Date'], errors='coerce')
     combined_df.sort_values('Date', ascending=True, inplace=True)
     combined_df.reset_index(drop=True, inplace=True)
-    # Don't add id column - let Supabase auto-generate it
+    # Don't add id column - let Turso auto-generate it
     
     # Reorder columns
     cols = list(combined_df.columns)
@@ -2157,15 +2078,15 @@ def process_and_upload_data(new_df, existing_df=None):
     
     # Upload ALL processed data to un_votes_with_sc first
     logger.info("Uploading processed data to un_votes_with_sc table...")
-    upload_to_supabase_with_sc(combined_df)
-    
+    upload_to_turso_with_sc(combined_df)
+
     # Filter for non-SC records and upload to un_votes_raw
     logger.info("Filtering for non-SC records to upload to un_votes_raw table...")
     non_sc_df = combined_df[combined_df['Council'] != 'Security Council'].copy()
-    
+
     if not non_sc_df.empty:
         logger.info(f"Uploading {len(non_sc_df)} non-SC records to un_votes_raw table...")
-        upload_to_supabase_raw(non_sc_df)
+        upload_to_turso_raw(non_sc_df)
     else:
         logger.info("No non-SC records to upload to un_votes_raw table.")
     
@@ -2174,7 +2095,7 @@ def process_and_upload_data(new_df, existing_df=None):
 
 def checkpoint_progress(new_rows_all, current_year):
     """
-    Checkpoint progress by uploading new data to Supabase.
+    Checkpoint progress by uploading new data to Turso.
     This allows recovery if the scraper is interrupted.
     
     Args:
@@ -2211,22 +2132,22 @@ def checkpoint_progress(new_rows_all, current_year):
 def main():
     """
     Main function that integrates scraping, tagging, and geo-tagging:
-      - Fetches existing data from Supabase for deduplication
+      - Fetches existing data from Turso for deduplication
       - Scrapes new rows to add to the dataset
       - Tags only the new rows with both regular tagging and geo-tagging
       - Standardizes country columns to ISO3 codes
-      - Uploads all data to both Supabase tables (un_votes_raw and un_votes_with_sc)
+      - Uploads all data to both Turso tables (un_votes_raw and un_votes_with_sc)
     """
     driver = None
     try:
-        logger.info("Starting Supabase-native UN voting data scraper...")
-        
+        logger.info("Starting Turso-native UN voting data scraper...")
+
         # Start scraper logging
         start_scraper_log()
-        
-        # Get existing links from Supabase for deduplication
-        logger.info("Loading existing links from Supabase for deduplication...")
-        existing_links = get_links_from_supabase()
+
+        # Get existing links from Turso for deduplication
+        logger.info("Loading existing links from Turso for deduplication...")
+        existing_links = get_links_from_turso()
         logger.info(f"Loaded {len(existing_links)} unique links for deduplication.")
         
         # Update log with total records found
@@ -2352,12 +2273,12 @@ def main():
         return
     
     # Final processing and upload
-    logger.info("Processing final data and uploading to Supabase...")
+    logger.info("Processing final data and uploading to Turso...")
     new_df = pd.DataFrame(new_rows_all)
-    
-    # Get existing data from Supabase to check for already uploaded records
-    logger.info("Fetching existing data from Supabase...")
-    existing_df = get_all_data_from_supabase()
+
+    # Get existing data from Turso to check for already uploaded records
+    logger.info("Fetching existing data from Turso...")
+    existing_df = get_all_data_from_turso()
     
     # Filter out records that were already uploaded during checkpoints
     if not existing_df.empty:
@@ -2379,7 +2300,7 @@ def main():
         final_df = process_and_upload_data(new_df, None)
         
         logger.info(f"Pipeline completed successfully. Final dataset contains {len(final_df)} rows.")
-        logger.info("Data uploaded to both un_votes_raw and un_votes_with_sc tables in Supabase.")
+        logger.info("Data uploaded to both un_votes_raw and un_votes_with_sc tables in Turso.")
         
         # Update final metrics and finish logging
         update_scraper_log({
