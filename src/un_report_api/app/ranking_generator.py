@@ -5,7 +5,7 @@ import numpy as np
 import os
 import logging
 from typing import List, Dict, Tuple, Optional
-from supabase_client import supabase_loader
+from turso_client import turso_loader
 
 # Configuration
 # Define paths relative to the project root, which is the current working directory.
@@ -135,7 +135,7 @@ def generate_yearly_rankings(year: int) -> Tuple[Dict, Optional[str]]:
 
     try:
         # Load scores from Supabase and standardize.
-        df_all_scores_raw = supabase_loader.load_annual_scores()
+        df_all_scores_raw = turso_loader.load_annual_scores()
         df_scores = standardize_col_names(df_all_scores_raw.copy())
         # The 'Country name' column in this file actually contains the 3-letter codes.
         # We rename it to 'country_code' to use as a reliable key for our merge.
@@ -149,7 +149,7 @@ def generate_yearly_rankings(year: int) -> Tuple[Dict, Optional[str]]:
         raise ValueError(f"Error processing data from Supabase: {e}")
 
     try:
-        df_classifications_raw = supabase_loader.load_country_classifications()
+        df_classifications_raw = turso_loader.load_country_classifications()
         df_classifications = standardize_col_names(df_classifications_raw.copy())
         logger.debug(f"Successfully loaded and standardized country_classifications from Supabase")
     except Exception as e:

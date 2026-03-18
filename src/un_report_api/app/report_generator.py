@@ -18,7 +18,7 @@ from typing import Optional, Tuple, Dict, List # Added Optional, Tuple, Dict, Li
 # --- Local Imports (relative for package structure) ---
 # Absolute imports for local modules
 from country_iso_map import COUNTRY_TO_ISO3
-from supabase_client import supabase_loader
+from turso_client import turso_loader
 
 # --- Configuration ---
 P5_ISO_CODES = ["CHN", "FRA", "RUS", "GBR", "USA"] # UN Security Council P5 Members
@@ -112,7 +112,7 @@ def load_un_region_mapping_from_supabase() -> Tuple[Optional[Dict], Optional[Dic
         Returns (None, None) if loading fails.
     """
     try:
-        df_regions = supabase_loader.load_un_region_mapping()
+        df_regions = turso_loader.load_un_region_mapping()
         
         if df_regions.empty:
             logging.error("No region mapping data found in Supabase.")
@@ -205,15 +205,15 @@ def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:
     # --- Load Data from Supabase ---
     try:
         logging.debug("Loading annual scores from Supabase")
-        df_scores_raw = supabase_loader.load_annual_scores()
+        df_scores_raw = turso_loader.load_annual_scores()
         df_scores = standardize_col_names(df_scores_raw.copy())
         
         logging.debug("Loading pairwise similarity from Supabase")
-        df_similarity_raw = supabase_loader.load_pairwise_similarity()
+        df_similarity_raw = turso_loader.load_pairwise_similarity()
         df_similarity = standardize_col_names(df_similarity_raw.copy())
 
         logging.debug("Loading topic votes from Supabase")
-        df_topics_raw = supabase_loader.load_topic_votes()
+        df_topics_raw = turso_loader.load_topic_votes()
         df_topics = standardize_col_names(df_topics_raw.copy())
 
     except Exception as e:

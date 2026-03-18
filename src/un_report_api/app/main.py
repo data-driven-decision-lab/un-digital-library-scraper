@@ -43,11 +43,8 @@ from simple_veto_endpoint import get_enhanced_veto_analysis
 
 # Security Council analysis imports
 try:
-    from supabase import create_client
     from un_classification_mapper import UNClassificationMapper, classify_title_with_un_mapper
 except ImportError:
-    # Fallback for development
-    create_client = None
     UNClassificationMapper = None
 
 import json
