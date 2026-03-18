@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Completed 01-cleanup-01-01-PLAN.md
-last_updated: "2026-03-18T20:18:36.425Z"
-last_activity: 2026-03-19 — Roadmap created, requirements mapped to 4 phases
+status: in_progress
+stopped_at: Completed 02-database-migration/02-01-PLAN.md
+last_updated: "2026-03-19T00:00:00.000Z"
+last_activity: 2026-03-19 — Phase 02 Plan 01 complete (Turso schema + TursoDataLoader)
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
-  percent: 100
+  total_plans: 3
+  completed_plans: 3
+  percent: 33
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Pipeline produces accurate, complete, and consistent voting analytics across all tables — served reliably via the API
-**Current focus:** Phase 1 — Cleanup
+**Current focus:** Phase 2 — Database Migration
 
 ## Current Position
 
-Phase: 1 of 4 (Cleanup)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-03-19 — Roadmap created, requirements mapped to 4 phases
+Phase: 2 of 4 (Database Migration)
+Plan: 1 of TBD in current phase (02-01 complete)
+Status: In progress
+Last activity: 2026-03-19 — Phase 02 Plan 01 complete (Turso schema + TursoDataLoader)
 
-Progress: [██████████] 100%
+Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
 
@@ -50,6 +50,7 @@ Progress: [██████████] 100%
 - Trend: -
 
 *Updated after each plan completion*
+| Phase 02-database-migration P01 | 2 | 2 tasks | 2 files |
 | Phase 01-cleanup P02 | 1 | 1 tasks | 0 files |
 | Phase 01-cleanup P01 | 2 | 2 tasks | 16 files |
 
@@ -67,6 +68,9 @@ Recent decisions affecting current work:
 - [Phase 01-cleanup]: Root CSVs were gitignored (*.csv rule) — deletion was filesystem-only, git rm not needed
 - [Phase 01-cleanup]: Live API CSVs in required_csvs/ whitelisted in .gitignore and confirmed untouched after cleanup
 - [Phase 01-cleanup]: turso_stuff.txt was untracked (never committed) — removed with rm not git rm; PIPELINE_ISSUES.md and RECOMPUTATION_GUIDE.md also untracked, moved via mv then git add at new location
+- [Phase 02-01]: vote_data stored as JSON TEXT blob to avoid enumerating 190+ country ISO3 columns in DDL
+- [Phase 02-01]: libsql_experimental import deferred inside get_turso_connection() so API starts without it installed
+- [Phase 02-01]: TursoDataLoader retains identical CSV-reading logic from SupabaseDataLoader — only class name and SDK dependency removed
 
 ### Pending Todos
 
@@ -79,6 +83,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T20:14:37.151Z
-Stopped at: Completed 01-cleanup-01-01-PLAN.md
+Last session: 2026-03-19T00:00:00.000Z
+Stopped at: Completed 02-database-migration/02-01-PLAN.md
 Resume file: None
