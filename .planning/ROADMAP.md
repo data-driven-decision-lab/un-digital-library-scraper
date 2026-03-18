@@ -78,7 +78,13 @@ Plans:
   3. README contains working setup, architecture, and deployment instructions
   4. Cloud Build / GitHub Action uses Turso environment variables and the pipeline deploys successfully to Cloud Run
   5. `.env.example` lists all required Turso credential placeholders
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Update cloudbuild.yaml with Turso env vars, verify Dockerfile, create .env.example (CICD-01, CICD-02, CICD-03)
+- [ ] 04-02-PLAN.md — Write docs/METHODOLOGY.md (P1/P2/P3 formulas) and docs/SCHEMA.md (Turso table reference) (DOC-01, DOC-02)
+- [ ] 04-03-PLAN.md — Add docstrings to major functions in dashboard_data_pipeline.py and scraper_pipeline.py (DOC-04)
+- [ ] 04-04-PLAN.md — Rewrite README.md for Turso-native pipeline with setup, architecture, and deployment (DOC-03)
 
 ## Progress
 
@@ -90,4 +96,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Cleanup | 2/2 | Complete   | 2026-03-18 |
 | 2. Database Migration | 4/4 | Complete   | 2026-03-18 |
 | 3. Pipeline Fixes | 2/2 | Complete   | 2026-03-18 |
-| 4. Ship | 0/TBD | Not started | - |
+| 4. Ship | 0/4 | Not started | - |
