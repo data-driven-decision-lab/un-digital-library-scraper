@@ -569,6 +569,13 @@ def generate_annual_scores(df_combined_index):
     for col in numeric_cols:
         df_annual[col] = pd.to_numeric(df_annual[col], errors='coerce')
 
+    # PIPE-03: exclude zero-vote countries (Total Votes in Year == 0 means no actual votes cast;
+    # these rows carry no pillar scores and create inconsistency with the other output tables).
+    if 'Total Votes in Year' in df_annual.columns:
+        before_filter = len(df_annual)
+        df_annual = df_annual[df_annual['Total Votes in Year'] > 0].copy()
+        logging.info(f"ANNUAL SCORES: Dropped {before_filter - len(df_annual)} zero-vote-country rows (PIPE-03).")
+
     logging.info(f"Step 2: Annual Scores generation finished. Shape: {df_annual.shape}")
     return df_annual
 
@@ -672,11 +679,14 @@ def generate_similarity_matrix(df_raw):
         if df_year.empty: continue
 
         vote_matrix_numeric = df_year.apply(lambda col: col.map(map_vote)).fillna(0).astype(np.int8)
+        # PIPE-03: exclude countries with all-zero vote vectors (non-voting countries like AFG, VEN)
+        active_cols = [c for c in vote_matrix_numeric.columns if vote_matrix_numeric[c].any()]
+        vote_matrix_numeric = vote_matrix_numeric[active_cols]
         if vote_matrix_numeric.empty: continue
 
         try:
             similarity_matrix = cosine_similarity(vote_matrix_numeric.T)
-            df_sim = pd.DataFrame(similarity_matrix, index=country_cols, columns=country_cols)
+            df_sim = pd.DataFrame(similarity_matrix, index=active_cols, columns=active_cols)
             df_sim_long = df_sim.stack().reset_index()
             df_sim_long.columns = ['Country1_ISO3', 'Country2_ISO3', 'CosineSimilarity']
             df_sim_long['Year'] = year
