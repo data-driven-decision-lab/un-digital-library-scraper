@@ -91,15 +91,15 @@
 | DOC-02 | Phase 4 | Pending |
 | DOC-03 | Phase 4 | Pending |
 | DOC-04 | Phase 4 | Pending |
-| CICD-01 | Phase 5 | Pending |
-| CICD-02 | Phase 5 | Pending |
-| CICD-03 | Phase 5 | Pending |
+| CICD-01 | Phase 4 | Pending |
+| CICD-02 | Phase 4 | Pending |
+| CICD-03 | Phase 4 | Pending |
 
 **Coverage:**
 - v1 requirements: 23 total
-- Mapped to phases: 23
+- Mapped to phases: 23 (across 4 phases)
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-19*
-*Last updated: 2026-03-19 after initial definition*
+*Last updated: 2026-03-19 — traceability updated to 4-phase structure (DOC + CICD merged into Phase 4)*
