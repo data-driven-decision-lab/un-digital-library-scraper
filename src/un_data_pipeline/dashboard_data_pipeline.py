@@ -12,7 +12,11 @@ import warnings
 from sklearn.metrics.pairwise import cosine_similarity
 from tqdm.auto import tqdm
 import ast
-import libsql_experimental as libsql
+try:
+    import libsql_experimental as libsql
+    _USE_HTTP_CLIENT = False
+except ImportError:
+    _USE_HTTP_CLIENT = True
 
 # ==============================================================================
 # INITIAL SETUP
@@ -53,13 +57,18 @@ def get_turso_connection():
     """Get a libsql connection to the Turso database.
 
     Reads TURSO_DATABASE_URL and TURSO_AUTH_TOKEN from environment.
+    Falls back to HTTP-based client on Windows if libsql-experimental
+    is not available.
 
     Returns:
-        libsql.Connection: Active database connection.
+        Connection: Active database connection.
 
     Raises:
         ValueError: If either environment variable is not set.
     """
+    if _USE_HTTP_CLIENT:
+        from src.un_data_pipeline.turso_http import get_turso_connection as _http_conn
+        return _http_conn()
     url = os.getenv("TURSO_DATABASE_URL")
     auth_token = os.getenv("TURSO_AUTH_TOKEN")
     if not url:
@@ -93,13 +102,13 @@ def _expand_vote_data(df):
     return df
 
 
-def load_data_from_turso(table_name='un_votes_with_sc', page_size=1000):
+def load_data_from_turso(table_name='un_votes_with_sc', page_size=500):
     """
-    Loads all data from a Turso (LibSQL) table.
+    Loads all data from a Turso (LibSQL) table with pagination.
 
     Args:
         table_name: Name of the table to load from
-        page_size: Unused — kept for API compatibility; LibSQL fetches all rows at once
+        page_size: Rows per page (for HTTP client, large responses can fail)
 
     Returns:
         pandas.DataFrame: Loaded data
@@ -113,14 +122,31 @@ def load_data_from_turso(table_name='un_votes_with_sc', page_size=1000):
         cursor = conn.execute(f"SELECT * FROM {table_name} LIMIT 1")
         cols = [d[0] for d in cursor.description]
 
-        # Fetch all rows
-        rows = conn.execute(f"SELECT * FROM {table_name}").fetchall()
+        # Get total count
+        count_cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name}")
+        total = count_cursor.fetchone()[0]
+        logging.info(f"Total rows in {table_name}: {total}")
 
-        if not rows:
+        if total == 0:
             logging.warning(f"No data found in {table_name} table")
             return pd.DataFrame()
 
-        df = pd.DataFrame(rows, columns=cols)
+        # Paginated fetch to avoid HTTP response size limits
+        all_rows = []
+        offset = 0
+        while offset < total:
+            cursor = conn.execute(
+                f"SELECT * FROM {table_name} LIMIT {page_size} OFFSET {offset}"
+            )
+            batch = cursor.fetchall()
+            if not batch:
+                break
+            all_rows.extend(batch)
+            offset += len(batch)
+            if offset % 2000 == 0 or offset >= total:
+                logging.info(f"  Loaded {offset}/{total} rows from {table_name}")
+
+        df = pd.DataFrame(all_rows, columns=cols)
         logging.info(f"Successfully loaded {len(df)} rows from {table_name}")
 
         # Expand vote_data JSON column if present
@@ -170,7 +196,7 @@ def save_data_to_turso(df: pd.DataFrame, table_name: str) -> int:
                 df_to_upload[col] = pd.to_numeric(df_to_upload[col], errors='coerce').astype('Int64')
                 # Convert pandas NA to Python None for libsql compatibility
                 df_to_upload[col] = df_to_upload[col].where(pd.notna(df_to_upload[col]), None)
-                df_to_upload[col] = df_to_upload[col].apply(lambda x: int(x) if x is not None else None)
+                df_to_upload[col] = df_to_upload[col].apply(lambda x: int(x) if pd.notna(x) else None)
             elif col in ['Pillar 1 Score', 'Pillar 2 Score', 'Pillar 3 Score',
                          'Total Index Average', 'Overall Rank Rolling Avg (3y)',
                          'Total Index Normalized', 'Pillar 1 Normalized', 'Pillar 2 Normalized',
@@ -276,7 +302,10 @@ def validate_source_year_coverage(df_raw, expected_year=EXPECTED_LATEST_YEAR):
     if 'Date' not in df_raw.columns:
         raise ValueError("Source data missing required 'Date' column for year validation.")
 
-    dates = pd.to_datetime(df_raw['Date'], errors='coerce')
+    dates = pd.to_datetime(
+        df_raw['Date'].astype(str).str.replace(r'[+-]\d{2}(?::\d{2})?$', '', regex=True),
+        errors='coerce'
+    )
     years = dates.dt.year.dropna()
     if years.empty:
         raise ValueError("Source data has no parseable dates; cannot validate year coverage.")
@@ -869,7 +898,15 @@ def main():
         logging.info(f"Filtered out Security Council resolutions, {len(df_filtered)} rows remaining.")
 
         # Create 'Year' column from 'Date'
-        df_filtered['Date'] = pd.to_datetime(df_filtered['Date'], errors='coerce')
+        # Normalize Date strings before parsing: strip timezone suffixes (+00, +00:00, -05:00)
+        # so that a mix of tz-aware ("2025-03-04 00:00:00+00") and tz-naive
+        # ("2025-09-19 00:00:00") strings both parse correctly. Without this,
+        # pd.to_datetime coerces tz-naive strings to NaT when the Series contains
+        # any tz-aware value, silently dropping all newly-scraped rows.
+        df_filtered['Date'] = pd.to_datetime(
+            df_filtered['Date'].astype(str).str.replace(r'[+-]\d{2}(?::\d{2})?$', '', regex=True),
+            errors='coerce'
+        )
         df_filtered.dropna(subset=['Date'], inplace=True)
         df_filtered['Year'] = df_filtered['Date'].dt.year
         logging.info("Created 'Year' column from 'Date'.")
@@ -906,17 +943,7 @@ def main():
                 'Country2_ISO3': 'Country2'
             })
 
-        logging.info(f"About to save annual_scores: {df_annual_scores_db.shape}")
-        logging.info(f"Annual scores columns: {list(df_annual_scores_db.columns)}")
-        rows_annual = save_data_to_turso(df_annual_scores_db, 'annual_scores')
-
-        logging.info(f"About to save topic_votes_yearly: {df_topic_votes.shape}")
-        rows_topic = save_data_to_turso(df_topic_votes, 'topic_votes_yearly')
-
-        logging.info(f"About to save pairwise_similarity_yearly: {df_similarity_db.shape}")
-        rows_similarity = save_data_to_turso(df_similarity_db, 'pairwise_similarity_yearly')
-
-        # --- 4. Save locally as CSV files (for API fallback) ---
+        # --- 4. Save locally as CSV files FIRST (fast, reliable) ---
         OUTPUT_DATA_DIR = os.path.join(PROJECT_ROOT, 'src', 'un_report_api', 'app', 'required_csvs')
 
         if not os.path.exists(OUTPUT_DATA_DIR):
@@ -944,6 +971,17 @@ def main():
         validate_output_contains_year(df_topic_votes, 'topic_votes_yearly.csv', expected_year=EXPECTED_LATEST_YEAR)
         validate_output_contains_year(df_similarity, 'pairwise_similarity_yearly.csv', expected_year=EXPECTED_LATEST_YEAR)
         logging.info(f"Validated required year coverage ({EXPECTED_LATEST_YEAR}) in all output CSV datasets.")
+
+        # --- 5b. Save to Turso (after CSVs, so data is safe even if upload is slow/fails) ---
+        logging.info("Saving computed data to Turso...")
+        logging.info(f"About to save annual_scores: {df_annual_scores_db.shape}")
+        rows_annual = save_data_to_turso(df_annual_scores_db, 'annual_scores')
+
+        logging.info(f"About to save topic_votes_yearly: {df_topic_votes.shape}")
+        rows_topic = save_data_to_turso(df_topic_votes, 'topic_votes_yearly')
+
+        logging.info(f"About to save pairwise_similarity_yearly: {df_similarity_db.shape}")
+        rows_similarity = save_data_to_turso(df_similarity_db, 'pairwise_similarity_yearly')
 
         # --- 6. Update pipeline_runs with success ---
         total_rows = rows_annual + rows_topic + rows_similarity
