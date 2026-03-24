@@ -47,7 +47,11 @@ from .data_modules.un_classification import un_classification
 from .data_modules.un_geo_hierarchy import geo_hierarchy
 from .data_modules.iso2_country import iso2_country_code
 import pycountry
-import libsql_experimental as libsql
+try:
+    import libsql_experimental as libsql
+    _USE_HTTP_CLIENT = False
+except ImportError:
+    _USE_HTTP_CLIENT = True
 
 
 
@@ -102,13 +106,13 @@ def enable_verbose_scraping():
 # Load environment variables
 load_dotenv()
 
-# Set your API key
-API_KEY = os.getenv("API_KEY")
+# Set your Gemini API key
+API_KEY = os.getenv("GEMINI_API_KEY")
 if not API_KEY:
-    raise ValueError("API_KEY not found in environment variables.")
+    raise ValueError("GEMINI_API_KEY not found in environment variables.")
 
 # ---------------- Global Settings ----------------
-DEFAULT_MODEL = "gpt-4o-mini"
+DEFAULT_MODEL = "gemini-3.1-flash-lite-preview"
 DEFAULT_TEMPERATURE = 0.2
 DEFAULT_MAX_TOKENS = 1000
 DEFAULT_MAX_WORKERS = 2  # For parallel scraping
@@ -125,14 +129,18 @@ def get_turso_connection():
     """Get a libsql connection to the Turso database.
 
     Reads TURSO_DATABASE_URL and TURSO_AUTH_TOKEN from environment.
-    Defined inline (not imported from turso_client.py) to keep scraper self-contained.
+    Falls back to HTTP-based client on Windows if libsql-experimental
+    is not available.
 
     Returns:
-        libsql.Connection: Active database connection.
+        Connection: Active database connection.
 
     Raises:
         ValueError: If either environment variable is not set.
     """
+    if _USE_HTTP_CLIENT:
+        from src.un_data_pipeline.turso_http import get_turso_connection as _http_conn
+        return _http_conn()
     url = os.getenv("TURSO_DATABASE_URL")
     auth_token = os.getenv("TURSO_AUTH_TOKEN")
     if not url:
@@ -288,7 +296,12 @@ class ResolutionTarget(BaseModel):
 def create_openai_client() -> OpenAI:
     """Create and return an OpenAI client instance using the API key."""
     # Set longer timeouts to handle potential network issues in CI/CD environments
-    return OpenAI(api_key=API_KEY, timeout=20.0, max_retries=0)
+    return OpenAI(
+        api_key=API_KEY,
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+        timeout=20.0,
+        max_retries=0,
+    )
 
 def execute_api_call(api_call_fn, max_retries=5):
     """
@@ -463,6 +476,9 @@ def combined_geo_tagger(df, geo_hierarchy, iso2_country_code,
         # Default to position 5 if Resolution not found
         insert_pos = 5 if len(df.columns) > 5 else len(df.columns)
     
+    # Reset index so iterrows() idx matches list positions
+    df = df.reset_index(drop=True)
+
     # Create empty lists for our new columns
     countries_list = [[] for _ in range(len(df))]
     subregions_list = [[] for _ in range(len(df))]
