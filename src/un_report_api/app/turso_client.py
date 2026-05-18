@@ -1,11 +1,107 @@
 """Turso (LibSQL) client for UN Report API."""
 
+import json
 import os
 import logging
+import math
+import urllib.request
 from typing import Optional
 import pandas as pd
 
 logger = logging.getLogger(__name__)
+
+
+class _TursoHTTPCursor:
+    """DB-API-style cursor backed by a single Turso HTTP response."""
+
+    def __init__(self, columns, rows):
+        self.description = [(c, None, None, None, None, None, None) for c in columns]
+        self._rows = rows
+        self._pos = 0
+
+    def fetchall(self):
+        return self._rows
+
+    def fetchone(self):
+        if self._pos < len(self._rows):
+            row = self._rows[self._pos]
+            self._pos += 1
+            return row
+        return None
+
+    @property
+    def rowcount(self):
+        return len(self._rows)
+
+
+class _TursoHTTPConnection:
+    """SQLite-like connection backed by the Turso HTTP API (v2/pipeline).
+
+    Used as a fallback when libsql_experimental isn't installable
+    (e.g. on Windows where the wheel doesn't build). Public surface
+    (execute/commit/close) matches libsql.Connection enough for the
+    read paths the API uses.
+    """
+
+    def __init__(self, url, auth_token):
+        self._url = url.replace("libsql://", "https://")
+        self._token = auth_token
+        self._api_url = f"{self._url}/v2/pipeline"
+
+    @staticmethod
+    def _convert_arg(a):
+        if a is None:
+            return {"type": "null"}
+        if hasattr(a, "item"):
+            a = a.item()
+        if isinstance(a, float) and (math.isnan(a) or math.isinf(a)):
+            return {"type": "null"}
+        if isinstance(a, bool):
+            return {"type": "integer", "value": str(int(a))}
+        if isinstance(a, int):
+            return {"type": "integer", "value": str(a)}
+        if isinstance(a, float):
+            return {"type": "float", "value": a}
+        return {"type": "text", "value": str(a)}
+
+    def execute(self, sql, args=None):
+        stmt = {"sql": sql}
+        if args:
+            stmt["args"] = [self._convert_arg(a) for a in args]
+        payload = json.dumps({"requests": [{"type": "execute", "stmt": stmt}, {"type": "close"}]})
+        req = urllib.request.Request(
+            self._api_url,
+            data=payload.encode(),
+            headers={"Authorization": f"Bearer {self._token}", "Content-Type": "application/json"},
+        )
+        resp = urllib.request.urlopen(req, timeout=60)
+        data = json.loads(resp.read())
+        result = data["results"][0]
+        if result["type"] == "error":
+            raise Exception(f"Turso SQL error: {result.get('error', {}).get('message', 'unknown')}")
+        exec_result = result["response"]["result"]
+        columns = [col["name"] for col in exec_result.get("cols", [])]
+        raw_rows = exec_result.get("rows", [])
+        rows = []
+        for raw_row in raw_rows:
+            row = []
+            for cell in raw_row:
+                if cell["type"] == "null":
+                    row.append(None)
+                elif cell["type"] == "integer":
+                    row.append(int(cell["value"]))
+                elif cell["type"] == "float":
+                    row.append(float(cell["value"]))
+                else:
+                    row.append(cell["value"])
+            rows.append(tuple(row))
+        return _TursoHTTPCursor(columns, rows)
+
+    def commit(self):
+        pass  # Turso auto-commits
+
+    def close(self):
+        pass
 
 
 def get_turso_connection():
@@ -28,8 +124,7 @@ def get_turso_connection():
         import libsql_experimental as libsql  # noqa: PLC0415
         return libsql.connect(url, auth_token=auth_token)
     except ImportError:
-        from un_data_pipeline.turso_http import TursoHTTPConnection  # noqa: PLC0415
-        return TursoHTTPConnection(url, auth_token)
+        return _TursoHTTPConnection(url, auth_token)
 
 
 class TursoDataLoader:

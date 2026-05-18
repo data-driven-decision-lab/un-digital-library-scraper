@@ -7,11 +7,17 @@ import os
 import json
 import pandas as pd
 from datetime import datetime
+from dotenv import find_dotenv, load_dotenv
 from fastapi import FastAPI, Path, Query, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from typing import Dict, List, Literal, Optional, Tuple
 import re
+
+# Load .env from the project root for local dev. In production (Cloud Run),
+# env vars are injected by the runtime — find_dotenv() returns '' and this
+# call becomes a no-op.
+load_dotenv(find_dotenv())
 #test
 # Use absolute imports with proper path handling
 import sys
