@@ -125,6 +125,29 @@ os.makedirs("../data/processed", exist_ok=True)
 current_run_id: Optional[str] = None
 scraper_log_data: Dict[str, Any] = {}
 
+def _clean_param(v):
+    """Convert a value to a type the libsql client accepts as a bound parameter.
+
+    libsql-experimental only accepts str/int/float/bytes/None. pandas/numpy
+    scalars (NaT, numpy.float64('nan'), pandas.Timestamp, numpy.int64, etc.)
+    raise ValueError("Unsupported parameter type"). Returns None for missing
+    values, otherwise stringifies (the affected metadata columns — Resolution,
+    Date, Title, Link, tags — are all TEXT in the Turso schema).
+    """
+    if v is None:
+        return None
+    try:
+        if pd.isna(v):
+            return None
+    except (TypeError, ValueError):
+        pass
+    if hasattr(v, 'item'):  # numpy scalar
+        v = v.item()
+    if isinstance(v, (str, int, float, bytes)):
+        return v
+    return str(v)
+
+
 def get_turso_connection():
     """Get a libsql connection to the Turso database.
 
@@ -1991,7 +2014,7 @@ def upload_to_turso_raw(df: pd.DataFrame):
         rows = []
         for _, row in df.iterrows():
             vote_data = {c: row[c] for c in country_cols if c in row and pd.notna(row[c])}
-            meta = [row.get(c) for c in meta_cols]
+            meta = [_clean_param(row.get(c)) for c in meta_cols]
             rows.append(tuple(meta + [json.dumps(vote_data)]))
         conn.executemany(
             "INSERT OR IGNORE INTO un_votes_raw (Resolution, Date, Title, Link, tags, vote_data) VALUES (?, ?, ?, ?, ?, ?)",
@@ -2028,7 +2051,7 @@ def upload_to_turso_with_sc(df: pd.DataFrame):
             vote_data = {c: row[c] for c in country_cols if c in row and pd.notna(row[c])}
             resolution = row.get('Resolution') or ''
             sc_flag = 1 if str(resolution).startswith('S/') else 0
-            meta = [row.get(c) for c in meta_cols]
+            meta = [_clean_param(row.get(c)) for c in meta_cols]
             rows.append(tuple(meta + [json.dumps(vote_data), sc_flag]))
         conn.executemany(
             "INSERT OR IGNORE INTO un_votes_with_sc (Resolution, Date, Title, Link, tags, vote_data, sc_flag) VALUES (?, ?, ?, ?, ?, ?, ?)",
