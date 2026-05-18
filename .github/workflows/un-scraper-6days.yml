@@ -13,7 +13,7 @@ jobs:
     env:
       TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
       TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-      API_KEY: ${{ secrets.API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       LOG_LEVEL: INFO
 
     steps:
@@ -42,7 +42,7 @@ jobs:
 
       - name: Check secrets are not empty and show lengths
         env:
-          API_KEY: ${{ secrets.API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
         run: |
@@ -56,30 +56,17 @@ jobs:
               echo "✅ $name length: ${#value}"
             fi
           }
-          check_var "API_KEY"
+          check_var "GEMINI_API_KEY"
           check_var "TURSO_DATABASE_URL"
           check_var "TURSO_AUTH_TOKEN"
 
-      - name: DNS check for OpenAI API
+      - name: DNS check for Gemini API
         run: |
-          echo "🔍 Checking DNS resolution for api.openai.com"
-          if dig +short api.openai.com | grep -qE '^[0-9.]+'; then
-            echo "✅ DNS resolution successful for api.openai.com"
+          echo "🔍 Checking DNS resolution for generativelanguage.googleapis.com"
+          if dig +short generativelanguage.googleapis.com | grep -qE '^[0-9.]+'; then
+            echo "✅ DNS resolution successful for generativelanguage.googleapis.com"
           else
-            echo "❌ DNS resolution failed for api.openai.com"
-            exit 1
-          fi
-
-      - name: HTTP check for OpenAI API availability (with auth)
-        env:
-          API_KEY: ${{ secrets.API_KEY }}
-        run: |
-          echo "🌐 Testing HTTPS connection to OpenAI API with authentication"
-          if curl -s --head --fail -H "Authorization: Bearer $API_KEY" \
-               https://api.openai.com/v1/models > /dev/null; then
-            echo "✅ OpenAI API is reachable"
-          else
-            echo "❌ OpenAI API is not reachable (HTTP check failed)"
+            echo "❌ DNS resolution failed for generativelanguage.googleapis.com"
             exit 1
           fi
 
