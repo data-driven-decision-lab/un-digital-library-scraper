@@ -384,5 +384,83 @@ async def download_votes(
     )
 
 
+@app.get(
+    "/download/metadata",
+    tags=["Downloads"],
+    summary="Metadata about the downloadable datasets",
+    description=(
+        "Returns Turso connectivity status, per-table row counts and date "
+        "ranges, and the most recent execution of each pipeline. Use this to "
+        "display 'data current as of …' indicators alongside the download UI."
+    ),
+)
+async def download_metadata():
+    response: dict = {
+        "turso": {"healthy": False, "checked_at": datetime.utcnow().isoformat() + "Z"},
+        "tables": {},
+        "last_run": {},
+    }
+
+    try:
+        from turso_client import get_turso_connection  # local import keeps cold-start fast
+        conn = get_turso_connection()
+    except Exception as e:
+        api_logger.error("Turso connection failed in /download/metadata: %s", e)
+        response["turso"]["error"] = str(e)
+        return response
+
+    response["turso"]["healthy"] = True
+
+    # Per-table summary. Filtering Date LIKE '1%' OR '2%' guards against the
+    # known data-quality issue where some rows have literal 'nan' as a Date.
+    table_queries = [
+        ("un_votes_unga",              "SELECT COUNT(*), MIN(Date), MAX(Date) FROM un_votes_unga WHERE Date LIKE '1%' OR Date LIKE '2%'",              "date"),
+        ("un_votes_with_sc",           "SELECT COUNT(*), MIN(Date), MAX(Date) FROM un_votes_with_sc WHERE Date LIKE '1%' OR Date LIKE '2%'",           "date"),
+        ("annual_scores",              "SELECT COUNT(*), MIN(Year), MAX(Year) FROM annual_scores",                                                      "year"),
+        ("topic_votes_yearly",         "SELECT COUNT(*), MIN(Year), MAX(Year) FROM topic_votes_yearly",                                                 "year"),
+        ("pairwise_similarity_yearly", "SELECT COUNT(*), MIN(Year), MAX(Year) FROM pairwise_similarity_yearly",                                         "year"),
+    ]
+    for table, sql, axis in table_queries:
+        try:
+            row = conn.execute(sql).fetchone()
+            count, earliest, latest = (row or (0, None, None))
+            entry = {"rows": int(count) if count is not None else 0}
+            if axis == "date":
+                entry["earliest_date"] = earliest
+                entry["latest_date"] = latest
+            else:
+                entry["earliest_year"] = int(earliest) if earliest is not None else None
+                entry["latest_year"] = int(latest) if latest is not None else None
+            response["tables"][table] = entry
+        except Exception as e:
+            api_logger.warning("Metadata query failed for %s: %s", table, e)
+            response["tables"][table] = {"error": str(e)}
+
+    # Last run per pipeline (scraper + dashboard).
+    pipeline_sql = (
+        "SELECT pipeline_name, started_at, finished_at, status, rows_affected, error_message "
+        "FROM pipeline_runs WHERE pipeline_name = ? "
+        "ORDER BY started_at DESC LIMIT 1"
+    )
+    for pipeline in ("scraper_pipeline", "dashboard_data_pipeline"):
+        try:
+            row = conn.execute(pipeline_sql, [pipeline]).fetchone()
+            if row:
+                response["last_run"][pipeline] = {
+                    "started_at": row[1],
+                    "finished_at": row[2],
+                    "status": row[3],
+                    "rows_affected": int(row[4]) if row[4] is not None else 0,
+                    "error_message": row[5],
+                }
+            else:
+                response["last_run"][pipeline] = None
+        except Exception as e:
+            api_logger.warning("Metadata query failed for last_run %s: %s", pipeline, e)
+            response["last_run"][pipeline] = {"error": str(e)}
+
+    return response
+
+
 # Run with Uvicorn example (CLI):
 # uvicorn main:app --host 0.0.0.0 --port 8000 --reload
