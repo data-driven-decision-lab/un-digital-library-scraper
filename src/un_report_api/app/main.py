@@ -437,7 +437,7 @@ async def download_metadata():
             "SELECT started_at, finished_at, status, rows_affected, error_message "
             "FROM pipeline_runs WHERE pipeline_name = ? "
             "ORDER BY started_at DESC LIMIT 1",
-            ["scraper_pipeline"],
+            ("scraper_pipeline",),
         ).fetchone()
         if row:
             response["last_run"]["scraper_pipeline"] = {
