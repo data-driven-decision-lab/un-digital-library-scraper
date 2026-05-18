@@ -3,20 +3,23 @@
 -- Apply via: cat db/schema.sql | turso db shell unga-datadrivendecisionlab
 --
 -- Tables:
---   1. un_votes_raw             - raw scraper output before SC tagging
---   2. un_votes_with_sc         - enriched voting data (includes SC resolutions)
+--   1. un_votes_unga            - General Assembly votes only (no Security Council)
+--   2. un_votes_with_sc         - all votes (General Assembly + Security Council)
 --   3. annual_scores            - per-country per-year pillar scores
 --   4. topic_votes_yearly       - per-country per-year per-topic vote counts
 --   5. pairwise_similarity_yearly - country-pair cosine similarity per year
 --   6. pipeline_runs            - execution metadata
 
 
--- 1. un_votes_raw: raw scraper output before Security Council tagging.
+-- 1. un_votes_unga: General Assembly votes only (Security Council resolutions excluded).
+--    Functionally equivalent to: SELECT ... FROM un_votes_with_sc WHERE sc_flag = 0.
+--    Maintained as a separate table for convenience of downstream consumers that
+--    only want GA voting data.
 --    The scraper produces wide-format rows (one row per resolution, country ISO3
 --    codes as columns). Rather than enumerating all 190+ country columns in DDL,
 --    per-country votes are stored as a JSON blob in vote_data.
 --    vote_data format: {"ISO3": "YES"|"NO"|"ABSTAIN"|null, ...}
-CREATE TABLE IF NOT EXISTS un_votes_raw (
+CREATE TABLE IF NOT EXISTS un_votes_unga (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     Resolution  TEXT,
     Date        TEXT,

@@ -15,7 +15,7 @@ cat db/schema.sql | turso db shell unga-datadrivendecisionlab
 
 ## Tables
 
-1. [un_votes_raw](#1-un_votes_raw)
+1. [un_votes_unga](#1-un_votes_unga)
 2. [un_votes_with_sc](#2-un_votes_with_sc)
 3. [annual_scores](#3-annual_scores)
 4. [topic_votes_yearly](#4-topic_votes_yearly)
@@ -24,10 +24,13 @@ cat db/schema.sql | turso db shell unga-datadrivendecisionlab
 
 ---
 
-## 1. `un_votes_raw`
+## 1. `un_votes_unga`
 
-**Purpose:** Raw scraper output before Security Council tagging. One row per UN General Assembly
-resolution as scraped from [digitallibrary.un.org](https://digitallibrary.un.org).
+**Purpose:** UN General Assembly votes only (Security Council resolutions excluded).
+One row per GA resolution as scraped from [digitallibrary.un.org](https://digitallibrary.un.org).
+Functionally equivalent to `SELECT ... FROM un_votes_with_sc WHERE sc_flag = 0`,
+maintained as a separate table for convenience of downstream consumers that only
+want GA voting data.
 
 **Populated by:** `scraper_pipeline.py`
 
@@ -70,12 +73,13 @@ columns in the DDL while keeping a single row per resolution.
 
 ## 2. `un_votes_with_sc`
 
-**Purpose:** Enriched voting data including Security Council resolutions.
-This is the **primary source table** for the dashboard data pipeline.
+**Purpose:** All UN votes — both General Assembly and Security Council resolutions.
+This is the **primary source table** for the dashboard data pipeline and the
+recommended table for any consumer wanting the full voting record.
 
 **Populated by:** `scraper_pipeline.py` after SC tagging
 
-Schema is identical to `un_votes_raw` with one additional column:
+Schema is identical to `un_votes_unga` with one additional column:
 
 | Column | Type | Description |
 |---|---|---|
@@ -85,7 +89,7 @@ Schema is identical to `un_votes_raw` with one additional column:
 | `Title` | TEXT | Full resolution title text |
 | `Link` | TEXT UNIQUE | Source URL on digitallibrary.un.org |
 | `tags` | TEXT | Comma-separated UNBIS subject tags |
-| `vote_data` | TEXT | JSON blob — same format as `un_votes_raw.vote_data` |
+| `vote_data` | TEXT | JSON blob — same format as `un_votes_unga.vote_data` |
 | `sc_flag` | INTEGER DEFAULT 0 | `1` if Security Council resolution (Resolution starts with `"S/"`), else `0` |
 
 **Filtering in the pipeline:** `dashboard_data_pipeline.py` excludes rows where

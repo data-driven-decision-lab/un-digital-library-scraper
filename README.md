@@ -6,7 +6,7 @@ Pipeline for scraping, classifying, and analyzing UN General Assembly voting dat
 
 The system has three layers:
 
-1. **Scraper Pipeline** (`src/un_data_pipeline/scraper_pipeline.py`) — Selenium scrapes voting records from [digitallibrary.un.org](https://digitallibrary.un.org). OpenAI GPT-4o-mini classifies each resolution using UNBIS subject tags and geographic tags. Results are written to the `un_votes_raw` and `un_votes_with_sc` tables in Turso.
+1. **Scraper Pipeline** (`src/un_data_pipeline/scraper_pipeline.py`) — Selenium scrapes voting records from [digitallibrary.un.org](https://digitallibrary.un.org). OpenAI GPT-4o-mini classifies each resolution using UNBIS subject tags and geographic tags. Results are written to the `un_votes_unga` (General Assembly only) and `un_votes_with_sc` (all votes, GA + SC) tables in Turso.
 
 2. **Dashboard Pipeline** (`src/un_data_pipeline/dashboard_data_pipeline.py`) — Reads `un_votes_with_sc`, computes Pillar 1/2/3 scores and pairwise cosine similarity, and writes results to three Turso tables (`annual_scores`, `topic_votes_yearly`, `pairwise_similarity_yearly`). CSV copies are saved to `src/un_report_api/app/required_csvs/` as API fallbacks.
 

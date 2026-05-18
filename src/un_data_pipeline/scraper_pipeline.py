@@ -1993,17 +1993,17 @@ def get_links_from_turso() -> set:
         return set()
 
 
-def upload_to_turso_raw(df: pd.DataFrame):
+def upload_to_turso_unga(df: pd.DataFrame):
     """
-    Uploads new rows to the 'un_votes_raw' table in Turso.
+    Uploads new rows to the 'un_votes_unga' table in Turso (General Assembly votes only).
     Converts wide-format DataFrame (country ISO3 columns) to vote_data JSON blob.
     Uses INSERT OR IGNORE to skip rows with duplicate Link values.
     """
     if df.empty:
-        logger.info("No new rows to upload to un_votes_raw.")
+        logger.info("No new rows to upload to un_votes_unga.")
         return
 
-    logger.info(f"Uploading {len(df)} rows to Turso un_votes_raw...")
+    logger.info(f"Uploading {len(df)} rows to Turso un_votes_unga...")
     try:
         conn = get_turso_connection()
         country_cols = [
@@ -2017,13 +2017,13 @@ def upload_to_turso_raw(df: pd.DataFrame):
             meta = [_clean_param(row.get(c)) for c in meta_cols]
             rows.append(tuple(meta + [json.dumps(vote_data)]))
         conn.executemany(
-            "INSERT OR IGNORE INTO un_votes_raw (Resolution, Date, Title, Link, tags, vote_data) VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT OR IGNORE INTO un_votes_unga (Resolution, Date, Title, Link, tags, vote_data) VALUES (?, ?, ?, ?, ?, ?)",
             rows
         )
         conn.commit()
-        logger.info(f"Inserted {len(rows)} rows to un_votes_raw (duplicates skipped).")
+        logger.info(f"Inserted {len(rows)} rows to un_votes_unga (duplicates skipped).")
     except Exception as e:
-        logger.error(f"Error uploading to Turso un_votes_raw: {e}")
+        logger.error(f"Error uploading to Turso un_votes_unga: {e}")
         raise
 
 
@@ -2064,12 +2064,12 @@ def upload_to_turso_with_sc(df: pd.DataFrame):
         raise
 
 
-def get_all_data_from_turso():
-    """Fetches all data from un_votes_raw in Turso."""
-    logger.info("Fetching all data from Turso un_votes_raw...")
+def get_all_unga_data_from_turso():
+    """Fetches all data from un_votes_unga in Turso (General Assembly votes only)."""
+    logger.info("Fetching all data from Turso un_votes_unga...")
     try:
         conn = get_turso_connection()
-        cursor = conn.execute("SELECT * FROM un_votes_raw")
+        cursor = conn.execute("SELECT * FROM un_votes_unga")
         cols = [d[0] for d in cursor.description]
         rows = cursor.fetchall()
         if rows:
@@ -2080,10 +2080,10 @@ def get_all_data_from_turso():
                     lambda x: json.loads(x) if x else {}
                 ).apply(pd.Series)
                 df = pd.concat([df.drop('vote_data', axis=1), vote_expanded], axis=1)
-            logger.info(f"Fetched {len(df)} rows from Turso un_votes_raw.")
+            logger.info(f"Fetched {len(df)} rows from Turso un_votes_unga.")
             return df
         else:
-            logger.info("No data in Turso un_votes_raw.")
+            logger.info("No data in Turso un_votes_unga.")
             return pd.DataFrame()
     except Exception as e:
         logger.error(f"Error fetching from Turso: {e}")
@@ -2149,15 +2149,15 @@ def process_and_upload_data(new_df, existing_df=None):
     logger.info("Uploading processed data to un_votes_with_sc table...")
     upload_to_turso_with_sc(combined_df)
 
-    # Filter for non-SC records and upload to un_votes_raw
-    logger.info("Filtering for non-SC records to upload to un_votes_raw table...")
+    # Filter for non-SC records and upload to un_votes_unga
+    logger.info("Filtering for non-SC records to upload to un_votes_unga table...")
     non_sc_df = combined_df[combined_df['Council'] != 'Security Council'].copy()
 
     if not non_sc_df.empty:
-        logger.info(f"Uploading {len(non_sc_df)} non-SC records to un_votes_raw table...")
-        upload_to_turso_raw(non_sc_df)
+        logger.info(f"Uploading {len(non_sc_df)} non-SC records to un_votes_unga table...")
+        upload_to_turso_unga(non_sc_df)
     else:
-        logger.info("No non-SC records to upload to un_votes_raw table.")
+        logger.info("No non-SC records to upload to un_votes_unga table.")
     
     logger.info("Data processing and upload completed successfully.")
     return combined_df
@@ -2205,7 +2205,7 @@ def main():
       - Scrapes new rows to add to the dataset
       - Tags only the new rows with both regular tagging and geo-tagging
       - Standardizes country columns to ISO3 codes
-      - Uploads all data to both Turso tables (un_votes_raw and un_votes_with_sc)
+      - Uploads all data to both Turso tables (un_votes_unga and un_votes_with_sc)
     """
     driver = None
     try:
@@ -2347,7 +2347,7 @@ def main():
 
     # Get existing data from Turso to check for already uploaded records
     logger.info("Fetching existing data from Turso...")
-    existing_df = get_all_data_from_turso()
+    existing_df = get_all_unga_data_from_turso()
     
     # Filter out records that were already uploaded during checkpoints
     if not existing_df.empty:
@@ -2369,13 +2369,13 @@ def main():
         final_df = process_and_upload_data(new_df, None)
         
         logger.info(f"Pipeline completed successfully. Final dataset contains {len(final_df)} rows.")
-        logger.info("Data uploaded to both un_votes_raw and un_votes_with_sc tables in Turso.")
-        
+        logger.info("Data uploaded to both un_votes_unga and un_votes_with_sc tables in Turso.")
+
         # Update final metrics and finish logging
         update_scraper_log({
             'new_records_processed': len(new_df),
             'records_uploaded_to_with_sc': len(final_df),
-            'records_uploaded_to_raw': len(final_df[final_df['Council'] != 'Security Council']) if not final_df.empty else 0
+            'records_uploaded_to_unga': len(final_df[final_df['Council'] != 'Security Council']) if not final_df.empty else 0
         })
         finish_scraper_log('success')
 

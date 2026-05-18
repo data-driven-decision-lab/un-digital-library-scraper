@@ -70,7 +70,7 @@ jobs:
             exit 1
           fi
 
-      - name: Run scraper (writes un_votes_raw + un_votes_with_sc to Turso)
+      - name: Run scraper (writes un_votes_unga + un_votes_with_sc to Turso)
         run: |
           python -c "import sys; sys.path.insert(0, 'src'); from un_data_pipeline.scraper_pipeline import main; main()"
 
