@@ -411,53 +411,47 @@ async def download_metadata():
 
     response["turso"]["healthy"] = True
 
-    # Per-table summary. Filtering Date LIKE '1%' OR '2%' guards against the
-    # known data-quality issue where some rows have literal 'nan' as a Date.
+    # Per-table summary for the two voting tables that back /download/votes.
+    # Filtering Date LIKE '1%' OR '2%' guards against the known data-quality
+    # issue where some rows have literal 'nan' as a Date.
     table_queries = [
-        ("un_votes_unga",              "SELECT COUNT(*), MIN(Date), MAX(Date) FROM un_votes_unga WHERE Date LIKE '1%' OR Date LIKE '2%'",              "date"),
-        ("un_votes_with_sc",           "SELECT COUNT(*), MIN(Date), MAX(Date) FROM un_votes_with_sc WHERE Date LIKE '1%' OR Date LIKE '2%'",           "date"),
-        ("annual_scores",              "SELECT COUNT(*), MIN(Year), MAX(Year) FROM annual_scores",                                                      "year"),
-        ("topic_votes_yearly",         "SELECT COUNT(*), MIN(Year), MAX(Year) FROM topic_votes_yearly",                                                 "year"),
-        ("pairwise_similarity_yearly", "SELECT COUNT(*), MIN(Year), MAX(Year) FROM pairwise_similarity_yearly",                                         "year"),
+        ("un_votes_unga",    "SELECT COUNT(*), MIN(Date), MAX(Date) FROM un_votes_unga WHERE Date LIKE '1%' OR Date LIKE '2%'"),
+        ("un_votes_with_sc", "SELECT COUNT(*), MIN(Date), MAX(Date) FROM un_votes_with_sc WHERE Date LIKE '1%' OR Date LIKE '2%'"),
     ]
-    for table, sql, axis in table_queries:
+    for table, sql in table_queries:
         try:
             row = conn.execute(sql).fetchone()
             count, earliest, latest = (row or (0, None, None))
-            entry = {"rows": int(count) if count is not None else 0}
-            if axis == "date":
-                entry["earliest_date"] = earliest
-                entry["latest_date"] = latest
-            else:
-                entry["earliest_year"] = int(earliest) if earliest is not None else None
-                entry["latest_year"] = int(latest) if latest is not None else None
-            response["tables"][table] = entry
+            response["tables"][table] = {
+                "rows": int(count) if count is not None else 0,
+                "earliest_date": earliest,
+                "latest_date": latest,
+            }
         except Exception as e:
             api_logger.warning("Metadata query failed for %s: %s", table, e)
             response["tables"][table] = {"error": str(e)}
 
-    # Last run per pipeline (scraper + dashboard).
-    pipeline_sql = (
-        "SELECT pipeline_name, started_at, finished_at, status, rows_affected, error_message "
-        "FROM pipeline_runs WHERE pipeline_name = ? "
-        "ORDER BY started_at DESC LIMIT 1"
-    )
-    for pipeline in ("scraper_pipeline", "dashboard_data_pipeline"):
-        try:
-            row = conn.execute(pipeline_sql, [pipeline]).fetchone()
-            if row:
-                response["last_run"][pipeline] = {
-                    "started_at": row[1],
-                    "finished_at": row[2],
-                    "status": row[3],
-                    "rows_affected": int(row[4]) if row[4] is not None else 0,
-                    "error_message": row[5],
-                }
-            else:
-                response["last_run"][pipeline] = None
-        except Exception as e:
-            api_logger.warning("Metadata query failed for last_run %s: %s", pipeline, e)
-            response["last_run"][pipeline] = {"error": str(e)}
+    # Last successful scraper run (the one that updates the voting tables).
+    try:
+        row = conn.execute(
+            "SELECT started_at, finished_at, status, rows_affected, error_message "
+            "FROM pipeline_runs WHERE pipeline_name = ? "
+            "ORDER BY started_at DESC LIMIT 1",
+            ["scraper_pipeline"],
+        ).fetchone()
+        if row:
+            response["last_run"]["scraper_pipeline"] = {
+                "started_at": row[0],
+                "finished_at": row[1],
+                "status": row[2],
+                "rows_affected": int(row[3]) if row[3] is not None else 0,
+                "error_message": row[4],
+            }
+        else:
+            response["last_run"]["scraper_pipeline"] = None
+    except Exception as e:
+        api_logger.warning("Metadata query failed for last_run scraper_pipeline: %s", e)
+        response["last_run"]["scraper_pipeline"] = {"error": str(e)}
 
     return response
 
