@@ -1,254 +1,267 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-03-18
+**Analysis Date:** 2026-05-18
 
 ## Test Framework
 
-**Runner:**
-- **No test framework configured** - No pytest.ini, pyproject.toml, setup.cfg, or tox.ini found
-- **No test files detected** - No `*_test.py` or `*_spec.py` files found in codebase
-- **Testing gap identified** - Codebase has zero automated test coverage
+**Current State:** No testing framework configured
 
-**Assertion Library:**
-- Not configured (no testing framework present)
+- **Test Runner:** Not detected
+- **Assertion Library:** Not detected
+- **Config Files:** No `pytest.ini`, `pyproject.toml`, `setup.py`, `conftest.py`, or `tox.ini` present
+- **Test Directory:** No dedicated `tests/` directory
 
-**Run Commands:**
-```bash
-# No test command available - testing infrastructure not established
-# To add testing, would need:
-# pytest                    # Run all tests
-# pytest -v                 # Verbose output
-# pytest --cov             # Coverage report
-# pytest -k "test_name"    # Run specific test
-```
+**Recommendation:** The project currently has zero automated tests. See [Testing Setup Required](#testing-setup-required) section below.
 
 ## Test File Organization
 
-**Location:**
-- **Not applicable** - No tests exist in codebase
-- Recommendation: Co-locate tests with source code or use separate `tests/` directory
-- Pattern would be: `src/un_report_api/app/report_generator.py` paired with `tests/test_report_generator.py`
+**Current Structure:**
+- No test files found in codebase
+- No co-located test files (e.g., `module_test.py` alongside `module.py`)
+- No separate test directory
 
-**Naming:**
-- Not established (no test files found)
-- Recommended: `test_*.py` prefix for pytest discovery: `test_report_generator.py`, `test_models.py`, etc.
+**What Should Be:**
+- Tests co-located with source or in top-level `tests/` directory
+- Pattern: `tests/test_scraper_pipeline.py` or `src/un_data_pipeline/test_scraper.py`
+- Naming convention: `test_*.py` or `*_test.py`
 
-**Structure:**
-- Not established
+## Manual Testing Patterns Observed
 
-## Test Structure
+**Scraper Testing:**
+- `scraper_pipeline.py` is designed to be executed directly: `if __name__ == "__main__": main()`
+- Includes logging at multiple levels to trace execution:
+  - INFO: Major phase boundaries and progress
+  - DEBUG: Detailed operation traces
+  - ERROR: Failures with context
+- Checkpoint function `checkpoint_progress()` writes intermediate state to allow recovery
+- Session-based approach: Browser sessions reset after `SESSION_RESET_THRESHOLD = 150` requests
 
-**Suite Organization:**
-- **Not implemented** - No existing test patterns to reference
+**API Testing:**
+- `main.py` FastAPI app can be tested with `uvicorn` server
+- Request logging middleware (`log_requests`) captures all HTTP operations
+- Response status codes logged after completion
+- No dedicated test client library integrated
 
-**Recommended pattern for FastAPI endpoints:**
-```python
-import pytest
-from fastapi.testclient import TestClient
-from main import app
+**Data Validation:**
+- Pydantic models auto-validate at API layer (FastAPI dependency)
+- Example: `ReportResponse` validates structure before returning
+- Year constraints validated via `Query()` parameters: `ge=MIN_YEAR_CONSTRAINT, le=MAX_YEAR_CONSTRAINT`
 
-client = TestClient(app)
+## Error Scenarios (Tested Implicitly)
 
-class TestReportEndpoint:
-    def test_get_country_report_valid_iso(self):
-        response = client.get("/report/USA?start_year=2009&end_year=2013")
-        assert response.status_code == 200
+**Handled but not formally tested:**
 
-    def test_get_country_report_invalid_iso(self):
-        response = client.get("/report/INVALID?start_year=2009&end_year=2013")
-        assert response.status_code == 400
-```
+1. **API Connection Failures** (`scraper_pipeline.py:306-339`):
+   ```python
+   def execute_api_call(api_call_fn, max_retries=5):
+       """Retry logic with exponential backoff for transient failures."""
+       for attempt in range(max_retries):
+           try:
+               return api_call_fn(client)
+           except (RateLimitError, APIConnectionError) as e:
+               logger.warning(f"Attempt {attempt + 1} failed: {e}")
+               time.sleep(2 ** attempt)  # Exponential backoff
+           except Exception as e:
+               logger.error(f"Non-retryable error: {e}")
+               raise e
+       raise Exception("OpenAI API request failed after max retries")
+   ```
+   - Catches `RateLimitError`, `APIConnectionError`
+   - Retries up to 5 times with exponential backoff
+   - Logs each attempt and final failure
 
-**Patterns needed:**
-- Setup/teardown for test fixtures
-- Isolation of external dependencies (Supabase, file I/O)
-- Assertion patterns for API responses
+2. **Scraper Recovery** (`scraper_pipeline.py:2248-2257`):
+   ```python
+   except (ConnectionResetError, ConnectionRefusedError, KeyboardInterrupt) as e:
+       logger.error(f"Year {year}: Connection error during link collection: {e}")
+       driver.quit()
+       driver = get_driver()
+       driver.get(BASE_SEARCH_URL)
+   ```
+   - Catches connection failures and keyboard interrupt
+   - Restarts browser session
+   - Continues execution
+
+3. **Database Operations** (`scraper_pipeline.py:175-184`):
+   ```python
+   try:
+       conn = get_turso_connection()
+       conn.execute(...)
+       conn.commit()
+   except Exception as e:
+       logger.error(f"Failed to create scraper log entry: {e}")
+   ```
+   - Generic exception handling with logging
+   - Operations continue even if DB operations fail
 
 ## Mocking
 
-**Framework:**
-- **Not detected** - Would use `unittest.mock` or `pytest-mock` if testing were implemented
+**Current State:** No mocking framework configured
 
-**Patterns:**
-- None currently used (no tests to establish patterns)
+- `unittest.mock` (stdlib) not imported anywhere
+- `pytest-mock` not in `requirements.txt`
+- No test fixtures or factory pattern implementation
 
-**What to Mock:**
-- Supabase client calls (`SupabaseDataLoader`)
-- File I/O operations (CSV loading)
-- External API calls (OpenAI for LLM enhancement)
-- Environment variables
-
-**What NOT to Mock:**
-- Pydantic model validation
-- Core data transformation logic
-- Business rule calculations
-
-**Recommended mocking approach:**
-```python
-from unittest.mock import patch, MagicMock
-import pytest
-
-@pytest.fixture
-def mock_supabase():
-    with patch('supabase_client.supabase_loader') as mock:
-        mock.load_annual_scores.return_value = pd.DataFrame({
-            'country_code': ['USA', 'CHN'],
-            'year': [2013, 2013]
-        })
-        yield mock
-
-def test_generate_report_with_mock_supabase(mock_supabase):
-    report = generate_report('USA', 2009, 2013)
-    assert report is not None
-```
+**What Should Be Mocked:**
+- Selenium WebDriver: Browser interactions to avoid actual scraping
+- API calls: OpenAI/Gemini API to avoid token consumption and rate limits
+- Database: Turso/libsql connections to isolate data layer
+- File I/O: CSV reads/writes to test data pipelines without disk access
+- Network: HTTP requests to external UN Digital Library website
 
 ## Fixtures and Factories
 
-**Test Data:**
-- **Not implemented** - No fixtures exist
+**Current State:** No test fixtures present
 
-**Recommendation for test data factories:**
+**Data Patterns in Production Code:**
+
+Example from `report_generator.py` showing data structure expectations:
 ```python
-import factory
-from models import ReportResponse, ReportMetadata
-
-class ReportMetadataFactory(factory.Factory):
-    class Meta:
-        model = ReportMetadata
-
-    country_iso3 = "USA"
-    country_name = "United States of America"
-    start_year = 2009
-    end_year = 2013
+def safe_get_value(df, year, country_col, target_country, value_col):
+    """Safely get a single value from a DataFrame for a specific year and country."""
+    try:
+        value = df.loc[(df['year'] == year) & (df[country_col] == target_country), value_col].iloc[0]
 ```
 
-**Location:**
-- Would be: `tests/factories.py` or `tests/conftest.py` (pytest fixtures)
+Example from `models.py` showing expected response structure:
+```python
+class ReportMetadata(BaseModel):
+    country_iso3: str = Field(..., example="USA")
+    country_name: str = Field(..., example="United States of America")
+    start_year: int = Field(..., example=2009)
+    end_year: int = Field(..., example=2013)
+```
+
+**What Should Exist:**
+- Fixture for sample vote data (CSV with years, countries, vote counts)
+- Fixture for Turso database connection mock
+- Factory for generating test `ReportResponse` objects with realistic data
+- Factory for creating sample Pydantic model instances
 
 ## Coverage
 
-**Requirements:**
-- **Not enforced** - No coverage configuration present
-- **Current coverage: 0%** - No tests exist
+**Requirements:** No coverage tooling present or enforced
 
-**View Coverage:**
+**Tools That Should Be Used:**
+- `pytest-cov` for coverage reports
+- Coverage target: Minimum 70% for core business logic (scraper, report generation)
+- Core files needing coverage:
+  - `scraper_pipeline.py`: 2362 lines - scrapers, LLM tagging, Turso interaction
+  - `report_generator.py`: 670 lines - report generation logic
+  - `analysis_service.py`: 151 lines - Security Council analysis
+  - `turso_client.py`: 215 lines - database interactions
+
+**View Coverage (when implemented):**
 ```bash
-# Once testing is implemented:
-pytest --cov=src --cov-report=html    # Generate HTML report
-pytest --cov=src --cov-report=term    # Terminal report
+pytest --cov=src --cov-report=html
+pytest --cov=src --cov-report=term-missing
 ```
 
 ## Test Types
 
-**Unit Tests:**
-- **Not implemented**
-- **Scope:** Individual functions like `safe_get_value()`, `calculate_perc_change()`, `standardize_col_names()`
-- **Approach:** Test with various inputs (normal, edge cases, None values, type mismatches)
+**Unit Tests (Needed):**
+- **Scope:** Individual functions in isolation
+- **Examples:**
+  - `test_safe_get_value()` - verify null handling in dataframe access
+  - `test_safe_float()` - verify NaN/Inf conversion
+  - `test_standardize_country_columns()` - verify ISO3 normalization
+  - `test_tag_resolution()` - verify tag extraction from title
+  - `test_scale_similarity()` - verify cosine similarity scaling (0-100)
+  - `test_calculate_perc_change()` - verify percentage calculation edge cases
+- **Approach:** Mock dependencies, test logic in isolation
 
-**Example unit test targets:**
-- `report_generator.py`: `safe_get_value()` (line 41), `calculate_perc_change()` (line 65), `scale_similarity()` (line 93)
-- `ranking_generator.py`: `standardize_col_names()` (line 33), `calculate_rankings_for_year()` (line 38)
-- `models.py`: Pydantic model validation
+**Integration Tests (Needed):**
+- **Scope:** Multiple components working together
+- **Examples:**
+  - Load sample CSV → Process tags → Validate output structure
+  - Query Turso → Load vote data → Generate report
+  - API endpoint → Report generation → Response validation
+- **Approach:** Use test fixtures, mock database, real data processing
 
-**Integration Tests:**
-- **Not implemented**
-- **Scope:** Full API endpoint flows with mocked Supabase/file I/O
-- **Approach:** End-to-end request/response validation
+**E2E Tests (Not Implemented):**
+- **Framework:** Not in use
+- **Justification:** Scraper inherently requires browser automation; data pipeline requires external APIs
+- **Alternative:** Manual testing and observability through logging
 
-**Example integration test targets:**
-- `GET /report/{country_iso}` endpoint with various year ranges
-- `GET /rankings/{year}` endpoint validation
-- `GET /health` endpoint
-- `GET /sc/veto_analysis` endpoint
-- Error handling for missing data, invalid inputs
+## Common Patterns to Test
 
-**E2E Tests:**
-- **Not implemented**
-- **Framework:** Would use pytest with TestClient for FastAPI testing
-- **Scope:** Full system testing against live/staging Supabase instance
+**Async Testing (Not Required):**
+- Python `asyncio` not used in data pipeline
+- FastAPI endpoints use `async` but can be tested with `TestClient` from `fastapi.testclient`
 
-## Common Patterns
-
-**Async Testing:**
-- **Not implemented**
-- FastAPI endpoints are async and would require:
-
-```python
-import pytest
-from fastapi.testclient import TestClient
-
-@pytest.mark.asyncio
-async def test_async_endpoint():
-    client = TestClient(app)
-    response = client.get("/health")
-    assert response.status_code == 200
-```
-
-**Error Testing:**
-- **Not implemented**
-- Pattern for testing error cases in `main.py` (lines 151-179):
+**Error Testing (Examples from Code):**
 
 ```python
-def test_country_report_file_not_found(mock_supabase):
-    """Test 503 error when data files missing"""
-    with patch('report_generator.generate_report',
-               side_effect=FileNotFoundError('annual_scores.csv')):
-        response = client.get("/report/USA?start_year=2009&end_year=2013")
-        assert response.status_code == 503
-        assert "required data file" in response.json()['detail']
+# Test that year validation rejects invalid years
+def test_year_validation_bounds():
+    response = client.get("/report/USA?start_year=1900&end_year=2025")
+    assert response.status_code == 422  # Pydantic validation error
 
-def test_country_report_invalid_year(mock_supabase):
-    """Test 404 error for unknown country"""
-    with patch('report_generator.generate_report',
-               side_effect=ValueError("Country ISO 'XYZ' not found")):
-        response = client.get("/report/XYZ?start_year=2009&end_year=2013")
-        assert response.status_code == 404
+# Test that country not found returns appropriate response
+def test_country_not_found():
+    response = client.get("/report/INVALID?start_year=2010&end_year=2015")
+    assert response.status_code == 400  # HTTPException raised
+
+# Test NaN handling in safe operations
+def test_safe_get_value_with_nan():
+    df = pd.DataFrame({"year": [2010], "country": ["USA"], "score": [np.nan]})
+    result = safe_get_value(df, 2010, "country", "USA", "score")
+    assert result is None
 ```
 
-## Critical Test Gaps
+## Testing Setup Required
 
-**High Priority Areas (0% coverage):**
+**Phase 1: Framework Setup**
+```bash
+# Add to requirements.txt
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-asyncio>=0.21.0  # For async endpoint testing
+pytest-mock>=3.10.0
+responses>=0.22.0  # For mocking HTTP requests
+```
 
-1. **Data Access Layer (`supabase_client.py`, `report_generator.py`)**
-   - `SupabaseDataLoader.load_annual_scores()` - CSV loading logic
-   - `SupabaseDataLoader.load_pairwise_similarity()` - Data transformation
-   - `load_un_region_mapping_from_supabase()` - Region mapping logic
-   - Missing tests for: file not found, empty data, malformed CSV, Supabase connection failures
+**Phase 2: Configuration**
+Create `pyproject.toml` section:
+```toml
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "--cov=src --cov-report=term-missing:skip-covered --cov-fail-under=70"
+```
 
-2. **API Endpoints (`main.py`)**
-   - `GET /report/{country_iso}` - Core business endpoint
-   - `GET /rankings/{year}` - Rankings generation
-   - `GET /sc/veto_analysis` - Security Council analysis
-   - `GET /sc/vote_analysis` - Vote analysis
-   - Missing tests for: invalid inputs, missing data, year constraints (1946-current)
+**Phase 3: Test Structure**
+```
+tests/
+├── conftest.py                    # Shared fixtures
+├── test_scraper_pipeline.py       # Scraper tests
+├── test_report_generator.py       # Report generation tests
+├── test_api_main.py               # FastAPI endpoint tests
+├── test_analysis_service.py       # Security Council analysis tests
+├── test_data_loaders.py           # Turso/CSV loading tests
+├── fixtures/
+│   ├── sample_votes.csv           # Test voting data
+│   ├── sample_response.json       # Expected API response
+│   └── mock_turso_data.json       # Database fixture
+└── integration/
+    └── test_end_to_end_report.py  # Full pipeline tests
+```
 
-3. **Report Generation (`report_generator.py`)**
-   - `generate_report()` - Main report logic (line 191)
-   - `safe_get_value()` - Value retrieval with fallback (line 41)
-   - `calculate_perc_change()` - Percentage calculations (line 65)
-   - `scale_similarity()` - Cosine similarity scaling (line 93)
-   - Missing tests for: None handling, NaN/Infinity in floats, type conversions
+**Phase 4: Critical Test Cases**
 
-4. **Rankings Generation (`ranking_generator.py`)**
-   - `calculate_rankings_for_year()` - Ranking logic (line 38)
-   - `get_rankings_for_pillar()` - Multi-pillar ranking (line 52)
-   - `generate_yearly_rankings()` - Main ranking endpoint (line 126)
-   - Missing tests for: missing data, tie-breaking, year-over-year changes
+Unit tests for `scraper_pipeline.py`:
+- `test_tag_new_rows_with_valid_titles()`
+- `test_get_llm_location_tags_handles_api_errors()`
+- `test_execute_api_call_retries_on_rate_limit()`
+- `test_standardize_country_columns_converts_to_iso3()`
 
-5. **Data Validation (`models.py`)**
-   - Pydantic model field validation
-   - Type coercion for Optional fields
-   - Dynamic constraint validation (`MAX_YEAR_CONSTRAINT`)
-   - Missing tests for: invalid field types, missing required fields, boundary values
-
-6. **Security Council Analysis (`services/analysis_service.py`, `simple_veto_endpoint.py`)**
-   - JSON data loading and parsing
-   - Veto pattern analysis
-   - Power dynamic classification
-   - Missing tests for: malformed JSON, missing fields, empty datasets
+Integration tests:
+- `test_scraper_pipeline_upload_to_turso()` (with mock DB)
+- `test_report_generation_with_sample_data()`
+- `test_api_country_report_endpoint()` (with TestClient)
 
 ---
 
-*Testing analysis: 2026-03-18*
-
-**Recommendation:** Implement testing infrastructure as high priority. Current zero test coverage creates risk for regression and makes refactoring dangerous.
+*Testing analysis: 2026-05-18*

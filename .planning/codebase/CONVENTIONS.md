@@ -1,150 +1,181 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-03-18
+**Analysis Date:** 2026-05-18
 
 ## Naming Patterns
 
 **Files:**
-- Lowercase snake_case for Python modules: `scraper_pipeline.py`, `report_generator.py`, `supabase_client.py`
-- Class files typically match class names: `UnClassificationMapper` in `un_classification_mapper.py`
-- Data module files are lowercase: `un_classification.py`, `iso2_country.py`, `un_geo_hierarchy.py`
+- Module files use lowercase with underscores: `scraper_pipeline.py`, `turso_client.py`, `dashboard_data_pipeline.py`
+- Data module files follow same convention: `un_classification.py`, `iso2_country.py`
+- API endpoints and services use lowercase: `analysis_service.py`, `report_generator.py`
 
 **Functions:**
-- Lowercase snake_case for all functions: `generate_report()`, `calculate_perc_change()`, `load_annual_scores()`
-- Async functions follow same convention: `async def log_requests()`, `async def validate_year_params()`
-- Helper functions prefixed with underscore for private use: `_load_data()`, `_get_default_data_path()`
-- Safe/wrapper functions often start with `safe_`: `safe_get_value()`, `safe_float()`, `safe_str()`, `safe_int()`
+- Functions use lowercase with underscores (snake_case): `get_turso_connection()`, `start_scraper_log()`, `tag_new_rows()`
+- Helper functions prefixed with intent: `safe_get_value()`, `safe_float()`, `extract_vote_data_from_html()`
+- Private helper functions follow same snake_case convention
 
 **Variables:**
-- Lowercase snake_case: `country_iso`, `start_year`, `end_year`, `api_logger`, `project_root`
-- Constants in UPPERCASE: `MIN_YEAR_CONSTRAINT`, `MAX_YEAR_CONSTRAINT`, `P5_ISO_CODES`, `DECIMAL_PLACES`
-- Dictionary keys use lowercase snake_case: `country_iso`, `world_avg_pillar_1_score`, `is_oecd`
+- Local variables and parameters use snake_case: `existing_links`, `new_records_processed`, `session_request_count`
+- Global constants use UPPERCASE with underscores: `DEFAULT_MODEL`, `MAX_WORKERS`, `BASE_SEARCH_URL`, `FIXED_COLUMNS`
+- Dictionary keys often use lowercase snake_case: `country_stats`, `topic_stats`, `power_dynamics`
 
-**Types:**
-- Use modern Python type hints throughout: `Optional[int]`, `Dict[str, Any]`, `List[Dict]`, `Tuple[str, str]`
-- Import from `typing` module: `from typing import Dict, List, Optional, Tuple, Any`
-- Pydantic models for API contracts: `BaseModel` with `Field` for validation
+**Types and Classes:**
+- Pydantic models use PascalCase: `LocationClassifications`, `ResolutionTarget`, `ReportResponse`, `SecurityCouncilAnalysisService`
+- Exception classes use PascalCase: `DuplicateLinkFound`
+- Type hints use standard Python conventions with `Optional`, `List`, `Dict`, `Tuple`, `Any`
 
 ## Code Style
 
 **Formatting:**
-- No automated formatter detected (no .prettierrc, pylint config, or black config files)
-- Follows PEP 8 style guide by convention
-- Lines appear to follow reasonable length limits (typically 80-120 characters)
-- Consistent indentation with 4 spaces
+- No formatter is explicitly configured (no `.prettierrc` or `ruff.toml`)
+- Code follows PEP 8 conventions implicitly
+- String formatting: F-strings are standard throughout codebase
+- Line length: Generally follows implicit 88-100 character guidelines based on observed code
 
 **Linting:**
-- No linting configuration found (no .pylintrc, .flake8, or similar)
-- However, code follows PEP 8 conventions
-- Type hints are consistently used throughout
+- No explicit linting configuration files present (no `.eslintrc`, `.pylintrc`)
+- Imports are organized but not strictly enforced:
+  - Standard library imports at top (sys, os, logging, json)
+  - Third-party packages (pandas, numpy, selenium, pydantic)
+  - Relative imports for local modules (e.g., `from .data_modules.un_classification import un_classification`)
 
 ## Import Organization
 
 **Order:**
-1. Standard library imports: `import os`, `import json`, `import logging`, `import re`, `from datetime import datetime`
-2. Third-party library imports: `import pandas as pd`, `import numpy as np`, `from fastapi import FastAPI`, `from pydantic import BaseModel`
-3. Local imports: `from report_generator import generate_report`, `from models import ReportResponse`, `from services.analysis_service import SecurityCouncilAnalysisService`
-
-**Pattern Examples:**
-- FastAPI imports: `from fastapi import FastAPI, Path, Query, HTTPException, Depends, Request`
-- Data science stack: `import pandas as pd`, `import numpy as np`, `from sklearn.metrics.pairwise import cosine_similarity`
-- Type imports: `from typing import Dict, List, Optional, Tuple, Any`
-- Local relative imports: `from report_generator import` (same directory) or `from services.analysis_service import` (subdirectory)
+1. Standard library imports: `sys`, `os`, `logging`, `json`, `time`, `uuid`, `re`, `csv`, `math`, `platform`
+2. Data/compute libraries: `pandas as pd`, `numpy as np`
+3. Web/HTTP libraries: `selenium`, `requests`, `BeautifulSoup`, `fastapi`, `uvicorn`, `openai`
+4. Data validation: `pydantic` (`BaseModel`, `Field`, `validator`)
+5. Utilities: `dotenv`, `tqdm`, `webdriver_manager`, `pycountry`
+6. Database: `libsql_experimental` (with fallback to HTTP client on Windows)
+7. Relative imports: `from .data_modules...`, `from .services...`
 
 **Path Aliases:**
-- None detected. Relative imports used for package structure navigation.
+- Project-relative paths constructed with `os.path.join()` and environment-relative paths
+- Environment-relative paths: `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` read via `os.getenv()`
+- Local relative imports use dot notation: `from .data_modules.un_classification import un_classification`
 
 ## Error Handling
 
 **Patterns:**
-- Try-except blocks with specific exception handling: `except FileNotFoundError as e:`, `except ValueError as e:`, `except KeyError as e:`
-- Broad exception fallbacks: `except Exception as e:` for unexpected errors
-- Multiple exception types in single handler: `except (ValueError, TypeError):`
-- HTTPException raised in FastAPI endpoints: `raise HTTPException(status_code=400, detail=str(e))`
-- ValueError raised in data processing functions: `raise ValueError(f"Error message: {e}")`
+- Generic exception catching with logging: `except Exception as e:` followed by `logger.error(f"...")`
+- Specific exceptions caught for retryable operations: `except (RateLimitError, APIConnectionError) as e:`
+- Selenium-specific exceptions caught separately: `TimeoutException`, `NoSuchElementException`, `ElementNotInteractableException`, `StaleElementReferenceException`
+- Custom exceptions defined with descriptive names: `DuplicateLinkFound(Exception)` with `new_links` attribute
+- Network/connection errors distinguished: `(ConnectionResetError, ConnectionRefusedError, KeyboardInterrupt)`
+- Environment validation at startup: `raise ValueError("GEMINI_API_KEY not found in environment variables.")`
 
-**File examples:**
-- `report_generator.py`: Lines 43-63 show nested try-except with specific exception handling for data retrieval
-- `main.py`: Lines 160-179 show FastAPI error handling pattern with specific status codes (404, 503, 500)
-- `supabase_client.py`: Lines 53-55 show catch-and-re-raise pattern with logging
-
-**Logging in error handlers:**
-```python
-except FileNotFoundError as e:
-    api_logger.error(f"Prerequisite data file not found: {e.filename}", exc_info=True)
-    raise HTTPException(status_code=503, detail=...)
-```
+**Error Recovery:**
+- Graceful degradation: Functions return empty structures or defaults on error
+- Logging of errors at appropriate levels: ERROR for critical failures, WARNING for recoverable issues, DEBUG for detailed traces
+- Retry logic implemented with `execute_api_call()` wrapper and exponential backoff for API calls
 
 ## Logging
 
-**Framework:** Standard Python `logging` module
+**Framework:** Python `logging` module (stdlib)
+
+**Configuration (from `scraper_pipeline.py`):**
+- Configured at module level with stream and file handlers
+- File handler writes to `logs/un_scraper_tagger.log`
+- Log level controlled via `LOG_LEVEL` environment variable (defaults to INFO)
+- Format: `"%(asctime)s [%(levelname)s] %(name)s:%(lineno)d - %(message)s"`
+- Time format: `"%H:%M:%S"`
 
 **Patterns:**
-- Module-level logger initialization: `logger = logging.getLogger(__name__)` (see `data_loader.py` line 11, `services/analysis_service.py` line 30)
-- API-level logger: `api_logger = logging.getLogger("un_report_api")` (see `main.py` lines 75-81)
-- Log levels used appropriately:
-  - `logger.info()` for standard operations: "Successfully loaded...", "Processing..."
-  - `logger.warning()` for recoverable issues: "Column not found", "Data not available"
-  - `logger.error()` for failures with exc_info: `api_logger.error(f"...", exc_info=True)`
-  - `logger.debug()` for detailed troubleshooting: `logger.debug(f"Processing rankings for pillar: {pillar_name}")`
+- Initial info log on startup: `logger.info("Starting Turso-native UN voting data scraper...")`
+- Progress logging at major phase boundaries: `logger.info(f"\n{'='*60}\nProcessing year {year}...")`
+- Debug logging for detailed operation traces: `logger.debug(f"Year {year}: Starting link collection")`
+- Error logging with full exception context: `logger.error(f"Error message: {e}")`
+- Warning logging for non-critical issues: `logger.warning(f"No active scraper run to update")`
+- Numeric debug level available: `logger.setLevel(logging.DEBUG)`
+- Dynamic level helpers: `enable_debug_logging()`, `enable_verbose_scraping()`
 
-**Logging configuration:**
-- FastAPI app configures handlers at startup (`main.py` lines 74-81)
-- Format: `'%(asctime)s - %(name)s - %(levelname)s - %(message)s'` or `'%(asctime)s [%(levelname)s] %(name)s:%(lineno)d - %(message)s'`
-- File logging to `logs/un_scraper_tagger.log` in pipeline modules
-- Environment-based level control: `LOG_LEVEL` env var (`scraper_pipeline.py` line 72)
+**In FastAPI (from `main.py`):**
+- Logger obtained: `api_logger = logging.getLogger("un_report_api")`
+- Request logging middleware logs all HTTP requests with method, path, query params
+- Response status codes logged after completion
+- Handlers check `if not api_logger.hasHandlers()` to prevent duplicate logging
 
 ## Comments
 
 **When to Comment:**
-- File-level docstrings describing module purpose (see all files: `"""FastAPI application..."""`)
-- Function docstrings for public functions with parameters and returns (see `data_loader.py` lines 18-23, `ranking_generator.py` lines 38-42)
-- Inline comments explaining non-obvious logic: `# Rank, 'min' method assigns the same rank to ties...`
-- Section comments marking major code blocks: `# --- CORS Middleware Configuration ---`, `# --- Dependency for Year Validation ---`
-
-**When NOT to comment:**
-- Obvious code (variable assignments, simple operations)
-- Code that should be self-documenting through clear naming
+- Docstrings required for all functions with multi-line format
+- Example from `get_turso_connection()`: Full docstring with Args, Returns, Raises sections
+- Complex logic steps documented inline (e.g., regex pattern compilation with explanation)
+- Configuration constants documented with purpose: `MAX_CONSECUTIVE_EMPTY_PAGES = 3  # Stop after this many...`
+- Section headers as visual dividers: `# ---------- Geo-Tagging Functions ----------`
 
 **JSDoc/TSDoc:**
-- Not used (Python codebase, no TypeScript)
-- Docstrings follow Python conventions with triple quotes
+- Not applicable (Python codebase, not JavaScript/TypeScript)
+- Pydantic model fields use `Field(description="...")` for inline documentation
+- OpenAPI schema docs from Pydantic models: `Field(..., example="USA", description="3-letter ISO code")`
 
 ## Function Design
 
-**Size:** Typically 30-150 lines
-- Shorter for utility functions: `safe_get_value()` ~15 lines, `calculate_perc_change()` ~12 lines
-- Moderate for business logic: `generate_report()` ~150+ lines, `get_yearly_rankings_api()` ~40 lines
-- Larger for data processing pipelines: `scraper_pipeline.py` functions span 50-200+ lines
+**Size:**
+- Most functions 20-100 lines (moderate scope)
+- Larger orchestrators like `main()` and `scraper_pipeline.py:process_and_upload_data()` exceed 100 lines (acceptable for complex workflows)
+- Helper utilities are typically 5-30 lines
 
 **Parameters:**
-- Usually 1-5 parameters per function
-- Use type hints for all parameters: `def generate_report(country_iso: str, start_year: int, end_year: int) -> dict:`
-- Optional parameters have defaults: `def load_annual_scores(self, year: Optional[int] = None) -> pd.DataFrame:`
-- FastAPI endpoints use dependency injection: `year_params: Dict[str, int] = Depends(validate_year_params)`
+- Explicit parameter names with type hints: `def call_llm_api(title: str, geo_hierarchy: dict, model: str = DEFAULT_MODEL) -> ResolutionTarget:`
+- Default parameters use module constants: `model: str = DEFAULT_MODEL`
+- Variadic parameters avoid overuse; used when necessary: `max_retries=5`, `batch_size=30`
+- Boolean flags used for optional behavior: `recent_year_only: bool = Query(False, ...)`
 
 **Return Values:**
-- Explicit return types specified: `-> dict`, `-> pd.DataFrame`, `-> Optional[str]`, `-> Dict[str, Any]`
-- Tuple returns for multiple values: `-> Tuple[Dict, Optional[str]]`, `-> tuple[str, str]`
-- None returned for missing data: `return None` for safe accessors
-- Dictionary returns for structured data: `return {"status": "ok"}`
+- Functions declare return types: `-> ResolutionTarget`, `-> List[List]`, `-> Dict[str, Any]`
+- Multiple returns indicated with `Tuple`: `-> Tuple[Dict, Optional[str]]`
+- None returns explicitly typed: `-> Optional[str]`
+- Dataframe returns for data operations: `-> pd.DataFrame`
 
 ## Module Design
 
 **Exports:**
-- Explicit imports used throughout: `from models import ReportResponse, MIN_YEAR_CONSTRAINT, ...`
-- Module-level constants and classes at top of file
-- Single responsibility per module (e.g., `report_generator.py` for report logic, `models.py` for Pydantic models, `supabase_client.py` for data access)
+- Modules designed for direct import: `from .data_modules.un_classification import un_classification`
+- Data modules export dictionaries/constants: `iso2_country_code`, `geo_hierarchy`, `un_classification`
+- Service modules export classes: `SecurityCouncilAnalysisService`
+- Pipeline modules designed as executable scripts with `if __name__ == "__main__":` guard
+- API modules export FastAPI `app` instance and endpoint functions
 
 **Barrel Files:**
-- `__init__.py` files exist but content not shown (see `app/__init__.py`, `services/__init__.py`)
-- Likely empty or minimal (common pattern for package initialization)
+- Service `__init__.py` files import and expose key classes from submodules
+- Example: `src/un_report_api/app/services/__init__.py` exposes service classes
+- Allows clean imports: `from services import SecurityCouncilAnalysisService`
+- Not used for data_modules (each module imported directly by name)
 
-**Class Organization:**
-- Pydantic models define API contracts: `class ReportResponse(BaseModel):`
-- Service classes encapsulate domain logic: `class SupabaseDataLoader:`, `class SecurityCouncilAnalysisService:`
-- Methods organized as: `__init__`, private methods (`_method()`), then public methods
+## API Response Patterns
+
+**FastAPI Endpoints:**
+- All endpoints decorated with HTTP method and path: `@app.get("/")`, `@app.get("/report/{country_iso3}")`
+- Path parameters use FastAPI `Path()`: `country_iso3: str = Path(...)`
+- Query parameters use `Query()`: `start_year: int = Query(...)`
+- Response models declared: `-> ReportResponse`
+- Error responses use `HTTPException`: `raise HTTPException(status_code=400, detail="Invalid year")`
+- Async functions standard: `async def get_country_report_api(...)`
+- Logging middleware wraps all requests: `@app.middleware("http")`
+
+**Pydantic Models:**
+- All response models inherit `BaseModel`
+- Fields use `Field()` with examples and descriptions for OpenAPI
+- Optional fields explicitly typed: `Optional[float] = Field(default=None, ...)`
+- Nested models for complex structures: `ReportResponse` contains `ReportMetadata`, `VotingBehaviorOverall`, etc.
+- Validators available but not heavily used: `@validator` decorator syntax available
+
+## Database Patterns
+
+**Connection Handling:**
+- `get_turso_connection()` creates fresh connection per call
+- Lazy imports: `libsql_experimental` imported inside function to avoid startup failures
+- Fallback to HTTP client on Windows: `try libsql import / except ImportError _USE_HTTP_CLIENT = True`
+- Connection obtained before each operation, not pooled
+- Explicit `conn.commit()` after mutations
+
+**Data Loading:**
+- CSV files used as primary data source in API: `pd.read_csv(csv_path)`
+- Turso used for logging and analytics in scraper
+- Data loader pattern: `TursoDataLoader` class with methods like `load_annual_scores(year)`
 
 ---
 
-*Convention analysis: 2026-03-18*
+*Convention analysis: 2026-05-18*
