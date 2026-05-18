@@ -1,5 +1,7 @@
 """FastAPI application for UN Country Voting Report API with CORS enabled."""
 
+import csv
+import io
 import logging
 import os
 import json
@@ -7,7 +9,8 @@ import pandas as pd
 from datetime import datetime
 from fastapi import FastAPI, Path, Query, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Dict, List, Optional, Tuple
+from fastapi.responses import StreamingResponse
+from typing import Dict, List, Literal, Optional, Tuple
 import re
 #test
 # Use absolute imports with proper path handling
@@ -315,6 +318,65 @@ async def get_security_council_vote_analysis():
             status_code=503,
             detail=f"Security Council vote analysis not available: {str(e)}"
         )
+
+
+# --- Bulk CSV Downloads ---
+
+@app.get(
+    "/download/votes",
+    tags=["Downloads"],
+    summary="Download UN voting data as CSV",
+    description=(
+        "Stream a CSV of UN voting data. Use type=unga (default) for General "
+        "Assembly resolutions only, or type=sc for Security Council resolutions "
+        "only. Rows include the per-country vote map as a JSON blob in the "
+        "vote_data column."
+    ),
+)
+async def download_votes(
+    type: Literal["unga", "sc"] = Query(
+        "unga",
+        description="Which chamber's votes to export: 'unga' (default) or 'sc'.",
+    ),
+):
+    if type == "unga":
+        sql = "SELECT * FROM un_votes_unga ORDER BY Date"
+        filename = "un_votes_unga.csv"
+    else:
+        sql = "SELECT * FROM un_votes_with_sc WHERE sc_flag = 1 ORDER BY Date"
+        filename = "un_votes_sc.csv"
+
+    try:
+        from turso_client import get_turso_connection  # local import keeps cold-start fast
+        conn = get_turso_connection()
+        cursor = conn.execute(sql)
+        columns = [d[0] for d in cursor.description]
+        rows = cursor.fetchall()
+    except Exception as e:
+        api_logger.error("Error querying Turso for /download/votes (type=%s): %s", type, e)
+        raise HTTPException(status_code=503, detail="Voting data is not available.")
+
+    api_logger.info("Streaming %d rows for /download/votes type=%s", len(rows), type)
+
+    def row_stream():
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(columns)
+        yield buf.getvalue()
+        buf.seek(0)
+        buf.truncate(0)
+        for row in rows:
+            writer.writerow(row)
+            yield buf.getvalue()
+            buf.seek(0)
+            buf.truncate(0)
+
+    return StreamingResponse(
+        row_stream(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
 
 # Run with Uvicorn example (CLI):
 # uvicorn main:app --host 0.0.0.0 --port 8000 --reload

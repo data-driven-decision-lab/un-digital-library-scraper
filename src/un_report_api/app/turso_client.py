@@ -10,24 +10,26 @@ logger = logging.getLogger(__name__)
 
 def get_turso_connection():
     """
-    Create a libsql_experimental connection to Turso.
-    Returns a connection object, or raises if credentials are missing.
+    Create a connection to Turso. Prefers libsql_experimental (native client);
+    falls back to the HTTP-based client when libsql_experimental is unavailable
+    (e.g. on Windows, where the wheel doesn't build). Both clients expose the
+    same execute()/commit()/close() interface.
 
-    The libsql_experimental import is intentionally deferred inside this
-    function so that an ImportError is localised to connection attempts
-    rather than raised at module-import time. This allows the API to start
-    without libsql_experimental installed (e.g. in CI environments that only
-    need the CSV-reading code paths).
+    Imports are deferred inside the function so that ImportError is localised
+    to connection attempts rather than raised at module-import time.
     """
-    import libsql_experimental as libsql  # noqa: PLC0415
     url = os.getenv("TURSO_DATABASE_URL")
     auth_token = os.getenv("TURSO_AUTH_TOKEN")
     if not url:
         raise ValueError("TURSO_DATABASE_URL environment variable not set.")
     if not auth_token:
         raise ValueError("TURSO_AUTH_TOKEN environment variable not set.")
-    conn = libsql.connect(url, auth_token=auth_token)
-    return conn
+    try:
+        import libsql_experimental as libsql  # noqa: PLC0415
+        return libsql.connect(url, auth_token=auth_token)
+    except ImportError:
+        from un_data_pipeline.turso_http import TursoHTTPConnection  # noqa: PLC0415
+        return TursoHTTPConnection(url, auth_token)
 
 
 class TursoDataLoader:
