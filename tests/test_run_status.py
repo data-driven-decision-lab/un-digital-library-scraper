@@ -22,6 +22,50 @@ REC = "https://digitallibrary.un.org/record/"
 
 
 class RunStatusTest(unittest.TestCase):
+    def test_waf_cookie_is_installed_in_every_new_browser_before_navigation(self):
+        browsers = [mock.Mock(), mock.Mock()]
+        for browser in browsers:
+            browser.execute_cdp_cmd.return_value = {"success": True}
+        with mock.patch.dict(os.environ, {"AWS_WAF_TOKEN": " test-token "}), \
+             mock.patch.object(sp, "ChromeDriverManager"), \
+             mock.patch.object(sp, "Service"), \
+             mock.patch.object(sp.os, "chmod"), \
+             mock.patch.object(sp.webdriver, "Chrome", side_effect=browsers):
+            for browser in browsers:
+                self.assertIs(sp.get_driver(), browser)
+                browser.get.assert_not_called()
+                browser.execute_cdp_cmd.assert_called_once_with("Network.setCookie", {
+                    "name": "aws-waf-token", "value": "test-token",
+                    "url": "https://digitallibrary.un.org/", "path": "/", "secure": True,
+                })
+
+    def test_local_browser_without_token_does_not_set_cookie(self):
+        with mock.patch.dict(os.environ, {"AWS_WAF_TOKEN": ""}), \
+             mock.patch.object(sp, "ChromeDriverManager"), \
+             mock.patch.object(sp, "Service"), \
+             mock.patch.object(sp.os, "chmod"), \
+             mock.patch.object(sp.webdriver, "Chrome") as chrome:
+            sp.get_driver()
+            chrome.return_value.execute_cdp_cmd.assert_not_called()
+
+    def test_cookie_failure_closes_browser_and_hides_sensitive_error(self):
+        for outcome in [{"success": False}, RuntimeError("secret-token")]:
+            browser = mock.Mock()
+            if isinstance(outcome, Exception):
+                browser.execute_cdp_cmd.side_effect = outcome
+            else:
+                browser.execute_cdp_cmd.return_value = outcome
+            with mock.patch.dict(os.environ, {"AWS_WAF_TOKEN": "secret-token"}), \
+                 mock.patch.object(sp, "ChromeDriverManager"), \
+             mock.patch.object(sp, "Service"), \
+                 mock.patch.object(sp.os, "chmod"), \
+                 mock.patch.object(sp.webdriver, "Chrome", return_value=browser):
+                with self.assertRaisesRegex(RuntimeError, "Could not configure") as error:
+                    sp.get_driver()
+            browser.quit.assert_called_once()
+            self.assertNotIn("secret-token", str(error.exception))
+            self.assertTrue(error.exception.__suppress_context__)
+
     def test_main_records_success_and_failure(self):
         for outcome, expected in [(None, ("success",)), (RuntimeError("boom"), ("failed", "boom"))]:
             def run():

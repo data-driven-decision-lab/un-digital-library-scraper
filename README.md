@@ -71,6 +71,20 @@ python -m src.un_data_pipeline.dashboard_data_pipeline
 
 The scraper requires Chrome and network access to `digitallibrary.un.org`. Each pipeline run logs execution metadata to the `pipeline_runs` Turso table.
 
+### AWS WAF token for the scheduled scraper
+
+Set the repository Actions secret `AWS_WAF_TOKEN` to the value of the
+`aws-waf-token` cookie from your UN Digital Library browser session. The workflow
+passes it to every scraper browser, including workers and restarted sessions,
+before any requests to the library. For local runs, set it in your environment or
+untracked `.env` file. Never commit the token.
+
+[AWS WAF tokens](https://docs.aws.amazon.com/waf/latest/developerguide/waf-tokens-details.html)
+contain browser-session information and have challenge expiration times; a copied
+token is not a permanent credential and may be rejected on a GitHub runner.
+If the library still serves a challenge, the run fails. Refresh the Actions secret
+with a valid token or arrange automated access with the UN Library.
+
 ## Running the API Locally
 
 ```bash

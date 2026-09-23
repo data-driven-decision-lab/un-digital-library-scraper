@@ -16,6 +16,7 @@ jobs:
       TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
       TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      AWS_WAF_TOKEN: ${{ secrets.AWS_WAF_TOKEN }}
       LOG_LEVEL: INFO
 
     steps:
@@ -67,6 +68,7 @@ jobs:
           check_var "GEMINI_API_KEY"
           check_var "TURSO_DATABASE_URL"
           check_var "TURSO_AUTH_TOKEN"
+          check_var "AWS_WAF_TOKEN"
 
       - name: DNS check for Gemini API
         run: |

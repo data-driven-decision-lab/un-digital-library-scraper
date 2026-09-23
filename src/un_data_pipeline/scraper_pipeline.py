@@ -1278,6 +1278,29 @@ def get_driver():
     driver = webdriver.Chrome(service=service, options=options)
     driver.set_page_load_timeout(45)
     driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+    waf_token = os.getenv("AWS_WAF_TOKEN", "").strip()
+    if waf_token:
+        # CDP sets the cookie before the first request, including in worker and
+        # replacement browsers. Restrict it to the UN Digital Library host.
+        # Selenium's DEBUG request logging would otherwise expose the cookie.
+        logging.getLogger("selenium.webdriver.remote.remote_connection").setLevel(logging.WARNING)
+        try:
+            result = driver.execute_cdp_cmd("Network.setCookie", {
+                "name": "aws-waf-token",
+                "value": waf_token,
+                "url": "https://digitallibrary.un.org/",
+                "path": "/",
+                "secure": True,
+            })
+            if not result.get("success"):
+                raise RuntimeError("Cookie was not accepted")
+        except Exception:
+            try:
+                driver.quit()
+            except Exception:
+                pass
+            raise RuntimeError("Could not configure the AWS_WAF_TOKEN cookie") from None
+        logger.info("Configured AWS WAF cookie for UN Digital Library")
     logger.info(f"Initialized browser with user-agent: {user_agent}")
     return driver
 
@@ -2218,10 +2241,11 @@ def run_scraper():
         
         years_data = get_available_years(driver)
         if not years_data:
-            # First seen 2026-09-23: every UN Digital Library page answers bots with an
-            # AWS WAF challenge. Needs sanctioned access from the UN Library, not a workaround.
             if 'awswaf' in driver.page_source.lower():
-                raise RuntimeError("UN Digital Library served an AWS WAF bot challenge: automated access is blocked.")
+                raise RuntimeError(
+                    "UN Digital Library served an AWS WAF bot challenge. "
+                    "AWS_WAF_TOKEN may be missing, expired, or rejected for this browser session."
+                )
             raise RuntimeError("No years found on the page. Check the website structure.")
         logger.info(f"Found {len(years_data)} years to process")
 
