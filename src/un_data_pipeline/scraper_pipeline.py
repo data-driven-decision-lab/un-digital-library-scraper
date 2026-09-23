@@ -280,7 +280,7 @@ FIXED_COLUMNS = [
 
 # Scraper constants
 BASE_SEARCH_URL = ("https://digitallibrary.un.org/search?cc=Voting%20Data&ln=en&p=&f=&rm=&sf=&so=d"
-                   "&rg=100&c=Voting%20Data&c=&of=hb&fti=1&fct__9=Vote&fti=1")  # 100 results per page for faster scraping
+                   "&rg=100&c=Voting%20Data&c=&of=hb&fti=0&fct__10=Vote")  # 100 results per page for faster scraping
 MAX_PAGES_PER_YEAR = 50
 MAX_WORKERS = 2
 MAX_CONSECUTIVE_EMPTY_PAGES = 3  # Stop after this many consecutive pages with no new links
@@ -2211,6 +2211,10 @@ def run_scraper():
         
         years_data = get_available_years(driver)
         if not years_data:
+            if 'No match found' in driver.page_source:
+                raise RuntimeError(
+                    'UN Digital Library returned no search results. Check the voting-data search filters.'
+                )
             if 'awswaf' in driver.page_source.lower():
                 raise RuntimeError(
                     "UN Digital Library served an AWS WAF bot challenge. "
