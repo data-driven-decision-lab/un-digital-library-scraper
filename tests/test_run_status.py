@@ -3,6 +3,8 @@
 Run from the repo root: python -m unittest discover tests
 """
 import os
+import json
+import sqlite3
 import sys
 import tempfile
 import unittest
@@ -22,6 +24,196 @@ REC = "https://digitallibrary.un.org/record/"
 
 
 class RunStatusTest(unittest.TestCase):
+    def test_new_country_names_preserve_votes_and_totals(self):
+        row = sp.standardize_country_columns(sp.pd.DataFrame([{
+            'Link': REC + '4128222', 'BAHAMAS (THE)': 'YES', 'NAOERO': 'ABSTAIN',
+            'USA': 'NO', 'YES COUNT': '1', 'NO COUNT': '1', 'ABSTAIN COUNT': '1',
+        }])).iloc[0]
+        self.assertEqual(sp.validated_vote_data(row, require_summary=True),
+                         {'BHS': 'YES', 'NRU': 'ABSTAIN', 'USA': 'NO'})
+        row['YES COUNT'] = '2'
+        with self.assertRaisesRegex(ValueError, 'Vote total mismatch'):
+            sp.validated_vote_data(row)
+
+    def test_unmapped_country_votes_fail_before_upload(self):
+        with self.assertRaisesRegex(ValueError, 'Unmapped country votes'):
+            sp.standardize_country_columns(sp.pd.DataFrame([{'NEW COUNTRY': 'YES'}]))
+
+    def test_targeted_repair_preserves_metadata_and_is_idempotent(self):
+        conn = sqlite3.connect(':memory:')
+        self.addCleanup(conn.close)
+        with open(os.path.join(_src, '..', 'db', 'schema.sql')) as schema:
+            conn.executescript(schema.read())
+        for table in ('un_votes_unga', 'un_votes_with_sc'):
+            conn.execute(f'INSERT INTO {table} (Link, Resolution, tags, vote_data) VALUES (?, ?, ?, ?)',
+                         (REC + '1', 'A/RES/81/1', 'original tags', '{}'))
+        raw = {'Link': REC + '1', 'Resolution': 'A/RES/81/1', 'BAHAMAS (THE)': 'YES',
+               'YES COUNT': '1', 'NO COUNT': '0', 'ABSTAIN COUNT': '0'}
+        with mock.patch.object(sp, 'get_turso_connection', return_value=conn), \
+             mock.patch.object(sp, 'process_resolution', return_value=raw), \
+             mock.patch.object(sp.time, 'sleep'):
+            sp.repair_record_votes(mock.Mock(), '1')
+            sp.repair_record_votes(mock.Mock(), '1')
+            for table in ('un_votes_unga', 'un_votes_with_sc'):
+                rows = conn.execute(f'SELECT tags, vote_data FROM {table}').fetchall()
+                self.assertEqual(len(rows), 1)
+                self.assertEqual(rows[0][0], 'original tags')
+                self.assertEqual(json.loads(rows[0][1]), {'BHS': 'YES'})
+            raw['YES COUNT'] = '2'
+            with self.assertRaisesRegex(ValueError, 'Vote total mismatch'):
+                sp.repair_record_votes(mock.Mock(), '1')
+            raw.pop('YES COUNT')
+            with self.assertRaisesRegex(ValueError, 'Missing YES summary'):
+                sp.repair_record_votes(mock.Mock(), '1')
+            with self.assertRaisesRegex(ValueError, 'numeric IDs'):
+                sp.repair_record_votes(mock.Mock(), '1,https://example.com')
+
+    def test_visible_year_labels_are_parsed_without_hidden_labels(self):
+        driver = mock.Mock(title="Search Results")
+        driver.find_elements.return_value = []
+        element = mock.Mock(tag_name="button")
+        element.get_attribute.side_effect = lambda name: {
+            "data-value": "MjAyNg==", "id": "desktopcheckbox1-fct__3-0",
+        }.get(name)
+        element.find_element.return_value.text = "2026 (53)"
+        driver.find_element.return_value.find_elements.return_value = [element]
+        with mock.patch.object(sp, "WebDriverWait"), mock.patch.object(sp.time, "sleep"):
+            self.assertEqual(sp.get_available_years(driver), [{
+                "year": "2026", "count": 53, "data_value": "MjAyNg==",
+                "element_id": "desktopcheckbox1-fct__3-0", "element_type": "button",
+            }])
+
+    def test_rejected_cookie_is_discarded_for_subsequent_browsers(self):
+        driver = mock.Mock(page_source="403 Forbidden")
+        with mock.patch.dict(os.environ, {"AWS_WAF_TOKEN": "expired-test-token"}), \
+             mock.patch.object(sp, "get_links_from_turso", return_value=set()), \
+             mock.patch.object(sp, "get_driver", return_value=driver), \
+             mock.patch.object(sp, "get_available_years", side_effect=[[], [{"year": 2026, "count": 1}]]), \
+             mock.patch.object(sp, "select_year_facet", return_value=(True, driver)), \
+             mock.patch.object(sp, "collect_links_for_year", return_value=[]), \
+             mock.patch.object(sp, "clear_filters"), \
+             mock.patch.object(sp, "update_scraper_log"), \
+             mock.patch.object(sp.time, "sleep"):
+            sp.run_scraper()
+            self.assertNotIn("AWS_WAF_TOKEN", os.environ)
+        driver.delete_cookie.assert_called_once_with("aws-waf-token")
+
+    def test_upload_routes_resolutions_and_is_idempotent(self):
+        conn = sqlite3.connect(":memory:")
+        self.addCleanup(conn.close)
+        with open(os.path.join(_src, "..", "db", "schema.sql")) as schema:
+            conn.executescript(schema.read())
+        rows = sp.pd.DataFrame([
+            {"Resolution": "A/RES/81/1", "Date": "2026-09-17", "Title": "GA vote",
+             "Council": "Unknown", "Link": REC + "1", "USA": "NO", "tags": "Peace"},
+            {"Resolution": "S/RES/2828(2026)", "Date": "2026-09-11", "Title": "SC vote",
+             "Council": "Unknown", "Link": REC + "2", "USA": "YES", "tags": "Peace"},
+        ])
+        with mock.patch.object(sp, "get_turso_connection", return_value=conn), \
+             mock.patch.object(sp, "tag_new_rows", side_effect=lambda df, **kw: df.copy()):
+            sp.process_and_upload_data(rows)
+            sp.process_and_upload_data(rows)
+            self.assertEqual(sp.get_links_from_turso(), {REC + "1", REC + "2"})
+        self.assertEqual(conn.execute("SELECT COUNT(*) FROM un_votes_with_sc").fetchone()[0], 2)
+        self.assertEqual(conn.execute("SELECT Resolution FROM un_votes_unga").fetchall(), [("A/RES/81/1",)])
+        self.assertEqual(conn.execute("SELECT vote_data FROM un_votes_unga").fetchone()[0], '{"USA": "NO"}')
+
+    def test_unrecovered_record_fails_but_saves_successful_rows(self):
+        rows = [{"Link": REC + "1", "Scrape_Year": 2026}]
+        with mock.patch.object(sp, "get_links_from_turso", return_value=set()), \
+             mock.patch.object(sp, "get_driver"), \
+             mock.patch.object(sp, "get_available_years", return_value=[{"year": 2026, "count": 2}]), \
+             mock.patch.object(sp, "select_year_facet", side_effect=lambda d, y: (True, d)), \
+             mock.patch.object(sp, "collect_links_for_year", return_value=[REC + "1", REC + "2"]), \
+             mock.patch.object(sp, "batch_scrape_resolutions", return_value=(rows, [REC + "2"])), \
+             mock.patch.object(sp, "retry_failed_links", return_value=[]), \
+             mock.patch.object(sp, "update_scraper_log"), \
+             mock.patch.object(sp.time, "sleep"), \
+             mock.patch.object(sp, "process_and_upload_data") as upload:
+            with self.assertRaisesRegex(RuntimeError, "1 records still failed"):
+                sp.run_scraper()
+        self.assertEqual(list(upload.call_args.args[0]["Link"]), [REC + "1"])
+
+    def test_partial_upload_is_not_treated_as_complete(self):
+        conn = sqlite3.connect(":memory:")
+        self.addCleanup(conn.close)
+        conn.executescript("""
+            CREATE TABLE un_votes_with_sc (Link TEXT, sc_flag INTEGER);
+            CREATE TABLE un_votes_unga (Link TEXT);
+        """)
+        conn.executemany("INSERT INTO un_votes_with_sc VALUES (?, ?)",
+                         [(REC + "1", 0), (REC + "2", 1), (REC + "3", 0)])
+        conn.execute("INSERT INTO un_votes_unga VALUES (?)", [REC + "3"])
+        with mock.patch.object(sp, "get_turso_connection", return_value=conn):
+            self.assertEqual(sp.get_links_from_turso(), {REC + "2", REC + "3"})
+            conn.execute("INSERT INTO un_votes_unga VALUES (?)", [REC + "1"])
+            self.assertEqual(sp.get_links_from_turso(), {REC + "1", REC + "2", REC + "3"})
+
+    def test_classification_failure_does_not_become_empty_tags(self):
+        with mock.patch.object(sp, "execute_api_call", side_effect=RuntimeError("API unavailable")):
+            with self.assertRaisesRegex(RuntimeError, "classification failed"):
+                sp.tag_resolution("Peacekeeping")
+            with self.assertRaisesRegex(RuntimeError, "classification failed"):
+                sp.call_llm_api("Peacekeeping", {})
+
+    def test_empty_search_is_not_misreported_as_waf(self):
+        driver = mock.Mock(page_source='<script src="awswaf.com"></script>No match found')
+        with mock.patch.object(sp, "get_links_from_turso", return_value=set()), \
+             mock.patch.object(sp, "get_driver", return_value=driver), \
+             mock.patch.object(sp, "get_available_years", return_value=[]), \
+             mock.patch.object(sp, "update_scraper_log"), \
+             mock.patch.object(sp.time, "sleep"):
+            with self.assertRaisesRegex(RuntimeError, "search filters"):
+                sp.run_scraper()
+
+    def test_failed_year_selection_fails_the_run(self):
+        with mock.patch.object(sp, "get_links_from_turso", return_value=set()), \
+             mock.patch.object(sp, "get_driver"), \
+             mock.patch.object(sp, "get_available_years", return_value=[{"year": 2026, "count": 2}]), \
+             mock.patch.object(sp, "select_year_facet", side_effect=lambda d, y: (False, d)), \
+             mock.patch.object(sp, "update_scraper_log"), \
+             mock.patch.object(sp.time, "sleep"):
+            with self.assertRaisesRegex(RuntimeError, "Failed to select"):
+                sp.run_scraper()
+
+    def test_waf_cookie_is_installed_in_every_new_browser_before_navigation(self):
+        browsers = [mock.Mock(), mock.Mock()]
+        for browser in browsers:
+            browser.execute_cdp_cmd.return_value = {"success": True}
+        with mock.patch.dict(os.environ, {"AWS_WAF_TOKEN": " test-token "}), \
+             mock.patch.object(sp, "Service"), \
+             mock.patch.object(sp.webdriver, "Chrome", side_effect=browsers):
+            for browser in browsers:
+                self.assertIs(sp.get_driver(), browser)
+                browser.get.assert_not_called()
+                browser.execute_cdp_cmd.assert_called_once_with("Network.setCookie", {
+                    "name": "aws-waf-token", "value": "test-token",
+                    "url": "https://digitallibrary.un.org/", "path": "/", "secure": True,
+                })
+
+    def test_local_browser_without_token_does_not_set_cookie(self):
+        with mock.patch.dict(os.environ, {"AWS_WAF_TOKEN": ""}), \
+             mock.patch.object(sp, "Service"), \
+             mock.patch.object(sp.webdriver, "Chrome") as chrome:
+            sp.get_driver()
+            chrome.return_value.execute_cdp_cmd.assert_not_called()
+
+    def test_cookie_failure_closes_browser_and_hides_sensitive_error(self):
+        for outcome in [{"success": False}, RuntimeError("secret-token")]:
+            browser = mock.Mock()
+            if isinstance(outcome, Exception):
+                browser.execute_cdp_cmd.side_effect = outcome
+            else:
+                browser.execute_cdp_cmd.return_value = outcome
+            with mock.patch.dict(os.environ, {"AWS_WAF_TOKEN": "secret-token"}), \
+                 mock.patch.object(sp, "Service"), \
+                 mock.patch.object(sp.webdriver, "Chrome", return_value=browser):
+                with self.assertRaisesRegex(RuntimeError, "Could not configure") as error:
+                    sp.get_driver()
+            browser.quit.assert_called_once()
+            self.assertNotIn("secret-token", str(error.exception))
+            self.assertTrue(error.exception.__suppress_context__)
+
     def test_main_records_success_and_failure(self):
         for outcome, expected in [(None, ("success",)), (RuntimeError("boom"), ("failed", "boom"))]:
             def run():

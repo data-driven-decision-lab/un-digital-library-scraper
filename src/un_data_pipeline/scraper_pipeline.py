@@ -58,8 +58,8 @@ except ImportError:
 # ---------------- Selenium & Scraper Imports ----------------
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import (
@@ -69,7 +69,6 @@ from selenium.common.exceptions import (
     StaleElementReferenceException
 )
 from bs4 import BeautifulSoup
-from webdriver_manager.chrome import ChromeDriverManager
 
 # ---------------- Configuration & Logging ----------------
 # Set logging level based on environment variable, default to INFO
@@ -162,7 +161,7 @@ def get_turso_connection():
         ValueError: If either environment variable is not set.
     """
     if _USE_HTTP_CLIENT:
-        from src.un_data_pipeline.turso_http import get_turso_connection as _http_conn
+        from .turso_http import get_turso_connection as _http_conn
         return _http_conn()
     url = os.getenv("TURSO_DATABASE_URL")
     auth_token = os.getenv("TURSO_AUTH_TOKEN")
@@ -282,22 +281,10 @@ FIXED_COLUMNS = [
 
 # Scraper constants
 BASE_SEARCH_URL = ("https://digitallibrary.un.org/search?cc=Voting%20Data&ln=en&p=&f=&rm=&sf=&so=d"
-                   "&rg=100&c=Voting%20Data&c=&of=hb&fti=1&fct__9=Vote&fti=1")  # 100 results per page for faster scraping
+                   "&rg=100&c=Voting%20Data&c=&of=hb&fti=0&fct__10=Vote")  # 100 results per page for faster scraping
 MAX_PAGES_PER_YEAR = 50
 MAX_WORKERS = 2
 MAX_CONSECUTIVE_EMPTY_PAGES = 3  # Stop after this many consecutive pages with no new links
-
-# User agent rotation for Selenium
-USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.5481.100 Safari/537.36"
-]
-user_agent_index = 0
-
-def reset_user_agent_rotation():
-    global user_agent_index
-    user_agent_index = 0
 
 # Custom exceptions
 class DuplicateLinkFound(Exception):
@@ -409,16 +396,7 @@ For each resolution text, identify ALL relevant tags that apply and return them 
         
     except Exception as e:
         logger.error(f"Error during API call: {e}")
-        # Return empty classification with error message
-        return ResolutionTarget(
-            classifications=[
-                LocationClassifications(
-                    continent="error",
-                    subregion="processing_error",
-                    country=None
-                )
-            ]
-        )
+        raise RuntimeError("Geographic classification failed") from e
 
 def get_llm_location_tags(title: str, geo_hierarchy: dict, model: str = DEFAULT_MODEL) -> List[List]:
     """
@@ -707,6 +685,10 @@ def standardize_country_columns(df):
 
     # Step 2: Add manual overrides for historical/ambiguous names
     manual_iso3_map = {
+        'BAHAMAS (THE)': 'BHS',
+        # Keep the database's historical NRU identifier for the renamed country.
+        # https://metadata.un.org/skosmos/thesaurus/en/page/1004349
+        'NAOERO': 'NRU',
         'BURMA': 'MMR', 'BYELORUSSIAN SSR': 'BLR', 'CAPE VERDE': 'CPV',
         'CENTRAL AFRICAN EMPIRE': 'CAF', 'CEYLON': 'LKA', "COTE D'IVOIRE": 'CIV',
         'DAHOMEY': 'BEN', 'DEMOCRATIC KAMPUCHEA': 'KHM', 'FEDERATION OF MALAYA': 'MYS',
@@ -862,6 +844,10 @@ def standardize_country_columns(df):
         logger.info("No country columns were successfully mapped and consolidated.")
 
     unmapped_cols_present = [col for col in unmapped_cols if col in df.columns]
+    unmapped_votes = [col for col in unmapped_cols_present
+                      if df[col].isin(['YES', 'NO', 'ABSTAIN']).any()]
+    if unmapped_votes:
+        raise ValueError(f"Unmapped country votes would be lost: {unmapped_votes}")
     if unmapped_cols_present:
          logger.warning(f"Adding {len(unmapped_cols_present)} unmapped columns to the end: {unmapped_cols_present}")
          # Filter unmapped_cols_present to ensure no duplicates with already added fixed/country cols
@@ -1029,7 +1015,7 @@ Rules:
             return response.choices[0].message.parsed
         except Exception as e:
             logger.error(f"Error during main tag API call: {e}")
-            return MainTagClassification(main_tags=[])
+            raise RuntimeError("Main-tag classification failed") from e
         
     elif stage == 2:
         # Stage 2: identify subtag1 based on main tags
@@ -1071,7 +1057,7 @@ Rules:
             return response.choices[0].message.parsed
         except Exception as e:
             logger.error(f"Error during subtag1 API call for {main_tag}: {e}")
-            return SubTag1Classification(subtag1s=[])
+            raise RuntimeError("Subtag classification failed") from e
         
     elif stage == 3:
         # Stage 3: identify subtag2 based on main tag and subtag1
@@ -1113,7 +1099,7 @@ Rules:
             return response.choices[0].message.parsed
         except Exception as e:
             logger.error(f"Error during subtag2 API call for {main_tag} > {subtag1}: {e}")
-            return SubTag2Classification(subtag2s=[])
+            raise RuntimeError("Detailed classification failed") from e
     
     else:
         logger.error(f"Invalid stage: {stage}")
@@ -1250,35 +1236,47 @@ def tag_new_rows(new_df, geo_hierarchy, iso2_country_code, model=DEFAULT_MODEL, 
 # -------------------- Scraper Pipeline Functions --------------------
 
 def get_driver():
-    """Initialize and return a Selenium Chrome driver with a rotated user-agent."""
-    global user_agent_index
+    """Initialize Chrome using its real browser identity and the installed binary."""
     options = Options()
-    if os.getenv('CI'):
-        options.add_argument("--headless")
+    if os.getenv('CHROME_HEADLESS', '1' if os.getenv('CI') else '0') == '1':
+        options.add_argument("--headless=new")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--disable-blink-features=AutomationControlled")
-    user_agent = USER_AGENTS[user_agent_index]
-    user_agent_index = (user_agent_index + 1) % len(USER_AGENTS)
-    options.add_argument(f"user-agent={user_agent}")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option("useAutomationExtension", False)
-    options.add_argument("--disable-extensions")
+    if os.getenv("CHROME_BINARY"):
+        options.binary_location = os.environ["CHROME_BINARY"]
     options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--js-flags=--expose-gc")
-    options.add_argument("--aggressive-cache-discard")
-    options.add_argument("--disable-site-isolation-trials")
-    driver_path = ChromeDriverManager().install()
-    try:
-        os.chmod(driver_path, 0o755)
-    except Exception as e:
-        logger.warning(f"Could not set permissions for {driver_path}: {e}")
-    service = Service(executable_path=driver_path)
+    driver_path = os.getenv("CHROMEDRIVER_PATH")
+    service = Service(executable_path=driver_path) if driver_path else Service()
     driver = webdriver.Chrome(service=service, options=options)
     driver.set_page_load_timeout(45)
-    driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-    logger.info(f"Initialized browser with user-agent: {user_agent}")
+    waf_token = os.getenv("AWS_WAF_TOKEN", "").strip()
+    if waf_token:
+        # CDP sets the cookie before the first request, including in worker and
+        # replacement browsers. Restrict it to the UN Digital Library host.
+        # Selenium's DEBUG request logging would otherwise expose the cookie.
+        logging.getLogger("selenium.webdriver.remote.remote_connection").setLevel(logging.WARNING)
+        try:
+            result = driver.execute_cdp_cmd("Network.setCookie", {
+                "name": "aws-waf-token",
+                "value": waf_token,
+                "url": "https://digitallibrary.un.org/",
+                "path": "/",
+                "secure": True,
+            })
+            if not result.get("success"):
+                raise RuntimeError("Cookie was not accepted")
+        except Exception:
+            try:
+                driver.quit()
+            except Exception:
+                pass
+            raise RuntimeError("Could not configure the AWS_WAF_TOKEN cookie") from None
+        logger.info("Configured AWS WAF cookie for UN Digital Library")
+    logger.info("Initialized Chrome %s", driver.capabilities.get("browserVersion", "unknown"))
     return driver
 
 def normalize_link(href):
@@ -1617,8 +1615,7 @@ def collect_links_for_year(driver, year, existing_links):
             )
             logger.debug(f"[Year {year}] Page {page_count} loaded successfully")
         except TimeoutException:
-            logger.warning(f"Timeout on page {page_count} for year {year}.")
-            break
+            raise RuntimeError(f"Search page {page_count} for year {year} did not load") from None
 
         elements = driver.find_elements(By.XPATH, "//a[contains(@href, '/record/')]")
         logger.debug(f"[Year {year}] Page {page_count} found {len(elements)} record links")
@@ -1687,8 +1684,7 @@ def collect_links_for_year(driver, year, existing_links):
                 time.sleep(1)
                 logger.debug(f"[Year {year}] Page {page_count}: Successfully clicked next button")
             except Exception as e:
-                logger.error(f"[Year {year}] Error clicking next button on page {page_count}: {e}")
-                break
+                raise RuntimeError(f"Could not load page {page_count + 1} for year {year}") from e
         else:
             logger.info(f"[Year {year}] No next button found on page {page_count}; reached last page.")
             break
@@ -1699,9 +1695,11 @@ def collect_links_for_year(driver, year, existing_links):
 def get_available_years(driver):
     """Extract available years and their counts from the date facet."""
     date_facets = []
+    if driver.title == "403 Forbidden":
+        return []
     try:
         # Wait for the page to fully load and then wait a bit more for dynamic content
-        WebDriverWait(driver, 15).until(
+        WebDriverWait(driver, 60).until(
             EC.presence_of_element_located((By.XPATH, "//ul[contains(@class, 'option-fct')]"))
         )
         time.sleep(2)  # Additional wait for dynamic content
@@ -1767,7 +1765,6 @@ def get_available_years(driver):
                             if not label_text:
                                 label_text = label_span.get_attribute("innerHTML").strip()
                                 # Clean HTML tags if any
-                                import re
                                 label_text = re.sub(r'<[^>]+>', '', label_text).strip()
                     else:
                         # For input elements, look for associated label
@@ -1806,7 +1803,7 @@ def get_available_years(driver):
 def select_year_facet(driver, year_data, max_retries=10):
     """
     Select a specific year by clicking its checkbox or button.
-    If "no such element" errors occur five times, refresh the browser session (switching user agent).
+    If "no such element" errors occur five times, refresh the browser session (restarting the browser).
     Returns a tuple: (True/False, driver)
     """
     no_element_error_count = 0
@@ -1865,7 +1862,7 @@ def select_year_facet(driver, year_data, max_retries=10):
                 no_element_error_count += 1
                 logger.warning(f"'No such element' error count: {no_element_error_count}")
                 if no_element_error_count >= 5:
-                    logger.info("5 'no such element' errors encountered; switching user agent.")
+                    logger.info("5 'no such element' errors encountered; restarting the browser.")
                     try:
                         driver.quit()
                     except Exception:
@@ -1873,7 +1870,7 @@ def select_year_facet(driver, year_data, max_retries=10):
                     driver = get_driver()
                     driver.get(BASE_SEARCH_URL)
                     time.sleep(2)
-                    # Reset the error count after switching agent
+                    # Reset the error count after restarting the browser
                     no_element_error_count = 0
                     continue
             if retry < max_retries - 1:
@@ -1883,7 +1880,7 @@ def select_year_facet(driver, year_data, max_retries=10):
         logger.warning(f"Trying fallback for year {year_data['year']}...")
         driver.get(BASE_SEARCH_URL)
         time.sleep(1.5)
-        WebDriverWait(driver, 15).until(
+        WebDriverWait(driver, 60).until(
             EC.presence_of_element_located((By.XPATH, "//ul[contains(@class, 'option-fct')]"))
         )
         
@@ -1953,7 +1950,7 @@ def retry_failed_links(failed_links, year):
 
     logging.info(f"Retrying {len(failed_links)} failed links for year {year}...")
 
-    retry_driver = get_driver()  # New session with rotated user-agent
+    retry_driver = get_driver()  # New browser session
     retried_rows = []
 
     try:
@@ -1974,7 +1971,7 @@ def retry_failed_links(failed_links, year):
 # -------------------- Turso Functions --------------------
 
 def get_links_from_turso() -> set:
-    """Fetches existing record links from un_votes_with_sc in Turso.
+    """Fetch record links that are present in every required Turso table.
 
     Raises after 3 failed attempts: continuing with an empty set would
     re-scrape and re-tag the whole library.
@@ -1982,7 +1979,11 @@ def get_links_from_turso() -> set:
     logger.info("Fetching existing links from Turso un_votes_with_sc...")
     for attempt in range(1, 4):
         try:
-            rows = get_turso_connection().execute("SELECT Link FROM un_votes_with_sc").fetchall()
+            rows = get_turso_connection().execute(
+                "SELECT v.Link FROM un_votes_with_sc v "
+                "WHERE v.sc_flag = 1 OR EXISTS "
+                "(SELECT 1 FROM un_votes_unga u WHERE u.Link = v.Link)"
+            ).fetchall()
             links = {n for n in (normalize_link(row[0]) for row in rows if row[0]) if n}
             logger.info(f"Found {len(links)} existing links in Turso.")
             return links
@@ -1991,6 +1992,58 @@ def get_links_from_turso() -> set:
             if attempt == 3:
                 raise
             time.sleep(10 * attempt)
+
+
+def validated_vote_data(row, require_summary=False):
+    """Build the stored votes and reject discrepancies with the UN summary."""
+    votes = {c: row[c] for c in row.index
+             if isinstance(c, str) and len(c) == 3 and c.isupper()
+             and c not in {'YES', 'NO'} and pd.notna(row[c])}
+    if any(value not in {'YES', 'NO', 'ABSTAIN'} for value in votes.values()):
+        raise ValueError(f"Invalid country vote in {row.get('Link')}")
+    for vote in ('YES', 'NO', 'ABSTAIN'):
+        expected = row.get(f'{vote} COUNT')
+        if expected is None or pd.isna(expected):
+            if require_summary:
+                raise ValueError(f"Missing {vote} summary for {row.get('Link')}")
+            continue
+        actual = sum(value == vote for value in votes.values())
+        if actual != int(expected):
+            raise ValueError(f"Vote total mismatch for {row.get('Link')}: "
+                             f"{vote} expected {expected}, got {actual}")
+    return votes
+
+
+def repair_record_votes(driver, record_ids):
+    """Re-fetch explicitly selected existing records; update only their votes."""
+    ids = list(dict.fromkeys(part.strip() for part in record_ids.split(',')))
+    if len(ids) > 100 or any(not re.fullmatch(r'[0-9]+', value) for value in ids):
+        raise ValueError('repair_record_ids must contain 1–100 comma-separated numeric IDs')
+    conn = get_turso_connection()
+    for record_id in ids:
+        link = f'https://digitallibrary.un.org/record/{record_id}'
+        raw = process_resolution(link, driver, None)
+        if not raw:
+            raise RuntimeError(f'Could not re-fetch repair record {record_id}')
+        row = standardize_country_columns(pd.DataFrame([raw])).iloc[0]
+        votes = json.dumps(validated_vote_data(row, require_summary=True))
+        tables = ['un_votes_with_sc']
+        if not str(row['Resolution']).startswith('S/'):
+            tables.append('un_votes_unga')
+        updates = []
+        for table in tables:
+            existing = conn.execute(
+                f'SELECT Link, Resolution FROM {table} WHERE Link = ? OR Link LIKE ?',
+                (link, link + '?%'),
+            ).fetchall()
+            if not existing or any(item[1] != row['Resolution'] for item in existing):
+                raise ValueError(f'Repair record {record_id} does not match {table}')
+            updates.extend((table, item[0]) for item in existing)
+        for table, stored_link in updates:
+            conn.execute(f'UPDATE {table} SET vote_data = ? WHERE Link = ?', (votes, stored_link))
+        conn.commit()
+        logger.info('Repaired and validated votes for record %s in %s', record_id, tables)
+        time.sleep(1)
 
 
 def upload_to_turso_unga(df: pd.DataFrame):
@@ -2006,14 +2059,10 @@ def upload_to_turso_unga(df: pd.DataFrame):
     logger.info(f"Uploading {len(df)} rows to Turso un_votes_unga...")
     try:
         conn = get_turso_connection()
-        country_cols = [
-            c for c in df.columns
-            if isinstance(c, str) and len(c) == 3 and c.isupper() and c not in {'YES', 'NO'}
-        ]
         meta_cols = ['Resolution', 'Date', 'Title', 'Link', 'tags']
         rows = []
         for _, row in df.iterrows():
-            vote_data = {c: row[c] for c in country_cols if c in row and pd.notna(row[c])}
+            vote_data = validated_vote_data(row)
             meta = [_clean_param(row.get(c)) for c in meta_cols]
             rows.append(tuple(meta + [json.dumps(vote_data)]))
         conn.executemany(
@@ -2041,14 +2090,10 @@ def upload_to_turso_with_sc(df: pd.DataFrame):
     logger.info(f"Uploading {len(df)} rows to Turso un_votes_with_sc...")
     try:
         conn = get_turso_connection()
-        country_cols = [
-            c for c in df.columns
-            if isinstance(c, str) and len(c) == 3 and c.isupper() and c not in {'YES', 'NO'}
-        ]
         meta_cols = ['Resolution', 'Date', 'Title', 'Link', 'tags']
         rows = []
         for _, row in df.iterrows():
-            vote_data = {c: row[c] for c in country_cols if c in row and pd.notna(row[c])}
+            vote_data = validated_vote_data(row)
             resolution = row.get('Resolution') or ''
             sc_flag = 1 if str(resolution).startswith('S/') else 0
             meta = [_clean_param(row.get(c)) for c in meta_cols]
@@ -2126,7 +2171,7 @@ def process_and_upload_data(new_df, existing_df=None):
 
     # Filter for non-SC records and upload to un_votes_unga
     logger.info("Filtering for non-SC records to upload to un_votes_unga table...")
-    non_sc_df = combined_df[combined_df['Council'] != 'Security Council'].copy()
+    non_sc_df = combined_df[~combined_df['Resolution'].fillna('').str.startswith('S/')].copy()
 
     if not non_sc_df.empty:
         logger.info(f"Uploading {len(non_sc_df)} non-SC records to un_votes_unga table...")
@@ -2217,13 +2262,43 @@ def run_scraper():
         time.sleep(2)
         
         years_data = get_available_years(driver)
+        if not years_data and os.getenv("AWS_WAF_TOKEN", "").strip() and (
+            '403 Forbidden' in driver.page_source or 'awswaf' in driver.page_source.lower()
+        ):
+            # A copied browser token can expire or be invalid in this session.
+            # Let the library initialize a fresh session once, without that cookie.
+            logger.info("Saved WAF cookie did not establish access; retrying without it")
+            driver.delete_cookie("aws-waf-token")
+            os.environ.pop("AWS_WAF_TOKEN", None)
+            driver.get(BASE_SEARCH_URL)
+            years_data = get_available_years(driver)
         if not years_data:
-            # First seen 2026-09-23: every UN Digital Library page answers bots with an
-            # AWS WAF challenge. Needs sanctioned access from the UN Library, not a workaround.
+            page_text = BeautifulSoup(driver.page_source, "html.parser").get_text(" ", strip=True)
+            waf_token = os.getenv("AWS_WAF_TOKEN", "").strip()
+            if waf_token:
+                page_text = page_text.replace(waf_token, "[REDACTED]")
+            logger.error("Search page did not load: title=%s; text=%s", driver.title, page_text[:800])
+            if '403 Forbidden' in page_text:
+                raise RuntimeError("UN Digital Library denied this runner access (HTTP 403 Forbidden)")
+            if 'No match found' in driver.page_source:
+                raise RuntimeError(
+                    'UN Digital Library returned no search results. Check the voting-data search filters.'
+                )
             if 'awswaf' in driver.page_source.lower():
-                raise RuntimeError("UN Digital Library served an AWS WAF bot challenge: automated access is blocked.")
+                raise RuntimeError(
+                    "UN Digital Library served an AWS WAF bot challenge. "
+                    "AWS_WAF_TOKEN may be missing, expired, or rejected for this browser session."
+                )
             raise RuntimeError("No years found on the page. Check the website structure.")
         logger.info(f"Found {len(years_data)} years to process")
+
+        repair_ids = os.getenv('REPAIR_RECORD_IDS', '').strip()
+        if repair_ids:
+            repair_record_votes(driver, repair_ids)
+            driver.get(BASE_SEARCH_URL)
+            years_data = get_available_years(driver)
+            if not years_data:
+                raise RuntimeError('Search did not reload after record repair')
 
         session_request_count = 0
         SESSION_RESET_THRESHOLD = 150
@@ -2247,8 +2322,7 @@ def run_scraper():
             logger.debug(f"Year {year}: Attempting to select year facet")
             success, driver = select_year_facet(driver, year_data)
             if not success:
-                logger.error(f"Failed to select facet for {year}; skipping this year.")
-                continue
+                raise RuntimeError(f"Failed to select the year facet for {year}")
             session_request_count += 1
             logger.debug(f"Year {year}: Successfully selected year facet")
             
@@ -2259,21 +2333,8 @@ def run_scraper():
             except DuplicateLinkFound as e:
                 new_links = e.new_links
                 logger.info(f"Year {year}: Duplicate link rule triggered; found {len(new_links)} new links.")
-            except (ConnectionResetError, ConnectionRefusedError, KeyboardInterrupt) as e:
-                logger.error(f"Year {year}: Connection error during link collection: {e}")
-                logger.info("Attempting to restart browser...")
-                try:
-                    driver.quit()
-                except:
-                    pass
-                driver = get_driver()
-                driver.get(BASE_SEARCH_URL)
-                time.sleep(3)
-                session_request_count = 0
-                continue
             except Exception as e:
-                logger.error(f"Year {year}: Unexpected error during link collection: {e}")
-                continue
+                raise RuntimeError(f"Link collection failed for year {year}") from e
 
             if new_links:
                 logger.info(f"Year {year}: Collected {len(new_links)} new links, proceeding to scrape")
@@ -2302,6 +2363,11 @@ def run_scraper():
                     if retry_rows: 
                         new_rows_all.extend(retry_rows)
                         logger.info(f"Year {year}: Recovered {len(retry_rows)} rows from retry")
+
+                    recovered = {normalize_link(row['Link']) for row in retry_rows}
+                    unresolved = {normalize_link(link) for link in failed_links} - recovered
+                    if unresolved:
+                        raise RuntimeError(f"Year {year}: {len(unresolved)} records still failed after retry")
 
                 # Update existing_links to prevent re-processing
                 existing_links.update(new_links)
@@ -2349,4 +2415,3 @@ def run_scraper():
 
 if __name__ == "__main__":
     main()
-
