@@ -59,7 +59,6 @@ except ImportError:
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import (
@@ -69,7 +68,6 @@ from selenium.common.exceptions import (
     StaleElementReferenceException
 )
 from bs4 import BeautifulSoup
-from webdriver_manager.chrome import ChromeDriverManager
 
 # ---------------- Configuration & Logging ----------------
 # Set logging level based on environment variable, default to INFO
@@ -286,18 +284,6 @@ BASE_SEARCH_URL = ("https://digitallibrary.un.org/search?cc=Voting%20Data&ln=en&
 MAX_PAGES_PER_YEAR = 50
 MAX_WORKERS = 2
 MAX_CONSECUTIVE_EMPTY_PAGES = 3  # Stop after this many consecutive pages with no new links
-
-# User agent rotation for Selenium
-USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.5481.100 Safari/537.36"
-]
-user_agent_index = 0
-
-def reset_user_agent_rotation():
-    global user_agent_index
-    user_agent_index = 0
 
 # Custom exceptions
 class DuplicateLinkFound(Exception):
@@ -1250,34 +1236,18 @@ def tag_new_rows(new_df, geo_hierarchy, iso2_country_code, model=DEFAULT_MODEL, 
 # -------------------- Scraper Pipeline Functions --------------------
 
 def get_driver():
-    """Initialize and return a Selenium Chrome driver with a rotated user-agent."""
-    global user_agent_index
+    """Initialize Chrome using its real browser identity and the installed binary."""
     options = Options()
     if os.getenv('CI'):
-        options.add_argument("--headless")
+        options.add_argument("--headless=new")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--window-size=1920,1080")
-    options.add_argument("--disable-blink-features=AutomationControlled")
-    user_agent = USER_AGENTS[user_agent_index]
-    user_agent_index = (user_agent_index + 1) % len(USER_AGENTS)
-    options.add_argument(f"user-agent={user_agent}")
-    options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    options.add_experimental_option("useAutomationExtension", False)
-    options.add_argument("--disable-extensions")
+    if os.getenv("CHROME_BINARY"):
+        options.binary_location = os.environ["CHROME_BINARY"]
     options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--js-flags=--expose-gc")
-    options.add_argument("--aggressive-cache-discard")
-    options.add_argument("--disable-site-isolation-trials")
-    driver_path = ChromeDriverManager().install()
-    try:
-        os.chmod(driver_path, 0o755)
-    except Exception as e:
-        logger.warning(f"Could not set permissions for {driver_path}: {e}")
-    service = Service(executable_path=driver_path)
-    driver = webdriver.Chrome(service=service, options=options)
+    driver = webdriver.Chrome(options=options)
     driver.set_page_load_timeout(45)
-    driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
     waf_token = os.getenv("AWS_WAF_TOKEN", "").strip()
     if waf_token:
         # CDP sets the cookie before the first request, including in worker and
@@ -1301,7 +1271,7 @@ def get_driver():
                 pass
             raise RuntimeError("Could not configure the AWS_WAF_TOKEN cookie") from None
         logger.info("Configured AWS WAF cookie for UN Digital Library")
-    logger.info(f"Initialized browser with user-agent: {user_agent}")
+    logger.info("Initialized Chrome %s", driver.capabilities.get("browserVersion", "unknown"))
     return driver
 
 def normalize_link(href):
@@ -1724,7 +1694,7 @@ def get_available_years(driver):
     date_facets = []
     try:
         # Wait for the page to fully load and then wait a bit more for dynamic content
-        WebDriverWait(driver, 15).until(
+        WebDriverWait(driver, 60).until(
             EC.presence_of_element_located((By.XPATH, "//ul[contains(@class, 'option-fct')]"))
         )
         time.sleep(2)  # Additional wait for dynamic content
@@ -1829,7 +1799,7 @@ def get_available_years(driver):
 def select_year_facet(driver, year_data, max_retries=10):
     """
     Select a specific year by clicking its checkbox or button.
-    If "no such element" errors occur five times, refresh the browser session (switching user agent).
+    If "no such element" errors occur five times, refresh the browser session (restarting the browser).
     Returns a tuple: (True/False, driver)
     """
     no_element_error_count = 0
@@ -1888,7 +1858,7 @@ def select_year_facet(driver, year_data, max_retries=10):
                 no_element_error_count += 1
                 logger.warning(f"'No such element' error count: {no_element_error_count}")
                 if no_element_error_count >= 5:
-                    logger.info("5 'no such element' errors encountered; switching user agent.")
+                    logger.info("5 'no such element' errors encountered; restarting the browser.")
                     try:
                         driver.quit()
                     except Exception:
@@ -1896,7 +1866,7 @@ def select_year_facet(driver, year_data, max_retries=10):
                     driver = get_driver()
                     driver.get(BASE_SEARCH_URL)
                     time.sleep(2)
-                    # Reset the error count after switching agent
+                    # Reset the error count after restarting the browser
                     no_element_error_count = 0
                     continue
             if retry < max_retries - 1:
@@ -1906,7 +1876,7 @@ def select_year_facet(driver, year_data, max_retries=10):
         logger.warning(f"Trying fallback for year {year_data['year']}...")
         driver.get(BASE_SEARCH_URL)
         time.sleep(1.5)
-        WebDriverWait(driver, 15).until(
+        WebDriverWait(driver, 60).until(
             EC.presence_of_element_located((By.XPATH, "//ul[contains(@class, 'option-fct')]"))
         )
         
@@ -1976,7 +1946,7 @@ def retry_failed_links(failed_links, year):
 
     logging.info(f"Retrying {len(failed_links)} failed links for year {year}...")
 
-    retry_driver = get_driver()  # New session with rotated user-agent
+    retry_driver = get_driver()  # New browser session
     retried_rows = []
 
     try:

@@ -27,9 +27,6 @@ class RunStatusTest(unittest.TestCase):
         for browser in browsers:
             browser.execute_cdp_cmd.return_value = {"success": True}
         with mock.patch.dict(os.environ, {"AWS_WAF_TOKEN": " test-token "}), \
-             mock.patch.object(sp, "ChromeDriverManager"), \
-             mock.patch.object(sp, "Service"), \
-             mock.patch.object(sp.os, "chmod"), \
              mock.patch.object(sp.webdriver, "Chrome", side_effect=browsers):
             for browser in browsers:
                 self.assertIs(sp.get_driver(), browser)
@@ -41,9 +38,6 @@ class RunStatusTest(unittest.TestCase):
 
     def test_local_browser_without_token_does_not_set_cookie(self):
         with mock.patch.dict(os.environ, {"AWS_WAF_TOKEN": ""}), \
-             mock.patch.object(sp, "ChromeDriverManager"), \
-             mock.patch.object(sp, "Service"), \
-             mock.patch.object(sp.os, "chmod"), \
              mock.patch.object(sp.webdriver, "Chrome") as chrome:
             sp.get_driver()
             chrome.return_value.execute_cdp_cmd.assert_not_called()
@@ -56,9 +50,6 @@ class RunStatusTest(unittest.TestCase):
             else:
                 browser.execute_cdp_cmd.return_value = outcome
             with mock.patch.dict(os.environ, {"AWS_WAF_TOKEN": "secret-token"}), \
-                 mock.patch.object(sp, "ChromeDriverManager"), \
-                 mock.patch.object(sp, "Service"), \
-                 mock.patch.object(sp.os, "chmod"), \
                  mock.patch.object(sp.webdriver, "Chrome", return_value=browser):
                 with self.assertRaisesRegex(RuntimeError, "Could not configure") as error:
                     sp.get_driver()

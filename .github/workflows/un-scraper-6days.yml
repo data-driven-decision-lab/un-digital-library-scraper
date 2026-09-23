@@ -5,6 +5,10 @@ on:
   schedule:
     - cron: '0 2 */6 * *' # Runs every 6 days at 2:00 AM UTC
 
+concurrency:
+  group: un-votes-database-update
+  cancel-in-progress: false
+
 permissions:
   contents: read
   actions: write # for the keep-alive step
@@ -12,6 +16,7 @@ permissions:
 jobs:
   scrape:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     env:
       TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
       TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
@@ -80,6 +85,11 @@ jobs:
             exit 1
           fi
 
+      - name: Run regression tests
+        run: python -m unittest discover tests
+
       - name: Run scraper (writes un_votes_unga + un_votes_with_sc to Turso)
+        env:
+          CHROME_BINARY: ${{ steps.setup-chrome.outputs.chrome-path }}
         run: |
           python -c "import sys; sys.path.insert(0, 'src'); from un_data_pipeline.scraper_pipeline import main; main()"
