@@ -38,8 +38,7 @@ gcloud run deploy $SERVICE_NAME \
   --min-instances 0 \
   --timeout 300 \
   --concurrency 80 \
-  --set-env-vars "SUPABASE_URL=https://gjakiqtayqltssvbzasd.supabase.co" \
-  --set-env-vars "SUPABASE_KEY=your-supabase-service-role-key"
+  --set-env-vars "TURSO_DATABASE_URL=libsql://your-database-name.turso.io,TURSO_AUTH_TOKEN=your-turso-auth-token"
 
 echo "✅ Deployment complete!"
 echo "🌐 Your API is now available at:"
@@ -47,7 +46,7 @@ gcloud run services describe $SERVICE_NAME --region=$REGION --format="value(stat
 
 echo ""
 echo "📋 Next steps:"
-echo "1. Update the SUPABASE_KEY environment variable with your actual service role key"
+echo "1. Replace the TURSO_DATABASE_URL and TURSO_AUTH_TOKEN placeholders with your Turso database URL and auth token"
 echo "2. Test the API endpoints"
 echo "3. Set up monitoring and logging"
 echo "4. Configure custom domain if needed"
