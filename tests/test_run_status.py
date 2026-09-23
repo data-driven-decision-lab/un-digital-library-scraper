@@ -3,6 +3,7 @@
 Run from the repo root: python -m unittest discover tests
 """
 import os
+import json
 import sqlite3
 import sys
 import tempfile
@@ -23,6 +24,50 @@ REC = "https://digitallibrary.un.org/record/"
 
 
 class RunStatusTest(unittest.TestCase):
+    def test_new_country_names_preserve_votes_and_totals(self):
+        row = sp.standardize_country_columns(sp.pd.DataFrame([{
+            'Link': REC + '4128222', 'BAHAMAS (THE)': 'YES', 'NAOERO': 'ABSTAIN',
+            'USA': 'NO', 'YES COUNT': '1', 'NO COUNT': '1', 'ABSTAIN COUNT': '1',
+        }])).iloc[0]
+        self.assertEqual(sp.validated_vote_data(row, require_summary=True),
+                         {'BHS': 'YES', 'NRU': 'ABSTAIN', 'USA': 'NO'})
+        row['YES COUNT'] = '2'
+        with self.assertRaisesRegex(ValueError, 'Vote total mismatch'):
+            sp.validated_vote_data(row)
+
+    def test_unmapped_country_votes_fail_before_upload(self):
+        with self.assertRaisesRegex(ValueError, 'Unmapped country votes'):
+            sp.standardize_country_columns(sp.pd.DataFrame([{'NEW COUNTRY': 'YES'}]))
+
+    def test_targeted_repair_preserves_metadata_and_is_idempotent(self):
+        conn = sqlite3.connect(':memory:')
+        self.addCleanup(conn.close)
+        with open(os.path.join(_src, '..', 'db', 'schema.sql')) as schema:
+            conn.executescript(schema.read())
+        for table in ('un_votes_unga', 'un_votes_with_sc'):
+            conn.execute(f'INSERT INTO {table} (Link, Resolution, tags, vote_data) VALUES (?, ?, ?, ?)',
+                         (REC + '1', 'A/RES/81/1', 'original tags', '{}'))
+        raw = {'Link': REC + '1', 'Resolution': 'A/RES/81/1', 'BAHAMAS (THE)': 'YES',
+               'YES COUNT': '1', 'NO COUNT': '0', 'ABSTAIN COUNT': '0'}
+        with mock.patch.object(sp, 'get_turso_connection', return_value=conn), \
+             mock.patch.object(sp, 'process_resolution', return_value=raw), \
+             mock.patch.object(sp.time, 'sleep'):
+            sp.repair_record_votes(mock.Mock(), '1')
+            sp.repair_record_votes(mock.Mock(), '1')
+            for table in ('un_votes_unga', 'un_votes_with_sc'):
+                rows = conn.execute(f'SELECT tags, vote_data FROM {table}').fetchall()
+                self.assertEqual(len(rows), 1)
+                self.assertEqual(rows[0][0], 'original tags')
+                self.assertEqual(json.loads(rows[0][1]), {'BHS': 'YES'})
+            raw['YES COUNT'] = '2'
+            with self.assertRaisesRegex(ValueError, 'Vote total mismatch'):
+                sp.repair_record_votes(mock.Mock(), '1')
+            raw.pop('YES COUNT')
+            with self.assertRaisesRegex(ValueError, 'Missing YES summary'):
+                sp.repair_record_votes(mock.Mock(), '1')
+            with self.assertRaisesRegex(ValueError, 'numeric IDs'):
+                sp.repair_record_votes(mock.Mock(), '1,https://example.com')
+
     def test_visible_year_labels_are_parsed_without_hidden_labels(self):
         driver = mock.Mock(title="Search Results")
         driver.find_elements.return_value = []

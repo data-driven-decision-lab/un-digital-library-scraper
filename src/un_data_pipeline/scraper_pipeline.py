@@ -685,6 +685,10 @@ def standardize_country_columns(df):
 
     # Step 2: Add manual overrides for historical/ambiguous names
     manual_iso3_map = {
+        'BAHAMAS (THE)': 'BHS',
+        # Keep the database's historical NRU identifier for the renamed country.
+        # https://metadata.un.org/skosmos/thesaurus/en/page/1004349
+        'NAOERO': 'NRU',
         'BURMA': 'MMR', 'BYELORUSSIAN SSR': 'BLR', 'CAPE VERDE': 'CPV',
         'CENTRAL AFRICAN EMPIRE': 'CAF', 'CEYLON': 'LKA', "COTE D'IVOIRE": 'CIV',
         'DAHOMEY': 'BEN', 'DEMOCRATIC KAMPUCHEA': 'KHM', 'FEDERATION OF MALAYA': 'MYS',
@@ -840,6 +844,10 @@ def standardize_country_columns(df):
         logger.info("No country columns were successfully mapped and consolidated.")
 
     unmapped_cols_present = [col for col in unmapped_cols if col in df.columns]
+    unmapped_votes = [col for col in unmapped_cols_present
+                      if df[col].isin(['YES', 'NO', 'ABSTAIN']).any()]
+    if unmapped_votes:
+        raise ValueError(f"Unmapped country votes would be lost: {unmapped_votes}")
     if unmapped_cols_present:
          logger.warning(f"Adding {len(unmapped_cols_present)} unmapped columns to the end: {unmapped_cols_present}")
          # Filter unmapped_cols_present to ensure no duplicates with already added fixed/country cols
@@ -1986,6 +1994,58 @@ def get_links_from_turso() -> set:
             time.sleep(10 * attempt)
 
 
+def validated_vote_data(row, require_summary=False):
+    """Build the stored votes and reject discrepancies with the UN summary."""
+    votes = {c: row[c] for c in row.index
+             if isinstance(c, str) and len(c) == 3 and c.isupper()
+             and c not in {'YES', 'NO'} and pd.notna(row[c])}
+    if any(value not in {'YES', 'NO', 'ABSTAIN'} for value in votes.values()):
+        raise ValueError(f"Invalid country vote in {row.get('Link')}")
+    for vote in ('YES', 'NO', 'ABSTAIN'):
+        expected = row.get(f'{vote} COUNT')
+        if expected is None or pd.isna(expected):
+            if require_summary:
+                raise ValueError(f"Missing {vote} summary for {row.get('Link')}")
+            continue
+        actual = sum(value == vote for value in votes.values())
+        if actual != int(expected):
+            raise ValueError(f"Vote total mismatch for {row.get('Link')}: "
+                             f"{vote} expected {expected}, got {actual}")
+    return votes
+
+
+def repair_record_votes(driver, record_ids):
+    """Re-fetch explicitly selected existing records; update only their votes."""
+    ids = list(dict.fromkeys(part.strip() for part in record_ids.split(',')))
+    if len(ids) > 100 or any(not re.fullmatch(r'[0-9]+', value) for value in ids):
+        raise ValueError('repair_record_ids must contain 1–100 comma-separated numeric IDs')
+    conn = get_turso_connection()
+    for record_id in ids:
+        link = f'https://digitallibrary.un.org/record/{record_id}'
+        raw = process_resolution(link, driver, None)
+        if not raw:
+            raise RuntimeError(f'Could not re-fetch repair record {record_id}')
+        row = standardize_country_columns(pd.DataFrame([raw])).iloc[0]
+        votes = json.dumps(validated_vote_data(row, require_summary=True))
+        tables = ['un_votes_with_sc']
+        if not str(row['Resolution']).startswith('S/'):
+            tables.append('un_votes_unga')
+        updates = []
+        for table in tables:
+            existing = conn.execute(
+                f'SELECT Link, Resolution FROM {table} WHERE Link = ? OR Link LIKE ?',
+                (link, link + '?%'),
+            ).fetchall()
+            if not existing or any(item[1] != row['Resolution'] for item in existing):
+                raise ValueError(f'Repair record {record_id} does not match {table}')
+            updates.extend((table, item[0]) for item in existing)
+        for table, stored_link in updates:
+            conn.execute(f'UPDATE {table} SET vote_data = ? WHERE Link = ?', (votes, stored_link))
+        conn.commit()
+        logger.info('Repaired and validated votes for record %s in %s', record_id, tables)
+        time.sleep(1)
+
+
 def upload_to_turso_unga(df: pd.DataFrame):
     """
     Uploads new rows to the 'un_votes_unga' table in Turso (General Assembly votes only).
@@ -1999,14 +2059,10 @@ def upload_to_turso_unga(df: pd.DataFrame):
     logger.info(f"Uploading {len(df)} rows to Turso un_votes_unga...")
     try:
         conn = get_turso_connection()
-        country_cols = [
-            c for c in df.columns
-            if isinstance(c, str) and len(c) == 3 and c.isupper() and c not in {'YES', 'NO'}
-        ]
         meta_cols = ['Resolution', 'Date', 'Title', 'Link', 'tags']
         rows = []
         for _, row in df.iterrows():
-            vote_data = {c: row[c] for c in country_cols if c in row and pd.notna(row[c])}
+            vote_data = validated_vote_data(row)
             meta = [_clean_param(row.get(c)) for c in meta_cols]
             rows.append(tuple(meta + [json.dumps(vote_data)]))
         conn.executemany(
@@ -2034,14 +2090,10 @@ def upload_to_turso_with_sc(df: pd.DataFrame):
     logger.info(f"Uploading {len(df)} rows to Turso un_votes_with_sc...")
     try:
         conn = get_turso_connection()
-        country_cols = [
-            c for c in df.columns
-            if isinstance(c, str) and len(c) == 3 and c.isupper() and c not in {'YES', 'NO'}
-        ]
         meta_cols = ['Resolution', 'Date', 'Title', 'Link', 'tags']
         rows = []
         for _, row in df.iterrows():
-            vote_data = {c: row[c] for c in country_cols if c in row and pd.notna(row[c])}
+            vote_data = validated_vote_data(row)
             resolution = row.get('Resolution') or ''
             sc_flag = 1 if str(resolution).startswith('S/') else 0
             meta = [_clean_param(row.get(c)) for c in meta_cols]
@@ -2239,6 +2291,14 @@ def run_scraper():
                 )
             raise RuntimeError("No years found on the page. Check the website structure.")
         logger.info(f"Found {len(years_data)} years to process")
+
+        repair_ids = os.getenv('REPAIR_RECORD_IDS', '').strip()
+        if repair_ids:
+            repair_record_votes(driver, repair_ids)
+            driver.get(BASE_SEARCH_URL)
+            years_data = get_available_years(driver)
+            if not years_data:
+                raise RuntimeError('Search did not reload after record repair')
 
         session_request_count = 0
         SESSION_RESET_THRESHOLD = 150

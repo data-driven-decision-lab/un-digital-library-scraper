@@ -76,6 +76,14 @@ and upload errors fail the run; successfully saved records are retained for the
 next attempt. A General Assembly record is only considered complete once it is
 present in both vote tables.
 
+Country votes are checked against the UN's published YES/NO/ABSTAIN totals before
+upload; unknown country names with votes fail the run instead of being dropped.
+To repair a known existing record, manually dispatch the workflow with
+`repair_record_ids` (comma-separated numeric UN record IDs, maximum 100). The
+scraper re-fetches and validates those votes and updates both applicable tables,
+preserving record IDs, metadata, and classification tags. Normal scheduled runs
+leave existing records alone.
+
 The scraper requires Chrome and network access to `digitallibrary.un.org`. Each pipeline run logs execution metadata to the `pipeline_runs` Turso table.
 
 ### AWS WAF token for the scheduled scraper

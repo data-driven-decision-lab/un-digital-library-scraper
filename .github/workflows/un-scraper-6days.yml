@@ -1,7 +1,13 @@
 name: UN Scraper (Every 6 Days)
 
 on:
-  workflow_dispatch: # Allows manual triggering
+  workflow_dispatch:
+    inputs:
+      repair_record_ids:
+        description: 'Optional: re-fetch votes for existing record IDs (comma-separated, max 100)'
+        required: false
+        default: ''
+        type: string
   schedule:
     - cron: '0 2 */6 * *' # Runs every 6 days at 2:00 AM UTC
 
@@ -22,6 +28,7 @@ jobs:
       TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       AWS_WAF_TOKEN: ${{ secrets.AWS_WAF_TOKEN }}
+      REPAIR_RECORD_IDS: ${{ inputs.repair_record_ids }}
       LOG_LEVEL: INFO
 
     steps:
