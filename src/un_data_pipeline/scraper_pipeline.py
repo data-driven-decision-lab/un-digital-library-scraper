@@ -58,6 +58,7 @@ except ImportError:
 # ---------------- Selenium & Scraper Imports ----------------
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -160,7 +161,7 @@ def get_turso_connection():
         ValueError: If either environment variable is not set.
     """
     if _USE_HTTP_CLIENT:
-        from src.un_data_pipeline.turso_http import get_turso_connection as _http_conn
+        from .turso_http import get_turso_connection as _http_conn
         return _http_conn()
     url = os.getenv("TURSO_DATABASE_URL")
     auth_token = os.getenv("TURSO_AUTH_TOKEN")
@@ -395,16 +396,7 @@ For each resolution text, identify ALL relevant tags that apply and return them 
         
     except Exception as e:
         logger.error(f"Error during API call: {e}")
-        # Return empty classification with error message
-        return ResolutionTarget(
-            classifications=[
-                LocationClassifications(
-                    continent="error",
-                    subregion="processing_error",
-                    country=None
-                )
-            ]
-        )
+        raise RuntimeError("Geographic classification failed") from e
 
 def get_llm_location_tags(title: str, geo_hierarchy: dict, model: str = DEFAULT_MODEL) -> List[List]:
     """
@@ -1015,7 +1007,7 @@ Rules:
             return response.choices[0].message.parsed
         except Exception as e:
             logger.error(f"Error during main tag API call: {e}")
-            return MainTagClassification(main_tags=[])
+            raise RuntimeError("Main-tag classification failed") from e
         
     elif stage == 2:
         # Stage 2: identify subtag1 based on main tags
@@ -1057,7 +1049,7 @@ Rules:
             return response.choices[0].message.parsed
         except Exception as e:
             logger.error(f"Error during subtag1 API call for {main_tag}: {e}")
-            return SubTag1Classification(subtag1s=[])
+            raise RuntimeError("Subtag classification failed") from e
         
     elif stage == 3:
         # Stage 3: identify subtag2 based on main tag and subtag1
@@ -1099,7 +1091,7 @@ Rules:
             return response.choices[0].message.parsed
         except Exception as e:
             logger.error(f"Error during subtag2 API call for {main_tag} > {subtag1}: {e}")
-            return SubTag2Classification(subtag2s=[])
+            raise RuntimeError("Detailed classification failed") from e
     
     else:
         logger.error(f"Invalid stage: {stage}")
@@ -1246,7 +1238,9 @@ def get_driver():
     if os.getenv("CHROME_BINARY"):
         options.binary_location = os.environ["CHROME_BINARY"]
     options.add_argument("--disable-dev-shm-usage")
-    driver = webdriver.Chrome(options=options)
+    driver_path = os.getenv("CHROMEDRIVER_PATH")
+    service = Service(executable_path=driver_path) if driver_path else Service()
+    driver = webdriver.Chrome(service=service, options=options)
     driver.set_page_load_timeout(45)
     waf_token = os.getenv("AWS_WAF_TOKEN", "").strip()
     if waf_token:
@@ -1610,8 +1604,7 @@ def collect_links_for_year(driver, year, existing_links):
             )
             logger.debug(f"[Year {year}] Page {page_count} loaded successfully")
         except TimeoutException:
-            logger.warning(f"Timeout on page {page_count} for year {year}.")
-            break
+            raise RuntimeError(f"Search page {page_count} for year {year} did not load") from None
 
         elements = driver.find_elements(By.XPATH, "//a[contains(@href, '/record/')]")
         logger.debug(f"[Year {year}] Page {page_count} found {len(elements)} record links")
@@ -1680,8 +1673,7 @@ def collect_links_for_year(driver, year, existing_links):
                 time.sleep(1)
                 logger.debug(f"[Year {year}] Page {page_count}: Successfully clicked next button")
             except Exception as e:
-                logger.error(f"[Year {year}] Error clicking next button on page {page_count}: {e}")
-                break
+                raise RuntimeError(f"Could not load page {page_count + 1} for year {year}") from e
         else:
             logger.info(f"[Year {year}] No next button found on page {page_count}; reached last page.")
             break
@@ -1967,7 +1959,7 @@ def retry_failed_links(failed_links, year):
 # -------------------- Turso Functions --------------------
 
 def get_links_from_turso() -> set:
-    """Fetches existing record links from un_votes_with_sc in Turso.
+    """Fetch record links that are present in every required Turso table.
 
     Raises after 3 failed attempts: continuing with an empty set would
     re-scrape and re-tag the whole library.
@@ -1975,7 +1967,11 @@ def get_links_from_turso() -> set:
     logger.info("Fetching existing links from Turso un_votes_with_sc...")
     for attempt in range(1, 4):
         try:
-            rows = get_turso_connection().execute("SELECT Link FROM un_votes_with_sc").fetchall()
+            rows = get_turso_connection().execute(
+                "SELECT v.Link FROM un_votes_with_sc v "
+                "WHERE v.sc_flag = 1 OR EXISTS "
+                "(SELECT 1 FROM un_votes_unga u WHERE u.Link = v.Link)"
+            ).fetchall()
             links = {n for n in (normalize_link(row[0]) for row in rows if row[0]) if n}
             logger.info(f"Found {len(links)} existing links in Turso.")
             return links
@@ -2119,7 +2115,7 @@ def process_and_upload_data(new_df, existing_df=None):
 
     # Filter for non-SC records and upload to un_votes_unga
     logger.info("Filtering for non-SC records to upload to un_votes_unga table...")
-    non_sc_df = combined_df[combined_df['Council'] != 'Security Council'].copy()
+    non_sc_df = combined_df[~combined_df['Resolution'].fillna('').str.startswith('S/')].copy()
 
     if not non_sc_df.empty:
         logger.info(f"Uploading {len(non_sc_df)} non-SC records to un_votes_unga table...")
@@ -2245,8 +2241,7 @@ def run_scraper():
             logger.debug(f"Year {year}: Attempting to select year facet")
             success, driver = select_year_facet(driver, year_data)
             if not success:
-                logger.error(f"Failed to select facet for {year}; skipping this year.")
-                continue
+                raise RuntimeError(f"Failed to select the year facet for {year}")
             session_request_count += 1
             logger.debug(f"Year {year}: Successfully selected year facet")
             
@@ -2257,21 +2252,8 @@ def run_scraper():
             except DuplicateLinkFound as e:
                 new_links = e.new_links
                 logger.info(f"Year {year}: Duplicate link rule triggered; found {len(new_links)} new links.")
-            except (ConnectionResetError, ConnectionRefusedError, KeyboardInterrupt) as e:
-                logger.error(f"Year {year}: Connection error during link collection: {e}")
-                logger.info("Attempting to restart browser...")
-                try:
-                    driver.quit()
-                except:
-                    pass
-                driver = get_driver()
-                driver.get(BASE_SEARCH_URL)
-                time.sleep(3)
-                session_request_count = 0
-                continue
             except Exception as e:
-                logger.error(f"Year {year}: Unexpected error during link collection: {e}")
-                continue
+                raise RuntimeError(f"Link collection failed for year {year}") from e
 
             if new_links:
                 logger.info(f"Year {year}: Collected {len(new_links)} new links, proceeding to scrape")
@@ -2300,6 +2282,11 @@ def run_scraper():
                     if retry_rows: 
                         new_rows_all.extend(retry_rows)
                         logger.info(f"Year {year}: Recovered {len(retry_rows)} rows from retry")
+
+                    recovered = {normalize_link(row['Link']) for row in retry_rows}
+                    unresolved = {normalize_link(link) for link in failed_links} - recovered
+                    if unresolved:
+                        raise RuntimeError(f"Year {year}: {len(unresolved)} records still failed after retry")
 
                 # Update existing_links to prevent re-processing
                 existing_links.update(new_links)

@@ -3,6 +3,7 @@
 Run from the repo root: python -m unittest discover tests
 """
 import os
+import sqlite3
 import sys
 import tempfile
 import unittest
@@ -22,11 +23,54 @@ REC = "https://digitallibrary.un.org/record/"
 
 
 class RunStatusTest(unittest.TestCase):
+    def test_partial_upload_is_not_treated_as_complete(self):
+        conn = sqlite3.connect(":memory:")
+        self.addCleanup(conn.close)
+        conn.executescript("""
+            CREATE TABLE un_votes_with_sc (Link TEXT, sc_flag INTEGER);
+            CREATE TABLE un_votes_unga (Link TEXT);
+        """)
+        conn.executemany("INSERT INTO un_votes_with_sc VALUES (?, ?)",
+                         [(REC + "1", 0), (REC + "2", 1), (REC + "3", 0)])
+        conn.execute("INSERT INTO un_votes_unga VALUES (?)", [REC + "3"])
+        with mock.patch.object(sp, "get_turso_connection", return_value=conn):
+            self.assertEqual(sp.get_links_from_turso(), {REC + "2", REC + "3"})
+            conn.execute("INSERT INTO un_votes_unga VALUES (?)", [REC + "1"])
+            self.assertEqual(sp.get_links_from_turso(), {REC + "1", REC + "2", REC + "3"})
+
+    def test_classification_failure_does_not_become_empty_tags(self):
+        with mock.patch.object(sp, "execute_api_call", side_effect=RuntimeError("API unavailable")):
+            with self.assertRaisesRegex(RuntimeError, "classification failed"):
+                sp.tag_resolution("Peacekeeping")
+            with self.assertRaisesRegex(RuntimeError, "classification failed"):
+                sp.call_llm_api("Peacekeeping", {})
+
+    def test_empty_search_is_not_misreported_as_waf(self):
+        driver = mock.Mock(page_source='<script src="awswaf.com"></script>No match found')
+        with mock.patch.object(sp, "get_links_from_turso", return_value=set()), \
+             mock.patch.object(sp, "get_driver", return_value=driver), \
+             mock.patch.object(sp, "get_available_years", return_value=[]), \
+             mock.patch.object(sp, "update_scraper_log"), \
+             mock.patch.object(sp.time, "sleep"):
+            with self.assertRaisesRegex(RuntimeError, "search filters"):
+                sp.run_scraper()
+
+    def test_failed_year_selection_fails_the_run(self):
+        with mock.patch.object(sp, "get_links_from_turso", return_value=set()), \
+             mock.patch.object(sp, "get_driver"), \
+             mock.patch.object(sp, "get_available_years", return_value=[{"year": 2026, "count": 2}]), \
+             mock.patch.object(sp, "select_year_facet", side_effect=lambda d, y: (False, d)), \
+             mock.patch.object(sp, "update_scraper_log"), \
+             mock.patch.object(sp.time, "sleep"):
+            with self.assertRaisesRegex(RuntimeError, "Failed to select"):
+                sp.run_scraper()
+
     def test_waf_cookie_is_installed_in_every_new_browser_before_navigation(self):
         browsers = [mock.Mock(), mock.Mock()]
         for browser in browsers:
             browser.execute_cdp_cmd.return_value = {"success": True}
         with mock.patch.dict(os.environ, {"AWS_WAF_TOKEN": " test-token "}), \
+             mock.patch.object(sp, "Service"), \
              mock.patch.object(sp.webdriver, "Chrome", side_effect=browsers):
             for browser in browsers:
                 self.assertIs(sp.get_driver(), browser)
@@ -38,6 +82,7 @@ class RunStatusTest(unittest.TestCase):
 
     def test_local_browser_without_token_does_not_set_cookie(self):
         with mock.patch.dict(os.environ, {"AWS_WAF_TOKEN": ""}), \
+             mock.patch.object(sp, "Service"), \
              mock.patch.object(sp.webdriver, "Chrome") as chrome:
             sp.get_driver()
             chrome.return_value.execute_cdp_cmd.assert_not_called()
@@ -50,6 +95,7 @@ class RunStatusTest(unittest.TestCase):
             else:
                 browser.execute_cdp_cmd.return_value = outcome
             with mock.patch.dict(os.environ, {"AWS_WAF_TOKEN": "secret-token"}), \
+                 mock.patch.object(sp, "Service"), \
                  mock.patch.object(sp.webdriver, "Chrome", return_value=browser):
                 with self.assertRaisesRegex(RuntimeError, "Could not configure") as error:
                     sp.get_driver()
