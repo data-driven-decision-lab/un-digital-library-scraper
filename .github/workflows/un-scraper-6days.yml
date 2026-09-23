@@ -24,11 +24,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
-      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      AWS_WAF_TOKEN: ${{ secrets.AWS_WAF_TOKEN }}
-      REPAIR_RECORD_IDS: ${{ inputs.repair_record_ids }}
       LOG_LEVEL: INFO
 
     steps:
@@ -86,6 +81,11 @@ jobs:
 
       - name: Run scraper (writes un_votes_unga + un_votes_with_sc to Turso)
         env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          AWS_WAF_TOKEN: ${{ secrets.AWS_WAF_TOKEN }}
+          REPAIR_RECORD_IDS: ${{ inputs.repair_record_ids }}
           CHROME_HEADLESS: "0"
           CHROME_BINARY: ${{ steps.setup-chrome.outputs.chrome-path }}
           CHROMEDRIVER_PATH: ${{ steps.setup-chrome.outputs.chromedriver-path }}
