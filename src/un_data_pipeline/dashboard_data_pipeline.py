@@ -245,8 +245,8 @@ def save_data_to_turso(df: pd.DataFrame, table_name: str) -> int:
 def identify_country_columns(df_columns):
     """Identify country ISO3 code columns in a DataFrame column list.
 
-    Matches columns that are exactly 3 uppercase letters, excluding known
-    non-country codes ('YES', 'NO').
+    Matches columns that are exactly 3 uppercase letters, excluding non-country
+    codes ('YES', 'NO') and ZAN: Zanzibar cast one vote (1963), too few to score.
 
     Args:
         df_columns: Iterable of column names from a DataFrame.
@@ -255,8 +255,8 @@ def identify_country_columns(df_columns):
         list[str]: Sorted list of ISO3 country code columns.
     """
     potential_countries = [col for col in df_columns if isinstance(col, str) and len(col) == 3 and col.isupper()]
-    known_non_countries = {'YES', 'NO'}
-    return sorted([col for col in potential_countries if col not in known_non_countries])
+    excluded = {'YES', 'NO', 'ZAN'}
+    return sorted([col for col in potential_countries if col not in excluded])
 
 def load_region_mapping(mapping_file_path):
     """Load the UN country-to-region mapping CSV.

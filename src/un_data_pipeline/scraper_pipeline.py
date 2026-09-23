@@ -692,28 +692,32 @@ def standardize_country_columns(df):
         'BURMA': 'MMR', 'BYELORUSSIAN SSR': 'BLR', 'CAPE VERDE': 'CPV',
         'CENTRAL AFRICAN EMPIRE': 'CAF', 'CEYLON': 'LKA', "COTE D'IVOIRE": 'CIV',
         'DAHOMEY': 'BEN', 'DEMOCRATIC KAMPUCHEA': 'KHM', 'FEDERATION OF MALAYA': 'MYS',
-        'GERMAN DEMOCRATIC REPUBLIC': 'DEU', 'FEDERAL REPUBLIC OF GERMANY': 'DEU', 'GERMANY': 'DEU',
+        # States that were members at the same time keep separate codes (former
+        # ISO 3166 DDR/YMD, Correlates of War ZAN): see docs/SCHEMA.md.
+        'GERMAN DEMOCRATIC REPUBLIC': 'DDR', 'FEDERAL REPUBLIC OF GERMANY': 'DEU',
+        'GERMANY, FEDERAL REPUBLIC OF': 'DEU', 'GERMANY': 'DEU',
         'IRAN (ISLAMIC REPUBLIC OF)': 'IRN', 'IVORY COAST': 'CIV', 'KHMER REPUBLIC': 'KHM',
         'MALDIVE ISLANDS': 'MDV', 'MICRONESIA (FEDERATED STATES OF)': 'FSM', 'PHILIPPINE REPUBLIC': 'PHL',
         'REPUBLIC OF KOREA': 'KOR', 'SIAM': 'THA', 'SURINAM': 'SUR', 'SWAZILAND': 'SWZ',
         'SYRIAN ARAB REPUBLIC': 'SYR', 'TANGANYIKA': 'TZA', 'THE FORMER YUGOSLAV REPUBLIC OF MACEDONIA': 'MKD',
         'TÜRKIYE': 'TUR', 'TÜRKÝYE': 'TUR', 'TÜRKİYE': 'TUR', 'TURKEY': 'TUR', 'UKRAINIAN SSR': 'UKR',
         'UNITED ARAB REPUBLIC': 'EGY', 'UPPER VOLTA': 'BFA', 'USSR': 'RUS', 'YUGOSLAVIA': 'SRB',
-        'ZAIRE': 'COD', 'ZANZIBAR': 'TZA', 'CZECHOSVK': 'CZE', 'DEMOCRATIC YEMEN': 'YEM',
-        'SOUTHERN YEMEN': 'YEM', 'UNITED CAMEROON': 'CMR', 'UNION OF SOUTH AFRICA': 'ZAF',
+        'ZAIRE': 'COD', 'ZANZIBAR': 'ZAN', 'CZECHOSVK': 'CZE', 'CZECHOSLOVAKIA': 'CZE',
+        'DEMOCRATIC YEMEN': 'YMD', 'SOUTHERN YEMEN': 'YMD', 'UNITED CAMEROON': 'CMR',
+        'UNITED REPUBLIC OF CAMEROON': 'CMR', 'UNION OF SOUTH AFRICA': 'ZAF',
         'SERBIA AND MONTENEGRO': 'SRB', 'CONGO (BRAZZAVILLE)': 'COG', 'CONGO (DEMOCRATIC REPUBLIC OF)': 'COD',
         'CONGO (LEOPOLDVILLE)': 'COD', 'DEMOCRATIC CONGO': 'COD', 'VENEZUELA (BOLIVARIAN REPUBLIC OF)': 'VEN',
         'BOLIVIA (PLURINATIONAL STATE OF)': 'BOL', 'NETHERLANDS (KINGDOM OF THE)': 'NLD',
         'LIBYAN ARAB JAMAHIRIYA': 'LBY', 'LIBYAN ARAB REPUBLIC': 'LBY', 'DEMOCRATIC REPUBLIC OF THE CONGO': 'COD',
         # Lowercase variations often seen
         'bol (plurinational state of)': 'BOL', 'cog (brazzaville)': 'COG', 'cog (democratic republic of)': 'COD',
-        'cog (leopoldville)': 'COD', 'democratic cog': 'COD', 'democratic yemen': 'YEM',
+        'cog (leopoldville)': 'COD', 'democratic cog': 'COD',
         'deu, federal republic of': 'DEU', '"deu, federal republic of"': 'DEU', 'iran (islamic republic of)': 'IRN',
         'libyan arab jamahiriya': 'LBY', 'libyan arab republic': 'LBY', 'nld (kingdom of the)': 'NLD',
-        'serbia and montenegro': 'SRB', 'southern yemen': 'YEM', 'union of south africa': 'ZAF',
+        'serbia and montenegro': 'SRB', 'union of south africa': 'ZAF',
         'united cameroon': 'CMR', 'venezuela (bolivarian republic of)': 'VEN', 'micronesia (federated states of)': 'FSM',
-        'democratic yem': 'YEM', 'lbyn arab jamahiriya': 'LBY', 'lbyn arab republic': 'LBY',
-        'srb and mne': 'SRB', 'southern yem': 'YEM', 'union of zaf': 'ZAF', 'united cmr': 'CMR',
+        'lbyn arab jamahiriya': 'LBY', 'lbyn arab republic': 'LBY',
+        'srb and mne': 'SRB', 'union of zaf': 'ZAF', 'united cmr': 'CMR',
         'ven (bolivarian republic of)': 'VEN', 'irn (islamic republic of)': 'IRN', 'iran islamic republic of': 'IRN'
     }
 
@@ -820,6 +824,13 @@ def standardize_country_columns(df):
         if not valid_original_cols:
             logger.warning(f"No valid columns found to combine for ISO3 code {iso3_code} from list: {cols_to_combine}")
             continue
+
+        # combine_first keeps one vote per row: two voting names on one code would
+        # silently drop a member's vote (the GDR once overwrote the FRG under DEU).
+        clash = df[valid_original_cols].isin(['YES', 'NO', 'ABSTAIN']).sum(axis=1) > 1
+        if clash.any():
+            raise ValueError(f"{iso3_code} would merge votes of {valid_original_cols} "
+                             f"in {int(clash.sum())} rows")
 
         # Handle Unicode characters safely for logging
         safe_cols = [col.encode('ascii', 'replace').decode('ascii') for col in valid_original_cols]

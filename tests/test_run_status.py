@@ -3,6 +3,7 @@
 Run from the repo root: python -m unittest discover tests
 """
 import os
+import importlib.util
 import json
 import sqlite3
 import sys
@@ -38,6 +39,32 @@ class RunStatusTest(unittest.TestCase):
     def test_unmapped_country_votes_fail_before_upload(self):
         with self.assertRaisesRegex(ValueError, 'Unmapped country votes'):
             sp.standardize_country_columns(sp.pd.DataFrame([{'NEW COUNTRY': 'YES'}]))
+
+    def test_states_voting_side_by_side_keep_separate_codes(self):
+        row = sp.standardize_country_columns(sp.pd.DataFrame([{
+            'Link': REC + '1', 'GERMAN DEMOCRATIC REPUBLIC': 'YES',
+            'GERMANY, FEDERAL REPUBLIC OF': 'NO', 'DEMOCRATIC YEMEN': 'YES', 'YEMEN': 'ABSTAIN',
+            'TANGANYIKA': 'YES', 'ZANZIBAR': 'ABSTAIN', 'CZECHOSLOVAKIA': 'NO',
+            'UNITED REPUBLIC OF CAMEROON': 'YES',
+            'YES COUNT': '4', 'NO COUNT': '2', 'ABSTAIN COUNT': '2',
+        }])).iloc[0]
+        self.assertEqual(sp.validated_vote_data(row, require_summary=True), {
+            'DDR': 'YES', 'DEU': 'NO', 'YMD': 'YES', 'YEM': 'ABSTAIN',
+            'TZA': 'YES', 'ZAN': 'ABSTAIN', 'CZE': 'NO', 'CMR': 'YES'})
+        with self.assertRaisesRegex(ValueError, 'DEU would merge'):
+            sp.standardize_country_columns(sp.pd.DataFrame([
+                {'GERMANY': 'YES', 'FEDERAL REPUBLIC OF GERMANY': 'NO'}]))
+
+    def test_backfill_rebuilds_only_split_state_keys(self):
+        path = os.path.join(_src, '..', 'db', 'backfill_historical_states.py')
+        spec = importlib.util.spec_from_file_location('backfill', path)
+        bf = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(bf)
+        self.assertEqual(bf.rebuilt_keys({
+            'Link': REC + '1', 'GERMAN DEMOCRATIC REPUBLIC': 'YES', 'GERMANY, FEDERAL REPUBLIC OF': float('nan'),
+            'YEMEN': 'NO', 'SOUTHERN YEMEN': 'ABSTAIN', 'TANGANYIKA': 'YES',
+        }), {'DEU': None, 'DDR': 'YES', 'YEM': 'NO', 'YMD': 'ABSTAIN'})
+        self.assertEqual(bf.rebuilt_keys({'Link': REC + '2', 'YEMEN': 'YES', 'TANGANYIKA': 'NO'}), {})
 
     def test_targeted_repair_preserves_metadata_and_is_idempotent(self):
         conn = sqlite3.connect(':memory:')

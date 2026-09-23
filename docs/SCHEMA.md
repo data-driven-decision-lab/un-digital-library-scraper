@@ -56,7 +56,8 @@ want GA voting data.
 }
 ```
 
-Keys are ISO 3166-1 alpha-3 country codes (approximately 190 countries). Values are:
+Keys are ISO 3166-1 alpha-3 country codes (approximately 190 countries; historical
+states are listed below). Values are:
 
 | Value | Meaning |
 |---|---|
@@ -68,6 +69,29 @@ Keys are ISO 3166-1 alpha-3 country codes (approximately 190 countries). Values 
 The dashboard pipeline expands this blob into per-country columns at load time via
 `_expand_vote_data()`. Storing votes as JSON avoids enumerating all 190+ country
 columns in the DDL while keeping a single row per resolution.
+
+### Historical member states
+
+Each key holds one member's vote, so a record's votes add up to the UN's published
+totals. Renamed states, and the successors chosen below, share one code; states that
+were members at the same time get their own code (former ISO 3166 code, or Correlates
+of War where ISO has none):
+
+| Key | Votes it holds |
+|---|---|
+| `DEU` | Federal Republic of Germany (1973 – 3 Oct 1990), then Germany |
+| `DDR` | German Democratic Republic (1973–1990) |
+| `YEM` | Yemen Arab Republic (North Yemen, until 22 May 1990), then Yemen |
+| `YMD` | Southern Yemen / Democratic Yemen (South Yemen, 1967–1990) |
+| `TZA` | Tanganyika (1961–1964), then the United Republic of Tanzania |
+| `ZAN` | Zanzibar (Dec 1963 – Apr 1964): one recorded vote, kept here but left out of all scores |
+| `RUS` | USSR (until Dec 1991), then the Russian Federation |
+| `CZE` | Czechoslovakia (until 1992), then Czechia |
+| `SRB` | Yugoslavia, Serbia and Montenegro (2003–2006), then Serbia |
+| `EGY` | United Arab Republic (1958–1971), then Egypt |
+
+Records stored before this convention (`DEU` holding the GDR's votes, `YEM` mostly South
+Yemen's, no `SRB` votes for 2003–2006) are corrected by `db/backfill_historical_states.py`.
 
 ---
 

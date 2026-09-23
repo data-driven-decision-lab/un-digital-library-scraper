@@ -139,7 +139,10 @@ bloc. A high P2 score indicates strong alignment with the country's region.
 
 Country-to-region assignments are loaded from
 `data/reference/UN_Country_Region_Mapping.csv`. Countries without a mapping entry
-are excluded from Pillar 2 computation.
+are excluded from Pillar 2 computation. The historical codes (see `docs/SCHEMA.md`)
+are assigned to Eastern Europe (`DDR`) and Western Asia (`YMD`); the committed copy
+in `src/un_report_api/app/required_csvs/` has these rows. `ZAN` (Zanzibar, a single
+1963 vote) is left out of every pillar, the similarity matrix and the topic counts.
 
 ### Sub-metrics
 
