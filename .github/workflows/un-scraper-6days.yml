@@ -73,7 +73,6 @@ jobs:
           check_var "GEMINI_API_KEY"
           check_var "TURSO_DATABASE_URL"
           check_var "TURSO_AUTH_TOKEN"
-          check_var "AWS_WAF_TOKEN"
 
       - name: Run regression tests
         run: python -m unittest discover tests

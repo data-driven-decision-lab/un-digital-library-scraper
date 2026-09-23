@@ -6,7 +6,7 @@ Pipeline for scraping, classifying, and analyzing UN General Assembly voting dat
 
 The system has three layers:
 
-1. **Scraper Pipeline** (`src/un_data_pipeline/scraper_pipeline.py`) — Selenium scrapes voting records from [digitallibrary.un.org](https://digitallibrary.un.org). OpenAI GPT-4o-mini classifies each resolution using UNBIS subject tags and geographic tags. Results are written to the `un_votes_unga` (General Assembly only) and `un_votes_with_sc` (all votes, GA + SC) tables in Turso.
+1. **Scraper Pipeline** (`src/un_data_pipeline/scraper_pipeline.py`) — Selenium scrapes voting records from [digitallibrary.un.org](https://digitallibrary.un.org). Gemini classifies each resolution using UNBIS subject tags and geographic tags. Results are written to the `un_votes_unga` (General Assembly only) and `un_votes_with_sc` (all votes, GA + SC) tables in Turso.
 
 2. **Dashboard Pipeline** (`src/un_data_pipeline/dashboard_data_pipeline.py`) — Reads `un_votes_with_sc`, computes Pillar 1/2/3 scores and pairwise cosine similarity, and writes results to three Turso tables (`annual_scores`, `topic_votes_yearly`, `pairwise_similarity_yearly`). CSV copies are saved to `src/un_report_api/app/required_csvs/` as API fallbacks.
 
@@ -25,7 +25,7 @@ See [docs/SCHEMA.md](docs/SCHEMA.md) for the full database table reference.
 - Python 3.11+
 - Chrome browser (for Selenium scraper)
 - [Turso](https://turso.tech) account with a database created
-- OpenAI API key (for scraper classification)
+- Gemini API key (for scraper classification)
 - Google Cloud project (for deployment)
 
 ## Local Setup
@@ -47,7 +47,7 @@ cp .env.example .env
 # Edit .env and fill in:
 #   TURSO_DATABASE_URL  — from Turso dashboard (libsql://your-database-name.turso.io)
 #   TURSO_AUTH_TOKEN    — from Turso dashboard
-#   API_KEY             — OpenAI API key
+#   GEMINI_API_KEY      — Gemini API key
 ```
 
 ### Initialise the database schema
@@ -69,11 +69,17 @@ python -c "import sys; sys.path.insert(0, 'src'); from un_data_pipeline.scraper_
 python -m src.un_data_pipeline.dashboard_data_pipeline
 ```
 
+The GitHub workflow installs matching Chrome and ChromeDriver versions, runs the
+regression tests, and prevents overlapping database updates. Scraping, tagging,
+and upload errors fail the run; successfully saved records are retained for the
+next attempt. A General Assembly record is only considered complete once it is
+present in both vote tables.
+
 The scraper requires Chrome and network access to `digitallibrary.un.org`. Each pipeline run logs execution metadata to the `pipeline_runs` Turso table.
 
 ### AWS WAF token for the scheduled scraper
 
-Set the repository Actions secret `AWS_WAF_TOKEN` to the value of the
+Optionally set the repository Actions secret `AWS_WAF_TOKEN` to the value of the
 `aws-waf-token` cookie from your UN Digital Library browser session. The workflow
 passes it to every scraper browser, including workers and restarted sessions,
 before any requests to the library. For local runs, set it in your environment or
@@ -82,7 +88,9 @@ untracked `.env` file. Never commit the token.
 [AWS WAF tokens](https://docs.aws.amazon.com/waf/latest/developerguide/waf-tokens-details.html)
 contain browser-session information and have challenge expiration times; a copied
 token is not a permanent credential and may be rejected on a GitHub runner.
-If the library still serves a challenge, the run fails. Refresh the Actions secret
+If the supplied cookie is rejected, the scraper discards it for the rest of that
+run and lets the library initialize a fresh session once. If access is still
+denied, the run fails. Refresh the Actions secret
 with a valid token or arrange automated access with the UN Library.
 
 ## Running the API Locally

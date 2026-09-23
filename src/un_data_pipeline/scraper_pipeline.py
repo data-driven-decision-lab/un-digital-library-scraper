@@ -1684,6 +1684,8 @@ def collect_links_for_year(driver, year, existing_links):
 def get_available_years(driver):
     """Extract available years and their counts from the date facet."""
     date_facets = []
+    if driver.title == "403 Forbidden":
+        return []
     try:
         # Wait for the page to fully load and then wait a bit more for dynamic content
         WebDriverWait(driver, 60).until(
@@ -2206,12 +2208,24 @@ def run_scraper():
         time.sleep(2)
         
         years_data = get_available_years(driver)
+        if not years_data and os.getenv("AWS_WAF_TOKEN", "").strip() and (
+            '403 Forbidden' in driver.page_source or 'awswaf' in driver.page_source.lower()
+        ):
+            # A copied browser token can expire or be invalid in this session.
+            # Let the library initialize a fresh session once, without that cookie.
+            logger.info("Saved WAF cookie did not establish access; retrying without it")
+            driver.delete_cookie("aws-waf-token")
+            os.environ.pop("AWS_WAF_TOKEN", None)
+            driver.get(BASE_SEARCH_URL)
+            years_data = get_available_years(driver)
         if not years_data:
             page_text = BeautifulSoup(driver.page_source, "html.parser").get_text(" ", strip=True)
             waf_token = os.getenv("AWS_WAF_TOKEN", "").strip()
             if waf_token:
                 page_text = page_text.replace(waf_token, "[REDACTED]")
             logger.error("Search page did not load: title=%s; text=%s", driver.title, page_text[:800])
+            if '403 Forbidden' in page_text:
+                raise RuntimeError("UN Digital Library denied this runner access (HTTP 403 Forbidden)")
             if 'No match found' in driver.page_source:
                 raise RuntimeError(
                     'UN Digital Library returned no search results. Check the voting-data search filters.'
@@ -2339,4 +2353,3 @@ def run_scraper():
 
 if __name__ == "__main__":
     main()
-
