@@ -46,6 +46,16 @@ class RunStatusTest(unittest.TestCase):
         self.assertEqual(conn.call_count, 3)
         get_driver.assert_not_called()
 
+    def test_bot_challenge_is_named_in_the_error(self):
+        driver = mock.Mock(page_source='<script src="https://x.token.awswaf.com/x/challenge.js">')
+        with mock.patch.object(sp, "get_links_from_turso", return_value=set()), \
+             mock.patch.object(sp, "get_driver", return_value=driver), \
+             mock.patch.object(sp, "get_available_years", return_value=[]), \
+             mock.patch.object(sp, "update_scraper_log"), \
+             mock.patch.object(sp.time, "sleep"):
+            with self.assertRaisesRegex(RuntimeError, "AWS WAF bot challenge"):
+                sp.run_scraper()
+
     def test_final_step_uploads_only_rows_missing_from_turso(self):
         rows = [{"Link": REC + "1", "Scrape_Year": 2026}, {"Link": REC + "2?ln=en", "Scrape_Year": 2026}]
         with mock.patch.object(sp, "get_links_from_turso", side_effect=[set(), {REC + "1"}]), \

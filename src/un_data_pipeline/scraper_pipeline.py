@@ -2218,6 +2218,10 @@ def run_scraper():
         
         years_data = get_available_years(driver)
         if not years_data:
+            # First seen 2026-09-23: every UN Digital Library page answers bots with an
+            # AWS WAF challenge. Needs sanctioned access from the UN Library, not a workaround.
+            if 'awswaf' in driver.page_source.lower():
+                raise RuntimeError("UN Digital Library served an AWS WAF bot challenge: automated access is blocked.")
             raise RuntimeError("No years found on the page. Check the website structure.")
         logger.info(f"Found {len(years_data)} years to process")
 
