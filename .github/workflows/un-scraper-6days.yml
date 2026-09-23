@@ -5,6 +5,10 @@ on:
   schedule:
     - cron: '0 2 */6 * *' # Runs every 6 days at 2:00 AM UTC
 
+permissions:
+  contents: read
+  actions: write # for the keep-alive step
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
@@ -15,6 +19,14 @@ jobs:
       LOG_LEVEL: INFO
 
     steps:
+      # ponytail: GitHub disables schedules in public repos after 60 days without
+      # commits (happened 2026-07-19). Re-enabling via the API each run resets that
+      # clock; if GitHub stops honouring it, switch to a periodic empty commit.
+      - name: Keep the schedule alive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/un-scraper-6days.yml/enable"
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
