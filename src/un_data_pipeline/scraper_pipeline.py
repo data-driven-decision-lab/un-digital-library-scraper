@@ -1974,23 +1974,23 @@ def retry_failed_links(failed_links, year):
 # -------------------- Turso Functions --------------------
 
 def get_links_from_turso() -> set:
-    """Fetches existing record links from un_votes_with_sc in Turso."""
+    """Fetches existing record links from un_votes_with_sc in Turso.
+
+    Raises after 3 failed attempts: continuing with an empty set would
+    re-scrape and re-tag the whole library.
+    """
     logger.info("Fetching existing links from Turso un_votes_with_sc...")
-    try:
-        conn = get_turso_connection()
-        rows = conn.execute("SELECT Link FROM un_votes_with_sc").fetchall()
-        links = set()
-        for row in rows:
-            if row[0]:
-                norm_link = normalize_link(row[0])
-                if norm_link:
-                    links.add(norm_link)
-        logger.info(f"Found {len(links)} existing links in Turso.")
-        return links
-    except Exception as e:
-        logger.error(f"Error fetching links from Turso: {e}")
-        logger.info("Continuing without deduplication...")
-        return set()
+    for attempt in range(1, 4):
+        try:
+            rows = get_turso_connection().execute("SELECT Link FROM un_votes_with_sc").fetchall()
+            links = {n for n in (normalize_link(row[0]) for row in rows if row[0]) if n}
+            logger.info(f"Found {len(links)} existing links in Turso.")
+            return links
+        except Exception as e:
+            logger.warning(f"Fetching links from Turso failed (attempt {attempt}/3): {e}")
+            if attempt == 3:
+                raise
+            time.sleep(10 * attempt)
 
 
 def upload_to_turso_unga(df: pd.DataFrame):
@@ -2063,31 +2063,6 @@ def upload_to_turso_with_sc(df: pd.DataFrame):
         logger.error(f"Error uploading to Turso un_votes_with_sc: {e}")
         raise
 
-
-def get_all_unga_data_from_turso():
-    """Fetches all data from un_votes_unga in Turso (General Assembly votes only)."""
-    logger.info("Fetching all data from Turso un_votes_unga...")
-    try:
-        conn = get_turso_connection()
-        cursor = conn.execute("SELECT * FROM un_votes_unga")
-        cols = [d[0] for d in cursor.description]
-        rows = cursor.fetchall()
-        if rows:
-            df = pd.DataFrame(rows, columns=cols)
-            # Expand vote_data JSON back to wide format
-            if 'vote_data' in df.columns:
-                vote_expanded = df['vote_data'].apply(
-                    lambda x: json.loads(x) if x else {}
-                ).apply(pd.Series)
-                df = pd.concat([df.drop('vote_data', axis=1), vote_expanded], axis=1)
-            logger.info(f"Fetched {len(df)} rows from Turso un_votes_unga.")
-            return df
-        else:
-            logger.info("No data in Turso un_votes_unga.")
-            return pd.DataFrame()
-    except Exception as e:
-        logger.error(f"Error fetching from Turso: {e}")
-        return pd.DataFrame()
 
 def process_and_upload_data(new_df, existing_df=None):
     """
@@ -2199,20 +2174,34 @@ def checkpoint_progress(new_rows_all, current_year):
         # Don't raise the exception - continue with scraping even if checkpoint fails
 
 def main():
+    """Runs the scraper and records the outcome in pipeline_runs.
+
+    Any failure marks the run 'failed' and re-raises, so the process exits
+    non-zero and the GitHub Action goes red instead of passing silently.
     """
-    Main function that integrates scraping, tagging, and geo-tagging:
-      - Fetches existing data from Turso for deduplication
+    start_scraper_log()
+    try:
+        run_scraper()
+    except Exception as e:
+        finish_scraper_log('failed', str(e)[:1000])
+        raise
+    finish_scraper_log('success')
+
+
+def run_scraper():
+    """
+    Integrates scraping, tagging, and geo-tagging:
+      - Fetches existing links from Turso for deduplication
       - Scrapes new rows to add to the dataset
       - Tags only the new rows with both regular tagging and geo-tagging
       - Standardizes country columns to ISO3 codes
-      - Uploads all data to both Turso tables (un_votes_unga and un_votes_with_sc)
+      - Uploads new rows to both Turso tables (un_votes_unga and un_votes_with_sc)
     """
     driver = None
+    new_rows_all = []
+    scrape_error = None
     try:
         logger.info("Starting Turso-native UN voting data scraper...")
-
-        # Start scraper logging
-        start_scraper_log()
 
         # Get existing links from Turso for deduplication
         logger.info("Loading existing links from Turso for deduplication...")
@@ -2229,11 +2218,13 @@ def main():
         
         years_data = get_available_years(driver)
         if not years_data:
-            logger.error("No years found on the page. Check the website structure.")
-            return
+            # First seen 2026-09-23: every UN Digital Library page answers bots with an
+            # AWS WAF challenge. Needs sanctioned access from the UN Library, not a workaround.
+            if 'awswaf' in driver.page_source.lower():
+                raise RuntimeError("UN Digital Library served an AWS WAF bot challenge: automated access is blocked.")
+            raise RuntimeError("No years found on the page. Check the website structure.")
         logger.info(f"Found {len(years_data)} years to process")
-        
-        new_rows_all = []
+
         session_request_count = 0
         SESSION_RESET_THRESHOLD = 150
 
@@ -2330,54 +2321,30 @@ def main():
         logger.info(f"Year processing completed. Total new rows collected: {len(new_rows_all)}")
         
     except Exception as general_e:
+        scrape_error = general_e
         logger.error(f"An error occurred during scraping: {general_e}", exc_info=True)
     finally:
         if driver:
             driver.quit()
-    
+
     logger.info(f"Scraping complete. {len(new_rows_all)} new rows collected.")
-    
-    if not new_rows_all:
-        logger.info("No new rows to process. Exiting.")
-        return
-    
-    # Final processing and upload
-    logger.info("Processing final data and uploading to Turso...")
-    new_df = pd.DataFrame(new_rows_all)
 
-    # Get existing data from Turso to check for already uploaded records
-    logger.info("Fetching existing data from Turso...")
-    existing_df = get_all_unga_data_from_turso()
-    
-    # Filter out records that were already uploaded during checkpoints
-    if not existing_df.empty:
-        existing_links = set(existing_df['Link'].tolist())
-        new_links = set(new_df['Link'].tolist())
-        already_uploaded = new_links.intersection(existing_links)
-        
-        if already_uploaded:
-            logger.info(f"Filtering out {len(already_uploaded)} records that were already uploaded during checkpoints...")
-            new_df = new_df[~new_df['Link'].isin(already_uploaded)]
-            logger.info(f"Remaining records to upload: {len(new_df)}")
-        
+    if new_rows_all:
+        # Per-year checkpoints normally uploaded everything already; only rows whose
+        # checkpoint failed are processed again. Compare links only: the old
+        # SELECT * of un_votes_unga broke mid-stream on 2026-07-19.
+        new_df = pd.DataFrame(new_rows_all)
+        uploaded = get_links_from_turso()
+        new_df = new_df[~new_df['Link'].map(normalize_link).isin(uploaded)]
         if new_df.empty:
-            logger.info("No new records to upload in final processing. All records were already uploaded during checkpoints.")
-            return
-        
-        # Process and upload final data
-        logger.info("Processing and uploading final data...")
-        final_df = process_and_upload_data(new_df, None)
-        
-        logger.info(f"Pipeline completed successfully. Final dataset contains {len(final_df)} rows.")
-        logger.info("Data uploaded to both un_votes_unga and un_votes_with_sc tables in Turso.")
+            logger.info("All new records were uploaded during checkpoints.")
+        else:
+            logger.info(f"Uploading {len(new_df)} records whose checkpoint failed...")
+            process_and_upload_data(new_df, None)
+        update_scraper_log({'new_records_processed': len(new_rows_all)})
 
-        # Update final metrics and finish logging
-        update_scraper_log({
-            'new_records_processed': len(new_df),
-            'records_uploaded_to_with_sc': len(final_df),
-            'records_uploaded_to_unga': len(final_df[final_df['Council'] != 'Security Council']) if not final_df.empty else 0
-        })
-        finish_scraper_log('success')
+    if scrape_error:
+        raise RuntimeError(f"Scraping stopped early: {scrape_error}") from scrape_error
 
 
 if __name__ == "__main__":
