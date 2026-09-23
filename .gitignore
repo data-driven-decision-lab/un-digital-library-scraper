@@ -39,6 +39,9 @@ gdp_population_2023.py
 
 /logs/
 /.cursor
+# Cursor MCP configs hold personal access tokens: never commit them
+.cursor/
+.github/.cursor/
 data/cleaned_countries_output.csv
 data/copyWorking_UN_VOTING_DATA_RAW_WITH_TAGS_2025-03-19 copy 2.csv
 data/UN_VOTING_DATA_RAW_WITH_TAGS_2025-03-19.csv
