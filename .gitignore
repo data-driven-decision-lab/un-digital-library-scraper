@@ -66,7 +66,7 @@ depricated/
 #hide nested scraper folder
 un-digital-library-scraper-main/
 
-#hide CSV data files (now using Supabase)
+#hide CSV data files (data lives in Turso)
 *.csv
 !src/un_report_api/app/required_csvs/*.csv
 !src/un_report_api/app/sc_data/*.csv
