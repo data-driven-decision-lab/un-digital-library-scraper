@@ -1230,7 +1230,7 @@ def tag_new_rows(new_df, geo_hierarchy, iso2_country_code, model=DEFAULT_MODEL, 
 def get_driver():
     """Initialize Chrome using its real browser identity and the installed binary."""
     options = Options()
-    if os.getenv('CI'):
+    if os.getenv('CHROME_HEADLESS', '1' if os.getenv('CI') else '0') == '1':
         options.add_argument("--headless=new")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")

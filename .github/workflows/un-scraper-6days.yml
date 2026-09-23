@@ -79,7 +79,8 @@ jobs:
 
       - name: Run scraper (writes un_votes_unga + un_votes_with_sc to Turso)
         env:
+          CHROME_HEADLESS: "0"
           CHROME_BINARY: ${{ steps.setup-chrome.outputs.chrome-path }}
           CHROMEDRIVER_PATH: ${{ steps.setup-chrome.outputs.chromedriver-path }}
         run: |
-          python -c "import sys; sys.path.insert(0, 'src'); from un_data_pipeline.scraper_pipeline import main; main()"
+          xvfb-run -a python -c "import sys; sys.path.insert(0, 'src'); from un_data_pipeline.scraper_pipeline import main; main()"
