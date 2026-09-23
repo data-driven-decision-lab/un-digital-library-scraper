@@ -40,6 +40,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: pip
 
       - name: Install Google Chrome
         id: setup-chrome
@@ -52,8 +53,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          sudo apt-get update
-          sudo apt-get install -y dnsutils
 
       - name: Check secrets are not empty and show lengths
         env:
@@ -75,16 +74,6 @@ jobs:
           check_var "TURSO_DATABASE_URL"
           check_var "TURSO_AUTH_TOKEN"
           check_var "AWS_WAF_TOKEN"
-
-      - name: DNS check for Gemini API
-        run: |
-          echo "🔍 Checking DNS resolution for generativelanguage.googleapis.com"
-          if dig +short generativelanguage.googleapis.com | grep -qE '^[0-9.]+'; then
-            echo "✅ DNS resolution successful for generativelanguage.googleapis.com"
-          else
-            echo "❌ DNS resolution failed for generativelanguage.googleapis.com"
-            exit 1
-          fi
 
       - name: Run regression tests
         run: python -m unittest discover tests

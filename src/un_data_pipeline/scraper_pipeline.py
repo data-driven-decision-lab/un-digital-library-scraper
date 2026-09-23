@@ -2207,6 +2207,11 @@ def run_scraper():
         
         years_data = get_available_years(driver)
         if not years_data:
+            page_text = BeautifulSoup(driver.page_source, "html.parser").get_text(" ", strip=True)
+            waf_token = os.getenv("AWS_WAF_TOKEN", "").strip()
+            if waf_token:
+                page_text = page_text.replace(waf_token, "[REDACTED]")
+            logger.error("Search page did not load: title=%s; text=%s", driver.title, page_text[:800])
             if 'No match found' in driver.page_source:
                 raise RuntimeError(
                     'UN Digital Library returned no search results. Check the voting-data search filters.'

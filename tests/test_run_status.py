@@ -23,6 +23,42 @@ REC = "https://digitallibrary.un.org/record/"
 
 
 class RunStatusTest(unittest.TestCase):
+    def test_upload_routes_resolutions_and_is_idempotent(self):
+        conn = sqlite3.connect(":memory:")
+        self.addCleanup(conn.close)
+        with open(os.path.join(_src, "..", "db", "schema.sql")) as schema:
+            conn.executescript(schema.read())
+        rows = sp.pd.DataFrame([
+            {"Resolution": "A/RES/81/1", "Date": "2026-09-17", "Title": "GA vote",
+             "Council": "Unknown", "Link": REC + "1", "USA": "NO", "tags": "Peace"},
+            {"Resolution": "S/RES/2828(2026)", "Date": "2026-09-11", "Title": "SC vote",
+             "Council": "Unknown", "Link": REC + "2", "USA": "YES", "tags": "Peace"},
+        ])
+        with mock.patch.object(sp, "get_turso_connection", return_value=conn), \
+             mock.patch.object(sp, "tag_new_rows", side_effect=lambda df, **kw: df.copy()):
+            sp.process_and_upload_data(rows)
+            sp.process_and_upload_data(rows)
+            self.assertEqual(sp.get_links_from_turso(), {REC + "1", REC + "2"})
+        self.assertEqual(conn.execute("SELECT COUNT(*) FROM un_votes_with_sc").fetchone()[0], 2)
+        self.assertEqual(conn.execute("SELECT Resolution FROM un_votes_unga").fetchall(), [("A/RES/81/1",)])
+        self.assertEqual(conn.execute("SELECT vote_data FROM un_votes_unga").fetchone()[0], '{"USA": "NO"}')
+
+    def test_unrecovered_record_fails_but_saves_successful_rows(self):
+        rows = [{"Link": REC + "1", "Scrape_Year": 2026}]
+        with mock.patch.object(sp, "get_links_from_turso", return_value=set()), \
+             mock.patch.object(sp, "get_driver"), \
+             mock.patch.object(sp, "get_available_years", return_value=[{"year": 2026, "count": 2}]), \
+             mock.patch.object(sp, "select_year_facet", side_effect=lambda d, y: (True, d)), \
+             mock.patch.object(sp, "collect_links_for_year", return_value=[REC + "1", REC + "2"]), \
+             mock.patch.object(sp, "batch_scrape_resolutions", return_value=(rows, [REC + "2"])), \
+             mock.patch.object(sp, "retry_failed_links", return_value=[]), \
+             mock.patch.object(sp, "update_scraper_log"), \
+             mock.patch.object(sp.time, "sleep"), \
+             mock.patch.object(sp, "process_and_upload_data") as upload:
+            with self.assertRaisesRegex(RuntimeError, "1 records still failed"):
+                sp.run_scraper()
+        self.assertEqual(list(upload.call_args.args[0]["Link"]), [REC + "1"])
+
     def test_partial_upload_is_not_treated_as_complete(self):
         conn = sqlite3.connect(":memory:")
         self.addCleanup(conn.close)
