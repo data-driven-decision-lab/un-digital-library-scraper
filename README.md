@@ -69,8 +69,9 @@ python -c "import sys; sys.path.insert(0, 'src'); from un_data_pipeline.scraper_
 python -m src.un_data_pipeline.dashboard_data_pipeline
 ```
 
-The GitHub workflow installs matching Chrome and ChromeDriver versions, runs the
-regression tests, and prevents overlapping database updates. Scraping, tagging,
+The GitHub workflow installs matching Chrome and ChromeDriver versions, runs Chrome
+under Xvfb (`CHROME_HEADLESS=0`), runs regression tests, and prevents overlapping
+database updates. Scraping, tagging,
 and upload errors fail the run; successfully saved records are retained for the
 next attempt. A General Assembly record is only considered complete once it is
 present in both vote tables.
