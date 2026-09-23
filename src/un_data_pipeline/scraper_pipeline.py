@@ -1754,7 +1754,6 @@ def get_available_years(driver):
                             if not label_text:
                                 label_text = label_span.get_attribute("innerHTML").strip()
                                 # Clean HTML tags if any
-                                import re
                                 label_text = re.sub(r'<[^>]+>', '', label_text).strip()
                     else:
                         # For input elements, look for associated label

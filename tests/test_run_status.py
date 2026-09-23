@@ -23,6 +23,36 @@ REC = "https://digitallibrary.un.org/record/"
 
 
 class RunStatusTest(unittest.TestCase):
+    def test_visible_year_labels_are_parsed_without_hidden_labels(self):
+        driver = mock.Mock(title="Search Results")
+        driver.find_elements.return_value = []
+        element = mock.Mock(tag_name="button")
+        element.get_attribute.side_effect = lambda name: {
+            "data-value": "MjAyNg==", "id": "desktopcheckbox1-fct__3-0",
+        }.get(name)
+        element.find_element.return_value.text = "2026 (53)"
+        driver.find_element.return_value.find_elements.return_value = [element]
+        with mock.patch.object(sp, "WebDriverWait"), mock.patch.object(sp.time, "sleep"):
+            self.assertEqual(sp.get_available_years(driver), [{
+                "year": "2026", "count": 53, "data_value": "MjAyNg==",
+                "element_id": "desktopcheckbox1-fct__3-0", "element_type": "button",
+            }])
+
+    def test_rejected_cookie_is_discarded_for_subsequent_browsers(self):
+        driver = mock.Mock(page_source="403 Forbidden")
+        with mock.patch.dict(os.environ, {"AWS_WAF_TOKEN": "expired-test-token"}), \
+             mock.patch.object(sp, "get_links_from_turso", return_value=set()), \
+             mock.patch.object(sp, "get_driver", return_value=driver), \
+             mock.patch.object(sp, "get_available_years", side_effect=[[], [{"year": 2026, "count": 1}]]), \
+             mock.patch.object(sp, "select_year_facet", return_value=(True, driver)), \
+             mock.patch.object(sp, "collect_links_for_year", return_value=[]), \
+             mock.patch.object(sp, "clear_filters"), \
+             mock.patch.object(sp, "update_scraper_log"), \
+             mock.patch.object(sp.time, "sleep"):
+            sp.run_scraper()
+            self.assertNotIn("AWS_WAF_TOKEN", os.environ)
+        driver.delete_cookie.assert_called_once_with("aws-waf-token")
+
     def test_upload_routes_resolutions_and_is_idempotent(self):
         conn = sqlite3.connect(":memory:")
         self.addCleanup(conn.close)
