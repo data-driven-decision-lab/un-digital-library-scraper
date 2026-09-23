@@ -57,7 +57,7 @@ class RunStatusTest(unittest.TestCase):
                 browser.execute_cdp_cmd.return_value = outcome
             with mock.patch.dict(os.environ, {"AWS_WAF_TOKEN": "secret-token"}), \
                  mock.patch.object(sp, "ChromeDriverManager"), \
-             mock.patch.object(sp, "Service"), \
+                 mock.patch.object(sp, "Service"), \
                  mock.patch.object(sp.os, "chmod"), \
                  mock.patch.object(sp.webdriver, "Chrome", return_value=browser):
                 with self.assertRaisesRegex(RuntimeError, "Could not configure") as error:
