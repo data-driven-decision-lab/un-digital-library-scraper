@@ -5,9 +5,9 @@ This directory contains the dashboard scoring pipeline in
 
 ## Overview
 
-The pipeline is Supabase-native:
+The pipeline reads from and writes to Turso (LibSQL):
 
-1. Loads source vote data from Supabase.
+1. Loads source vote data from Turso (`un_votes_with_sc` by default).
 2. Filters out Security Council resolutions (`Resolution` starting with `S/`).
 3. Generates:
    - `annual_scores.csv`
@@ -15,11 +15,14 @@ The pipeline is Supabase-native:
    - `pairwise_similarity_yearly.csv`
 4. Saves outputs to `src/un_report_api/app/required_csvs/`.
 5. Validates output year coverage (must include `2025`) and fails on missing coverage.
+6. Writes the three outputs to the Turso tables of the same name and records the run in `pipeline_runs`.
+
+It uses `libsql-experimental` when installed, otherwise the HTTP client in `turso_http.py`. Table definitions are in `db/schema.sql` and `docs/SCHEMA.md`. Before the 2026 migration the pipeline used Supabase, which is now offline (see `legacy/supabase/`).
 
 ## Required Environment Variables
 
-- `SUPABASE_KEY` (required)
-- `SUPABASE_URL` (optional, defaults to project URL in code)
+- `TURSO_DATABASE_URL` (required)
+- `TURSO_AUTH_TOKEN` (required)
 - `PIPELINE_SOURCE_TABLE` (optional, defaults to `un_votes_with_sc`)
 
 ## Manual Run
@@ -30,4 +33,4 @@ From the project root:
 python -m src.un_data_pipeline.dashboard_data_pipeline
 ```
 
-The script logs row counts/pages loaded from Supabase and fails with a non-zero exit if required year coverage checks fail.
+The script logs row counts/pages loaded from Turso and fails with a non-zero exit if required year coverage checks fail.
