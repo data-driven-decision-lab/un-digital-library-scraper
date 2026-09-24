@@ -8,6 +8,7 @@ import json
 import uuid
 from collections import Counter
 from datetime import datetime
+from functools import lru_cache
 import warnings
 from sklearn.metrics.pairwise import cosine_similarity
 from tqdm.auto import tqdm
@@ -37,17 +38,11 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR)) # This should be the
 sys.path.insert(0, PROJECT_ROOT)
 
 try:
-    from src.un_data_pipeline.data_modules.un_classification import un_classification
-    main_category_keys = set(un_classification.keys())
-    subcategory_keys = set()
-    for _mc_dict in un_classification.values():
-        subcategory_keys.update(_mc_dict.keys())
+    from src.un_data_pipeline.data_modules.un_classification import un_classification, TaxonomyParser
     logging.info("Successfully imported 'un_classification' dictionary.")
 except ImportError:
     logging.error("Could not import 'un_classification'. Ensure 'dictionaries/un_classification.py' exists.")
     un_classification = None
-    main_category_keys = set()
-    subcategory_keys = set()
 
 # ==============================================================================
 # TURSO FUNCTIONS
@@ -701,8 +696,9 @@ def generate_annual_scores(df_combined_index):
 def generate_topic_votes(df_raw):
     """Aggregate votes by country, year, and UNBIS topic tag.
 
-    Parses the 'tags' column to extract all matching UNBIS Main Category and
-    Subcategory tags (both levels — PIPE-01 fix). Each resolution can match
+    Parses the 'tags' column with TaxonomyParser to extract every UNBIS Main Category
+    and Subcategory label (both levels — PIPE-01 fix; labels can contain commas,
+    e.g. 'POLITICAL CONDITIONS, INSTITUTIONS, MOVEMENTS'). Each resolution can match
     multiple tags; the DataFrame is exploded so each tag gets its own row.
     Deduplicates on (Year, Country, TopicTag) before returning (PIPE-02).
 
@@ -720,16 +716,19 @@ def generate_topic_votes(df_raw):
 
     logging.info("Step 3A: Starting Topic Votes generation...")
 
+    parser = TaxonomyParser()
+
+    @lru_cache(maxsize=None)  # one parse per distinct tags string, not per country vote
     def parse_tags_for_subtag1(tag_string):
-        """Parse a comma-separated tags string and return all matching UNBIS Main Category and Subcategory tags."""
+        """Return the UNBIS Main Category and Subcategory labels of a tags string, in order."""
         if pd.isna(tag_string) or not isinstance(tag_string, str):
             return []
-        tag_items = [item.strip() for item in tag_string.split(',') if item.strip()]
-        matched = []
-        for item in tag_items:
-            if item in main_category_keys or item in subcategory_keys:
-                matched.append(item)
-        return list(dict.fromkeys(matched))  # dedupe preserving insertion order
+        try:
+            paths = parser.parse(tag_string)
+        except ValueError:
+            logging.warning(f"TOPIC VOTES: unparseable tags skipped: {tag_string[:120]!r}")
+            return []
+        return list(dict.fromkeys(label for p in paths for label in (p.topic_l1, p.topic_l2) if label))
 
     country_cols = identify_country_columns(df_raw.columns)
     if not country_cols:
@@ -749,7 +748,6 @@ def generate_topic_votes(df_raw):
         return pd.DataFrame()
 
     logging.info("... parsing tags and exploding dataframe")
-    df_melted['tags'] = df_melted['tags'].astype(str)
     tqdm.pandas(desc="Parsing Topic Tags", leave=False)
     df_melted['TopicTags'] = df_melted['tags'].progress_apply(parse_tags_for_subtag1)
 

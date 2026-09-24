@@ -1,3 +1,6 @@
+from dataclasses import dataclass
+from functools import lru_cache
+
 un_classification = {
     'RECOMMENDATIONS': {
         'INTERNATIONAL CIVIL SERVICE': [
@@ -1929,3 +1932,167 @@ un_classification = {
         ]
     }
 }
+
+# Parser for the comma-joined `tags` strings (L1, L2, L3, L1, L2, ...), where labels can
+# themselves contain commas: never split tags on commas by hand. Ported from unga-2025
+# analysis/Thematic/generate_2025_theme_csvs.py; only the fallback sort key differs.
+
+
+@dataclass(frozen=True)
+class ParsedPath:
+    topic_l1: str
+    topic_l2: str | None
+    topic_l3: str | None
+    used_fallback: bool = False
+
+
+def normalize(text: str) -> str:
+    return " ".join(text.strip().split())
+
+
+def tokenize_label(label: str) -> tuple[str, ...]:
+    return tuple(normalize(part) for part in label.split(",") if normalize(part))
+
+
+class TaxonomyParser:
+    def __init__(self) -> None:
+        self.l1_candidates: list[tuple[tuple[str, ...], str]] = []
+        self.l2_by_l1: dict[str, list[tuple[tuple[str, ...], str]]] = {}
+        self.l3_by_pair: dict[tuple[str, str], list[tuple[tuple[str, ...], str]]] = {}
+
+        for topic_l1, l2_map in un_classification.items():
+            self.l1_candidates.append((tokenize_label(topic_l1), topic_l1))
+
+            l2_candidates: list[tuple[tuple[str, ...], str]] = []
+            for topic_l2, l3_values in l2_map.items():
+                l2_candidates.append((tokenize_label(topic_l2), topic_l2))
+                self.l3_by_pair[(topic_l1, topic_l2)] = [
+                    (tokenize_label(topic_l3), topic_l3) for topic_l3 in l3_values
+                ]
+
+            self.l2_by_l1[topic_l1] = sorted(
+                l2_candidates,
+                key=lambda item: (-len(item[0]), item[1]),
+            )
+
+        self.l1_candidates.sort(key=lambda item: (-len(item[0]), item[1]))
+
+        for key, candidates in self.l3_by_pair.items():
+            self.l3_by_pair[key] = sorted(
+                candidates,
+                key=lambda item: (-len(item[0]), item[1]),
+            )
+
+    @staticmethod
+    def _matching_candidates(
+        tokens: tuple[str, ...],
+        start: int,
+        candidates: list[tuple[tuple[str, ...], str]],
+    ) -> list[tuple[tuple[str, ...], str]]:
+        matches: list[tuple[tuple[str, ...], str]] = []
+        for token_parts, label in candidates:
+            stop = start + len(token_parts)
+            if tokens[start:stop] == token_parts:
+                matches.append((token_parts, label))
+        return matches
+
+    def _parse_tokens(
+        self,
+        tokens: tuple[str, ...],
+        allow_unknown_l3: bool,
+    ) -> tuple[ParsedPath, ...] | None:
+        @lru_cache(maxsize=None)
+        def starts_l1(position: int) -> bool:
+            return bool(self._matching_candidates(tokens, position, self.l1_candidates))
+
+        def unknown_l3_options(position: int) -> list[tuple[int, str]]:
+            if position >= len(tokens):
+                return []
+
+            options: list[tuple[int, str]] = []
+            for next_position in range(len(tokens), position, -1):
+                if next_position < len(tokens) and not starts_l1(next_position):
+                    continue
+                raw_l3 = ", ".join(tokens[position:next_position])
+                options.append((next_position, raw_l3))
+            return options
+
+        @lru_cache(maxsize=None)
+        def parse_from(position: int) -> tuple[ParsedPath, ...] | None:
+            if position == len(tokens):
+                return ()
+
+            for l1_parts, topic_l1 in self._matching_candidates(
+                tokens,
+                position,
+                self.l1_candidates,
+            ):
+                after_l1 = position + len(l1_parts)
+                path_options: list[tuple[int, ParsedPath]] = []
+
+                for l2_parts, topic_l2 in self._matching_candidates(
+                    tokens,
+                    after_l1,
+                    self.l2_by_l1[topic_l1],
+                ):
+                    after_l2 = after_l1 + len(l2_parts)
+
+                    for l3_parts, topic_l3 in self._matching_candidates(
+                        tokens,
+                        after_l2,
+                        self.l3_by_pair[(topic_l1, topic_l2)],
+                    ):
+                        path_options.append(
+                            (
+                                after_l2 + len(l3_parts),
+                                ParsedPath(topic_l1, topic_l2, topic_l3),
+                            )
+                        )
+
+                    path_options.append((after_l2, ParsedPath(topic_l1, topic_l2, None)))
+
+                    if allow_unknown_l3:
+                        for next_position, raw_l3 in unknown_l3_options(after_l2):
+                            path_options.append(
+                                (
+                                    next_position,
+                                    ParsedPath(topic_l1, topic_l2, raw_l3, True),
+                                )
+                            )
+
+                path_options.append((after_l1, ParsedPath(topic_l1, None, None)))
+
+                path_options.sort(
+                    key=lambda item: (
+                        item[1].used_fallback,
+                        # Shortest unknown L3 first: the longest one swallows every valid path after it.
+                        item[0] if item[1].used_fallback else -item[0],
+                        item[1].topic_l1,
+                        item[1].topic_l2 or "",
+                        item[1].topic_l3 or "",
+                    )
+                )
+                for next_position, parsed_path in path_options:
+                    remainder = parse_from(next_position)
+                    if remainder is not None:
+                        return (parsed_path,) + remainder
+
+            return None
+
+        return parse_from(0)
+
+    def parse(self, raw_tags: str) -> tuple[ParsedPath, ...]:
+        if not raw_tags or not raw_tags.strip():
+            return ()
+
+        tokens = tuple(normalize(part) for part in raw_tags.split(",") if normalize(part))
+
+        parsed = self._parse_tokens(tokens, allow_unknown_l3=False)
+        if parsed is not None:
+            return parsed
+
+        parsed = self._parse_tokens(tokens, allow_unknown_l3=True)
+        if parsed is not None:
+            return parsed
+
+        raise ValueError(f"Could not parse taxonomy sequence: {raw_tags}")
