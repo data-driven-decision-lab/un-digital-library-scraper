@@ -47,9 +47,10 @@ behaviour across topic areas.
 Resolution tags are matched against the UNBIS classification hierarchy
 (`un_classification` dictionary). For Pillar 1, the `parse_tags_p1()` function
 returns the **Subcategory** tag of the first matching Main Category / Subcategory
-pair found in the tag list. For topic vote counting (Section 3A), the
-`parse_tags_for_subtag1()` function matches both **Main Category** and
-**Subcategory** level tags.
+pair found in the tag list. For topic vote counting (Section 3A), `TaxonomyParser`
+(`un_classification.py`) reads the tags as Main Category > Subcategory > Specific Item
+paths, since labels can contain commas, and counts the **Main Category** and
+**Subcategory** of each path.
 
 Only UNBIS Main Category and Subcategory tags participate in scoring — Specific
 Items are not used.

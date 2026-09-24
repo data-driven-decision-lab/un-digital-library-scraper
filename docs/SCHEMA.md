@@ -175,15 +175,15 @@ and breakdown charts in reports.
 | `id` | INTEGER | Auto-increment primary key |
 | `Year` | INTEGER | Calendar year |
 | `Country` | TEXT | ISO 3166-1 alpha-3 country code |
-| `TopicTag` | TEXT | UNBIS Main Category or Subcategory name (e.g., `"DISARMAMENT"`, `"Nuclear weapons"`) |
+| `TopicTag` | TEXT | UNBIS Main Category or Subcategory name (e.g., `"DISARMAMENT"`, `"Nuclear weapons"`); may contain commas (`"POLITICAL CONDITIONS, INSTITUTIONS, MOVEMENTS"`) |
 | `YesVotes_Topic` | INTEGER DEFAULT 0 | YES votes cast by this country on resolutions tagged with this topic in this year |
 | `NoVotes_Topic` | INTEGER DEFAULT 0 | NO votes cast |
 | `AbstainVotes_Topic` | INTEGER DEFAULT 0 | ABSTAIN votes cast |
 | `TotalVotes_Topic` | INTEGER DEFAULT 0 | Sum of Yes + No + Abstain votes for this topic |
 
 A single resolution can contribute to multiple topic tags if it has multiple UNBIS
-tags. The pipeline uses `parse_tags_for_subtag1()`, which matches both Main Category
-and Subcategory tags from the `un_classification` dictionary.
+tags. The pipeline parses tags with `TaxonomyParser` (`un_classification.py`), which reads
+them as Main Category > Subcategory > Specific Item paths and counts the first two levels.
 
 ---
 
